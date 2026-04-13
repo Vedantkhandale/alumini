@@ -1,0 +1,50 @@
+:root {
+    --primary-red: #ff4d4d;
+    --dark-text: #1e293b;
+    --light-bg: #f8fafc;
+}
+
+body {
+    background-color: var(--light-bg);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.alumnix-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    border: 1px solid #eee;
+}
+
+.btn-alumnix {
+    background-color: var(--primary-red);
+    color: white;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    cursor: pointer;
+}
+
+.btn-alumnix:hover {
+    background-color: #e63939;
+    transform: translateY(-2px);
+}
+
+.form-control-alumnix {
+    width: 100%;
+    padding: 12px 15px;
+    margin-top: 8px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.form-control-alumnix:focus {
+    border-color: var(--primary-red);
+    outline: none;
+    background: #fff;
+}
