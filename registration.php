@@ -2,34 +2,29 @@
 session_start();
 include("includes/db.php");
 $msg = "";
+$reg_success = false; // Flag for SweetAlert
 
-// Check if form was submitted via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
     
-    // Sabhi fields ko safely fetch karo (No more Undefined Key warnings)
-    $full_name  = isset($_POST['full_name']) ? mysqli_real_escape_string($conn, $_POST['full_name']) : '';
-    $student_id = isset($_POST['student_id']) ? mysqli_real_escape_string($conn, $_POST['student_id']) : '';
-    $email      = isset($_POST['email']) ? mysqli_real_escape_string($conn, $_POST['email']) : '';
-    $gender     = isset($_POST['gender']) ? mysqli_real_escape_string($conn, $_POST['gender']) : '';
-    $batch      = isset($_POST['batch']) ? mysqli_real_escape_string($conn, $_POST['batch']) : '';
-    $grad_year  = isset($_POST['grad_year']) ? mysqli_real_escape_string($conn, $_POST['grad_year']) : '';
-    $pass       = isset($_POST['password']) ? mysqli_real_escape_string($conn, $_POST['password']) : ''; 
+    $full_name  = mysqli_real_escape_string($conn, $_POST['full_name']);
+    $student_id = mysqli_real_escape_string($conn, $_POST['student_id']);
+    $email      = mysqli_real_escape_string($conn, $_POST['email']);
+    $gender     = mysqli_real_escape_string($conn, $_POST['gender']);
+    $batch      = mysqli_real_escape_string($conn, $_POST['batch']);
+    $grad_year  = mysqli_real_escape_string($conn, $_POST['grad_year']);
+    $pass       = mysqli_real_escape_string($conn, $_POST['password']); 
 
-    // Basic validation taaki empty data insert na ho
     if (!empty($email) && !empty($student_id)) {
-        
-        // Duplicate check logic
         $check = $conn->query("SELECT * FROM users WHERE email='$email' OR student_id='$student_id'");
 
         if($check->num_rows > 0){
             $msg = "<div class='alert error'>⚠️ Student ID or Email already registered!</div>";
         } else {
-            // Data insert (status 'pending' rakha hai admin approval ke liye)
             $sql = "INSERT INTO users (full_name, student_id, email, password, gender, batch, graduation_year, status, role) 
-                    VALUES ('$full_name', '$student_id', '$email', '$pass', '$gender', '$batch', '$grad_year', 'pending', 'alumni')";
+                    VALUES ('$full_name', '$student_id', '$email', '$pass', '$gender', '$batch', '$grad_year', 'approved', 'alumni')";
             
             if($conn->query($sql)){
-                $msg = "<div class='alert success'>✅ Registration Submitted! Wait for Admin Approval.</div>";
+                $reg_success = true; // Success trigger!
             } else {
                 $msg = "<div class='alert error'>❌ DB Error: " . $conn->error . "</div>";
             }
@@ -44,6 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Alumni Portal | Register</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,13 +51,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
         .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .field-group { margin-bottom: 5px; }
         .label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 6px; }
-        .input-style, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f9fafb; font-size: 14px; outline: none; }
+        .input-style, select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f9fafb; font-size: 14px; outline: none; transition: 0.3s; }
         .input-style:focus, select:focus { border-color: #ff4d4d; background: #fff; box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.05); }
-        .btn-red { grid-column: span 2; width: 100%; padding: 16px; background: #ff4d4d; color: #fff; border: none; border-radius: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-top: 15px; }
-        .btn-red:hover { background: #e63939; transform: translateY(-2px); }
+        .btn-red { grid-column: span 2; width: 100%; padding: 16px; background: #ff4d4d; color: #fff; border: none; border-radius: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer; margin-top: 15px; transition: 0.3s; }
+        .btn-red:hover { background: #e63939; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(255, 77, 77, 0.2); }
         .alert { padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 13px; font-weight: 600; text-align: center; border: 1px solid; }
         .error { background: #fef2f2; color: #ef4444; border-color: #fee2e2; }
-        .success { background: #f0fdf4; color: #10b981; border-color: #dcfce7; }
         @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } .btn-red { grid-column: span 1; } }
     </style>
 </head>
@@ -75,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
 
     <?php if(!empty($msg)) echo $msg; ?>
 
-    <form action="registration.php" method="POST">
+    <form method="POST">
         <div class="form-grid">
             <div class="field-group">
                 <label class="label">Full Name</label>
@@ -123,7 +118,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
                 <input type="password" name="password" class="input-style" placeholder="••••••••" required>
             </div>
 
-            <button type="submit" name="register" class="btn-red">Request Access</button>
+            <button type="submit" name="register" class="btn-red">Join Network</button>
         </div>
     </form>
     
@@ -131,6 +126,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
         <p style="font-size: 13px; color: #64748b;">Already a member? <a href="login.php" style="color: #ff4d4d; font-weight: 700; text-decoration: none;">Log In</a></p>
     </div>
 </div>
+
+<?php if($reg_success): ?>
+<script>
+    Swal.fire({
+        title: 'Welcome to the Family!',
+        text: 'Account created successfully. Redirecting to login...',
+        icon: 'success',
+        timer: 2500,
+        showConfirmButton: false,
+        background: '#fff',
+        iconColor: '#10b981',
+        confirmButtonColor: '#ff4d4d'
+    }).then(() => {
+        window.location.href = 'login.php';
+    });
+</script>
+<?php endif; ?>
 
 </body>
 </html>

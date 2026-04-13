@@ -1,22 +1,26 @@
 <?php
 session_start();
-include("includes/db.php");
+include("includes/db.php"); // Path check kar lena agar ye 'includes' folder mein hai
+
+// 1. Pehle variables ko initialize karo (Warnings hatane ke liye)
 $error = "";
+$success = false;
+$redirect_url = "";
 
 if(isset($_POST['login'])){
     $email = mysqli_real_escape_string($conn, $_POST['email']);
     $pass = mysqli_real_escape_string($conn, $_POST['password']);
 
-    // Logic: Email + Pass + Approval Status
-    $result = $conn->query("SELECT * FROM alumni WHERE email='$email' AND password='$pass' AND status='approved'");
+    $result = $conn->query("SELECT * FROM users WHERE email='$email' AND password='$pass'");
 
     if($result->num_rows > 0){
         $user = $result->fetch_assoc();
-        $_SESSION['user'] = $email;
-        header("Location: alumni/dashboard.php");
-        exit();
+        $_SESSION['user'] = $user;
+        
+        $success = true;
+        $redirect_url = ($user['role'] == 'admin') ? "admin/index.php" : "alumini/dashboard.php";
     } else {
-        $error = "Invalid Credentials or Pending Approval!";
+        $error = "Incorrect email or password!";
     }
 }
 ?>
@@ -25,73 +29,73 @@ if(isset($_POST['login'])){
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | AlumniX</title>
-    <link rel="stylesheet" href="assets/login.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .login-wrapper { width: 100%; max-width: 400px; padding: 20px; }
-        .error-msg { color: #d9534f; background: #fdf7f7; padding: 10px; border-radius: 5px; margin-bottom: 20px; text-align: center; font-size: 13px; font-weight: bold; border: 1px solid #eed3d7; }
-        
-        /* Utility for the forget row */
-        .form-footer-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
+        :root { --primary: #ff4d4d; --dark: #1e293b; --text-light: #64748b; --bg: #f8fafc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-wrapper { width: 100%; max-width: 420px; padding: 20px; }
+        .alumnix-card { background: #ffffff; padding: 45px 35px; border-radius: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .header h1 { font-size: 34px; font-weight: 800; color: var(--dark); letter-spacing: -1.5px; }
+        .header span { color: var(--primary); }
+        .error-msg { background: #fff1f2; color: #e11d48; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 25px; border: 1px solid #ffe4e6; }
+        .input-group { margin-bottom: 22px; }
+        .label { font-size: 11px; font-weight: 800; color: var(--text-light); text-transform: uppercase; display: block; margin-bottom: 8px; }
+        .input-style { width: 100%; padding: 14px 18px; border: 2px solid #f1f5f9; border-radius: 14px; background: #f8fafc; outline: none; transition: 0.3s; }
+        .input-style:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.1); }
+        .btn-alumnix { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 14px; font-size: 14px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.3s; box-shadow: 0 10px 20px rgba(255, 77, 77, 0.2); }
+        .bottom-links { text-align: center; margin-top: 35px; border-top: 1px solid #f1f5f9; padding-top: 25px; }
+        a { text-decoration: none; color: var(--primary); font-weight: 700; }
     </style>
 </head>
 <body>
 
-<div class="login-container">
-    <div class="login-wrapper">
-        <div class="alumnix-card" style="padding: 40px; background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #eee;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="font-size: 32px; font-weight: 800; color: #1e293b; margin: 0;">
-                    Alumni<span style="color: #ff4d4d;">X</span>
-                </h1>
-                <p style="color: #94a3b8; font-size: 14px; margin-top: 5px;">Secure Access Portal</p>
+<div class="login-wrapper">
+    <div class="alumnix-card">
+        <div class="header" style="text-align: center; margin-bottom: 35px;">
+            <h1>Alumni<span>X</span></h1>
+            <p style="color: var(--text-light); font-size: 14px; margin-top: 5px;">Welcome back to the portal</p>
+        </div>
+
+        <?php if(!empty($error)): ?>
+            <div class="error-msg"><?php echo $error; ?></div>
+        <?php endif; ?>
+
+        <form method="POST">
+            <div class="input-group">
+                <label class="label">Email Address</label>
+                <input type="email" name="email" class="input-style" placeholder="Enter your email" required>
             </div>
-
-            <?php if($error): ?>
-                <div class="error-msg"><?php echo $error; ?></div>
-            <?php endif; ?>
-
-            <form method="POST">
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Email Address</label>
-                    <input type="email" name="email" class="form-control-alumnix" placeholder="Enter your email" required style="width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa;">
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase;">Password</label>
-                    <input type="password" name="password" class="form-control-alumnix" placeholder="••••••••" required style="width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa;">
-                </div>
-
-                <div class="form-footer-row">
-                    <div style="display: flex; align-items: center;">
-                        <input type="checkbox" id="remember" style="margin-right: 5px; accent-color: #ff4d4d;">
-                        <label for="remember" style="font-size: 12px; color: #64748b; cursor: pointer;">Remember me</label>
-                    </div>
-                    <a href="forget_password.php" style="color: #ff4d4d; font-size: 12px; font-weight: 700; text-decoration: none;">Forgot Password?</a>
-                </div>
-
-                <button type="submit" name="login" class="btn-alumnix" style="width: 100%; padding: 12px; background: #ff4d4d; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase;">Login to Portal</button>
-            </form>
-
-            <div style="text-align: center; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                <p style="font-size: 13px; color: #64748b;">New here? <a href="registration.php" style="color: #ff4d4d; font-weight: 700; text-decoration: none;">Register Now</a></p>
-                <a href="index.php" style="display: block; margin-top: 15px; font-size: 11px; color: #cbd5e1; text-transform: uppercase; font-weight: 800; text-decoration: none;">← Home</a>
+            <div class="input-group">
+                <label class="label">Password</label>
+                <input type="password" name="password" class="input-style" placeholder="••••••••" required>
             </div>
+            <button type="submit" name="login" class="btn-alumnix">Access Dashboard</button>
+        </form>
+
+        <div class="bottom-links">
+            <p style="font-size: 13px; color: var(--text-light);">Don't have an account? <a href="registration.php">Join Now</a></p>
         </div>
     </div>
 </div>
+
+<?php if($success): ?>
+<script>
+    Swal.fire({
+        title: 'Login Successful!',
+        text: 'Redirecting to your dashboard...',
+        icon: 'success',
+        timer: 2000,
+        showConfirmButton: false,
+        iconColor: '#10b981'
+    }).then(() => {
+        window.location.href = '<?php echo $redirect_url; ?>';
+    });
+</script>
+<?php endif; ?>
 
 </body>
 </html>
