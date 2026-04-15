@@ -1,3 +1,4 @@
+<?php header("Location: dashboard.php"); exit(); ?>
 <?php
 session_start();
 include("../includes/db.php");

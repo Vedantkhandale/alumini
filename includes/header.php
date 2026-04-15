@@ -1,4 +1,7 @@
-<?php $pageTitle = $pageTitle ?? "AlumniX"; ?>
+<?php
+$pageTitle = $pageTitle ?? "AlumniX";
+$bodyClass = $bodyClass ?? "";
+?>
 <!DOCTYPE html>
 <html>
 
@@ -168,7 +171,7 @@
     <link rel="stylesheet" href="assets/css/public.css">
 </head>
 
-<body>
+<body class="<?php echo htmlspecialchars($bodyClass, ENT_QUOTES, "UTF-8"); ?>">
 
     <nav>
 

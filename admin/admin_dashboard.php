@@ -1,3 +1,4 @@
+<?php require __DIR__ . "/page_dashboard.php"; return; ?>
 <?php
 session_start();
 if(!isset($_SESSION['admin'])){

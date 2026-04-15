@@ -1,3 +1,4 @@
+<?php require __DIR__ . "/page_event.php"; return; ?>
 <?php
 session_start();
 include("../includes/db.php");

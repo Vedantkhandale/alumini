@@ -18,6 +18,6 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // User ko login page par redirect kar do
-header("Location: login.php?msg=logged_out");
+header("Location: admin_login.php?msg=logged_out");
 exit();
 ?>

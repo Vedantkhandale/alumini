@@ -1,3 +1,4 @@
+<?php require __DIR__ . "/page_jobs.php"; return; ?>
 <?php
 session_start();
 include("../includes/db.php");

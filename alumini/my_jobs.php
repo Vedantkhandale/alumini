@@ -20,8 +20,8 @@ if(isset($_POST['post_job'])){
     $link = mysqli_real_escape_string($conn, $_POST['apply_link']);
     $desc = mysqli_real_escape_string($conn, $_POST['description']);
 
-    $sql = "INSERT INTO jobs (alumni_id, title, company, location, apply_link, description) 
-            VALUES ('$alumni_id', '$title', '$company', '$location', '$link', '$desc')";
+    $sql = "INSERT INTO jobs (alumni_id, title, company, location, apply_link, description, status) 
+            VALUES ('$alumni_id', '$title', '$company', '$location', '$link', '$desc', 'pending')";
     
     if($conn->query($sql)){
         $msg = "success";

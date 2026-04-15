@@ -130,7 +130,7 @@ if(isset($_POST['login'])){
 <div class="bg-glow glow-2"></div>
 
 <div class="login-card">
-    <a href="#" class="logo">Alumni<span>X</span> Admin</a>
+    <a href="../index.php" class="logo">Alumni<span>X</span> Admin</a>
     <h2>Authorize Access</h2>
 
     <form method="POST">

@@ -1,5 +1,6 @@
 <?php
 $pageTitle = "AlumniX | Home";
+$bodyClass = "home-page";
 include(__DIR__ . "/header.php");
 include(__DIR__ . "/db.php");
 require_once(__DIR__ . "/public_helpers.php");
@@ -16,71 +17,27 @@ $stats = [
 ];
 ?>
 
-<div class="public-shell">
-    <section class="hero">
-        <div class="hero-grid">
-            <div class="hero-copy">
-                <span class="eyebrow animate-hero">Built for alumni who still show up</span>
-                <h1 class="hero-title animate-hero">Your campus network <span>with real momentum.</span></h1>
-                <p class="animate-hero">AlumniX turns scattered alumni updates into one sharp portal for job referrals, event announcements, and success stories that actually help the next batch move faster.</p>
+<section class="hero">
+    <video autoplay muted loop playsinline class="hero-video">
+        <source src="images/hero.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+    <div class="hero-content">
+        <h1 class="animate-hero">Alumni Connect</h1>
+        <p class="animate-hero">Bridging the gap between Nagpur's talent and global success.</p>
+        <a href="registration.php" class="btn-main animate-hero">Join the Elite Community</a>
+    </div>
+</section>
 
-                <div class="action-row animate-hero">
-                    <a href="registration.php" class="btn-main">Join the Network</a>
-                    <a href="jobs.php" class="btn-soft">Explore Jobs</a>
-                </div>
-
-                <div class="pill-row animate-hero">
-                    <span class="pill">Community-led hiring</span>
-                    <span class="pill">Upcoming meetups</span>
-                    <span class="pill">Alumni spotlight</span>
-                </div>
+<div class="public-shell home-after-hero">
+    <div class="stats-grid reveal">
+        <?php foreach ($stats as $stat): ?>
+            <div class="stat-card">
+                <strong><?php echo number_format($stat["value"]); ?></strong>
+                <span><?php echo e($stat["label"]); ?></span>
             </div>
-
-            <div class="hero-visual reveal">
-                <div class="hero-video-wrap">
-                    <video autoplay muted loop playsinline>
-                        <source src="images/hero.mp4" type="video/mp4">
-                    </video>
-                </div>
-
-                <div class="hero-stack">
-                    <div class="floating-card primary">
-                        <span class="section-kicker">Fresh energy</span>
-                        <h3>Where seniors open doors for the next wave.</h3>
-                        <p>From referrals to reunions, the portal keeps the community useful, visible, and easy to join.</p>
-                        <div class="metric"><?php echo number_format($stats[1]["value"]); ?>+</div>
-                    </div>
-
-                    <div class="floating-card secondary">
-                        <h3>What is moving this week</h3>
-                        <div class="status-list">
-                            <div class="status-item">
-                                <strong><?php echo number_format($stats[1]["value"]); ?> live jobs</strong>
-                                <span>Hiring</span>
-                            </div>
-                            <div class="status-item">
-                                <strong><?php echo number_format($stats[2]["value"]); ?> events listed</strong>
-                                <span>Meetups</span>
-                            </div>
-                            <div class="status-item">
-                                <strong><?php echo number_format($stats[0]["value"]); ?> alumni profiles</strong>
-                                <span>Network</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="stats-grid reveal">
-            <?php foreach ($stats as $stat): ?>
-                <div class="stat-card">
-                    <strong><?php echo number_format($stat["value"]); ?></strong>
-                    <span><?php echo e($stat["label"]); ?></span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    </section>
+        <?php endforeach; ?>
+    </div>
 
     <section class="section">
         <div class="section-head">
