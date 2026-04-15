@@ -23,9 +23,10 @@ $stats = [
     </video>
     <div class="overlay"></div>
     <div class="hero-content">
-        <h1 class="animate-hero">Alumni Connect</h1>
-        <p class="animate-hero">Bridging the gap between Nagpur's talent and global success.</p>
-        <a href="registration.php" class="btn-main animate-hero">Join the Elite Community</a>
+        <div class="hero-badge animate-hero"><i class="fas fa-graduation-cap"></i> Trusted Alumni Network</div>
+        <h1 class="animate-hero">Alumni Network</h1>
+        <p class="animate-hero">Connect with seniors. Grow your career. Explore opportunities.</p>
+        <a href="registration.php" class="btn-main animate-hero">Join Now</a>
     </div>
 </section>
 

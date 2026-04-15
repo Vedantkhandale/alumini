@@ -1,6 +1,7 @@
 <?php
 $pageTitle = $pageTitle ?? "AlumniX";
 $bodyClass = $bodyClass ?? "";
+$currentPage = basename($_SERVER["PHP_SELF"] ?? "index.php");
 ?>
 <!DOCTYPE html>
 <html>
@@ -185,10 +186,10 @@ $bodyClass = $bodyClass ?? "";
 
         <!-- LINKS -->
         <div class="nav-links">
-            <a href="index.php"><i class="fa fa-home"></i> Home</a>
-            <a href="events.php">Events</a>
-            <a href="jobs.php">Jobs</a>
-            <a href="alumni.php">Alumni</a>
+            <a href="index.php" class="<?php echo $currentPage === "index.php" ? "is-active" : ""; ?>"><i class="fa fa-home"></i> Home</a>
+            <a href="events.php" class="<?php echo $currentPage === "events.php" ? "is-active" : ""; ?>">Events</a>
+            <a href="jobs.php" class="<?php echo $currentPage === "jobs.php" ? "is-active" : ""; ?>">Jobs</a>
+            <a href="alumni.php" class="<?php echo $currentPage === "alumni.php" ? "is-active" : ""; ?>">Alumni</a>
         </div>
 
         <!-- ACTION BUTTONS -->
