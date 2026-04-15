@@ -22,7 +22,7 @@ if(isset($_POST['reset_request'])){
         $message = "<div style='color: #ef4444; background: #fef2f2; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 13px; border: 1px solid #fee2e2;'>❌ Wrong Captcha! Try again.</div>";
     } else {
         // Email database check
-        $check = $conn->query("SELECT * FROM alumni WHERE email='$email'");
+        $check = $conn->query("SELECT * FROM users WHERE email='$email'");
         
         if($check->num_rows > 0){
             $message = "<div style='color: #10b981; background: #f0fdf4; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 13px; border: 1px solid #dcfce7;'>✅ Success! Reset link sent to $email</div>";

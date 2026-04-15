@@ -15,10 +15,22 @@ if(isset($_POST['login'])){
 
     if($result->num_rows > 0){
         $user = $result->fetch_assoc();
-        $_SESSION['user'] = $user;
-        
-        $success = true;
-        $redirect_url = ($user['role'] == 'admin') ? "admin/index.php" : "alumini/dashboard.php";
+        $status = strtolower((string) ($user['status'] ?? 'approved'));
+
+        if(in_array($status, ['pending', 'rejected', 'blocked'], true)){
+            $error = "Your account is not active yet. Please contact admin.";
+        } else {
+            $_SESSION['user'] = $user;
+
+            if(($user['role'] ?? '') === 'admin'){
+                $_SESSION['admin'] = $user['full_name'] ?? $user['email'];
+                $redirect_url = "admin/admin_dashboard.php";
+            } else {
+                $redirect_url = "alumini/dashboard.php";
+            }
+
+            $success = true;
+        }
     } else {
         $error = "Incorrect email or password!";
     }
@@ -78,6 +90,7 @@ if(isset($_POST['login'])){
 
         <div class="bottom-links">
             <p style="font-size: 13px; color: var(--text-light);">Don't have an account? <a href="registration.php">Join Now</a></p>
+            <p style="font-size: 13px; color: var(--text-light); margin-top: 10px;">Forgot your password? <a href="forget_password.php">Reset it</a></p>
         </div>
     </div>
 </div>

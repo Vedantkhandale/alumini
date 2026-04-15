@@ -1,3 +1,4 @@
+<?php require __DIR__ . "/includes/page_jobs.php"; return; ?>
 <?php include("includes/header.php"); ?>
 
 <style>

@@ -1,3 +1,4 @@
+<?php require __DIR__ . "/includes/page_home.php"; return; ?>
 <?php include("includes/header.php"); ?>
 <?php include("includes/db.php"); ?>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
