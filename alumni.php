@@ -1,182 +1,204 @@
-<?php require __DIR__ . "/includes/page_alumni.php"; return; ?>
-<?php include("includes/header.php"); ?>
+<?php 
+// Footer errors fix karne ke liye path check kar lena
+include(__DIR__ . "/includes/header.php"); 
+include(__DIR__ . "/includes/db.php"); 
+?>
 
 <style>
-/* 🌍 PAGE WRAPPER */
+/* 🎨 THEME VARIABLES */
+:root {
+    --primary: #ff3b3b;
+    --primary-glow: rgba(255, 59, 59, 0.15);
+    --card-shadow: 0 20px 40px rgba(0,0,0,0.06);
+    --card-hover-shadow: 0 40px 80px rgba(255, 59, 59, 0.12);
+}
+
 .page {
-    padding: 80px 10%;
-    background: #f4f7fa; 
+    padding: 100px 8%;
+    background: #f8fafc; /* Ultra clean background */
     min-height: 100vh;
 }
 
-/* 🔥 DYNAMIC PAGE TITLE */
-.page-header {
-    text-align: center;
-    margin-bottom: 60px;
-}
-
-.page-title {
-    font-size: 3rem;
-    font-weight: 800;
-    color: #0f172a;
-    letter-spacing: -2px;
-    margin-bottom: 10px;
-}
-
-.page-subtitle {
-    color: #64748b;
-    font-size: 1.1rem;
-    font-weight: 500;
-}
-
-/* 🏢 ALUMNI GRID */
+/* 🏢 ELITE GRID */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 35px;
 }
 
-/* 🤵 ELITE ALUMNI CARD */
+/* 🤵 PREMIUM ALUMNI CARD */
 .card {
     background: #ffffff;
-    padding: 40px 30px;
-    border-radius: 30px;
-    border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.02);
+    padding: 50px 30px;
+    border-radius: 35px;
+    border: 1px solid rgba(0,0,0,0.03);
+    box-shadow: var(--card-shadow);
     text-align: center;
-    transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
+    transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
     position: relative;
     overflow: hidden;
+    z-index: 1;
 }
 
-/* Subtle background pattern for card */
-.card::before {
+/* Glassy Border Glow Effect */
+.card::after {
     content: '';
     position: absolute;
-    top: -50px; right: -50px;
-    width: 100px; height: 100px;
-    background: rgba(255, 59, 59, 0.03);
-    border-radius: 50%;
+    inset: 0;
+    border-radius: 35px;
+    padding: 2px; /* Border thickness */
+    background: linear-gradient(135deg, transparent, transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
     transition: 0.5s;
+    opacity: 0;
 }
 
 .card:hover {
-    transform: translateY(-15px);
-    box-shadow: 0 30px 60px rgba(0,0,0,0.08);
-    border-color: rgba(255, 59, 59, 0.2);
+    transform: translateY(-20px) scale(1.02);
+    box-shadow: var(--card-hover-shadow);
+    border-color: transparent;
 }
 
-.card:hover::before {
-    transform: scale(3);
-    background: rgba(255, 59, 59, 0.05);
+.card:hover::after {
+    background: linear-gradient(135deg, var(--primary), #ff9b9b);
+    opacity: 1;
 }
 
-/* 🎨 PREMIUM AVATAR */
+/* 🎨 SQUIRCLE AVATAR WITH NEON GLOW */
+.avatar-wrapper {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 25px;
+}
+
 .avatar {
-    width: 90px;
-    height: 90px;
-    border-radius: 25px; /* Squircle shape */
-    background: linear-gradient(135deg, #ff3b3b 0%, #ff7b7b 100%);
-    color: white;
+    width: 100%;
+    height: 100%;
+    border-radius: 32px; /* Premium Squircle */
+    background: linear-gradient(135deg, #111 0%, #333 100%);
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 800;
-    margin: 0 auto 20px;
-    box-shadow: 0 10px 20px rgba(255, 59, 59, 0.3);
-    transform: rotate(-5deg);
-    transition: 0.4s;
+    position: relative;
+    z-index: 2;
+    transition: 0.5s;
+}
+
+.avatar-glow {
+    position: absolute;
+    inset: -5px;
+    background: var(--primary);
+    border-radius: 35px;
+    filter: blur(15px);
+    opacity: 0;
+    transition: 0.5s;
+}
+
+.card:hover .avatar-glow {
+    opacity: 0.4;
 }
 
 .card:hover .avatar {
-    transform: rotate(0deg) scale(1.1);
+    background: var(--primary);
+    transform: rotate(-5deg);
 }
 
 /* TEXT STYLING */
 .card h3 {
-    color: #1e293b;
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin-bottom: 8px;
+    color: #0f172a;
+    font-size: 1.5rem;
+    font-weight: 850;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
 }
 
-.course {
-    color: #ff3b3b;
-    font-weight: 700;
-    font-size: 0.85rem;
+.course-tag {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--primary-glow);
+    color: var(--primary);
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 1px;
-    margin-bottom: 5px;
+    margin-bottom: 15px;
 }
 
-.company {
+.company-box {
     color: #64748b;
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 8px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
 }
 
-/* 🎖️ ALUMNI STATUS BADGE */
-.badge {
-    display: inline-block;
-    margin-top: 25px;
-    padding: 8px 20px;
-    background: #f1f5f9;
-    color: #475569;
-    border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    transition: 0.3s;
-}
-
-.card:hover .badge {
-    background: #0f172a;
-    color: #ffffff;
-}
-
-/* 📱 MOBILE FIX */
-@media(max-width:768px){
-    .page { padding: 50px 20px; }
-    .page-title { font-size: 2.2rem; }
+/* 🏅 VERIFIED BADGE */
+.verified-icon {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    color: #10b981;
+    font-size: 18px;
+    background: #ecfdf5;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 </style>
 
 <div class="page">
-    <div class="page-header reveal">
-        <h2 class="page-title">👨‍🎓 Alumni Network</h2>
-        <p class="page-subtitle">Connecting past achievers with future leaders</p>
+    <div class="page-header reveal" style="text-align:center; margin-bottom: 70px;">
+        <span style="color:var(--primary); font-weight:800; text-transform:uppercase; letter-spacing:2px; font-size:12px;">Global Directory</span>
+        <h2 style="font-size: 3.5rem; font-weight: 900; letter-spacing:-3px; color:#0f172a;">Elite <span>Network.</span></h2>
     </div>
 
     <div class="grid">
         <?php
-        include("includes/db.php");
         $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC");
-
-        if($res->num_rows > 0){
-            while($row = $res->fetch_assoc()){
-                $initial = strtoupper(substr($row['name'], 0, 1));
-                ?>
-                <div class="card reveal">
-                    <div class="avatar"><?= $initial ?></div>
-                    <p class="course"><?= htmlspecialchars($row['course']) ?></p>
-                    <h3><?= htmlspecialchars($row['name']) ?></h3>
-                    <p class="company">
-                        <i class="fas fa-briefcase" style="font-size: 12px;"></i> 
-                        <?= htmlspecialchars($row['company']) ?>
-                    </p>
-                    <div class="badge">PRO ALUMNI</div>
-                </div>
-            <?php }
-        } else {
-            echo "<p style='grid-column: 1/-1; text-align:center;'>No alumni members listed yet.</p>";
-        }
+        while($row = $res->fetch_assoc()){
+            $initial = strtoupper(substr($row['name'], 0, 1));
         ?>
+            <div class="card">
+                <div class="verified-icon" title="Verified Member">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+
+                <div class="avatar-wrapper">
+                    <div class="avatar-glow"></div>
+                    <div class="avatar"><?= $initial ?></div>
+                </div>
+
+                <span class="course-tag"><?= htmlspecialchars($row['course']) ?> Member</span>
+                
+                <h3><?= htmlspecialchars($row['name']) ?></h3>
+                
+                <div class="company-box">
+                    <i class="fas fa-building" style="color:#cbd5e1;"></i> 
+                    <span><?= htmlspecialchars($row['company']) ?></span>
+                </div>
+
+                <a href="profile.php?id=<?= $row['id'] ?>" style="margin-top:25px; display:inline-block; text-decoration:none; font-weight:800; font-size:12px; color:var(--primary); text-transform:uppercase; letter-spacing:1px;">
+                    View Experience <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        <?php } ?>
     </div>
 </div>
 
-<?php include("includes/footer.php"); ?>
+<?php include(__DIR__ . "/includes/footer.php"); ?>
