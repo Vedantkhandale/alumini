@@ -1,169 +1,291 @@
-<?php 
-include("includes/header.php"); 
-include("includes/db.php"); 
+<?php
+include("includes/header.php");
+include("includes/db.php");
 ?>
 
 <style>
     :root {
         --primary: #ff3b3b;
-        --dark: #0f172a;
+        --primary-light: rgba(255, 59, 59, 0.1);
         --bg: #f8fafc;
-        --text-muted: #64748b;
+        --card-bg: #ffffff;
+        --text: #111;
+        --muted: #64748b;
+        --radius: 20px;
     }
 
-    /* Hero Section */
+    /* HERO (NO CHANGES) */
     .hero {
         position: relative;
         height: 100vh;
         display: flex;
         align-items: center;
         justify-content: center;
-        text-align: center;
-        background: #000;
-        overflow: hidden;
         color: #fff;
+        text-align: center;
+        overflow: hidden;
     }
-    .hero-video {
+
+    .hero video {
         position: absolute;
-        width: 100%; height: 100%;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
-        opacity: 0.5;
+        filter: brightness(0.6);
     }
-    .hero-overlay {
+
+    .hero::after {
+        content: "";
         position: absolute;
         inset: 0;
-        background: linear-gradient(to bottom, transparent, rgba(15, 23, 42, 0.9));
+        background: rgba(0, 0, 0, 0.6);
     }
-    .hero-content { position: relative; z-index: 10; max-width: 800px; padding: 0 20px; }
-    .hero-badge {
-        background: rgba(255, 59, 59, 0.1);
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero h1 {
+        font-size: 60px;
+        font-weight: 800;
+    }
+
+    .hero h1 span {
         color: var(--primary);
-        padding: 8px 20px;
-        border-radius: 100px;
-        font-weight: 700;
-        border: 1px solid var(--primary);
-        display: inline-block;
-        margin-bottom: 20px;
     }
-    .hero-content h1 { font-size: clamp(3rem, 8vw, 5.5rem); font-weight: 800; line-height: 1; margin-bottom: 20px; letter-spacing: -2px; }
-    .hero-content h1 span { color: var(--primary); }
+
+    .hero p {
+        margin: 15px 0 25px;
+        opacity: 0.8;
+    }
+
     .btn-main {
         background: var(--primary);
+        padding: 14px 35px;
+        border-radius: 40px;
         color: #fff;
-        padding: 16px 40px;
-        border-radius: 50px;
         text-decoration: none;
-        font-weight: 700;
-        display: inline-block;
-        transition: 0.3s;
+        font-weight: 600;
     }
 
-    /* Grid & Cards */
-    .section { padding: 80px 8%; background: var(--bg); }
-    .title { font-size: 2.5rem; font-weight: 800; margin-bottom: 10px; }
-    .title span { color: var(--primary); }
+    /* SECTION HEADINGS */
+    .section {
+        padding: 100px 8%;
+        background: var(--bg);
+    }
+
+    .section-head {
+        margin-bottom: 50px;
+        text-align: left;
+    }
+
+    .section-kicker {
+        display: block;
+        color: var(--primary);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+
+    .title {
+        font-size: 42px;
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        color: #111;
+    }
+
+    /* GRID & CARDS */
     .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 30px;
-        margin-top: 40px;
     }
 
-    /* Elite Card Design */
-    .elite-card {
-        background: #fff;
-        border-radius: 24px;
+    .card {
+        background: var(--card-bg);
+        border-radius: var(--radius);
         padding: 30px;
         text-decoration: none;
         color: inherit;
-        display: block;
-        border: 1px solid rgba(0,0,0,0.05);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(0, 0, 0, 0.03);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
-    .elite-card:hover {
-        transform: translateY(-12px);
-        box-shadow: 0 25px 50px -12px rgba(0,0,0,0.1);
-        border-color: var(--primary);
+
+    .card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.08);
+        border-color: var(--primary-light);
     }
-    .alumni-img-wrapper img {
-        width: 80px; height: 80px;
-        border-radius: 50%;
-        margin-bottom: 20px;
-        border: 3px solid #fff;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-    }
-    .company-tag {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 14px;
-        background: rgba(255, 59, 59, 0.05);
+
+    /* Event Specific Styling */
+    .event-date-box {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: var(--primary-light);
         color: var(--primary);
+        padding: 8px 12px;
         border-radius: 12px;
+        text-align: center;
+        min-width: 50px;
+    }
+
+    .event-date-box span {
+        display: block;
+        font-weight: 800;
+        font-size: 18px;
+        line-height: 1;
+    }
+
+    .event-date-box small {
+        font-size: 10px;
+        text-transform: uppercase;
         font-weight: 700;
-        font-size: 0.85rem;
-        margin-top: 15px;
+    }
+
+    .tag {
+        display: inline-block;
+        padding: 4px 12px;
+        background: var(--primary-light);
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 50px;
+        width: fit-content;
+    }
+
+    .meta-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        color: var(--muted);
     }
 </style>
 
 <div class="hero">
-    <video autoplay muted loop playsinline class="hero-video">
-        <source src="images/hero.mp4" type="video/mp4">
+    <video autoplay muted loop>
+        <source src="images/hero.mp4">
     </video>
-    <div class="hero-overlay"></div>
     <div class="hero-content">
-        <span class="hero-badge animate-hero">Nagpur's Elite Network</span>
-        <h1 class="animate-hero">Alumni <span>Connect</span></h1>
-        <p class="animate-hero" style="font-size: 1.2rem; opacity: 0.8; margin-bottom: 30px;">Fueling the next generation of global leaders and local innovators.</p>
-        <div class="hero-btns animate-hero">
-            <a href="registration.php" class="btn-main">Join the Community</a>
-        </div>
+        <h1>Alumni <span>Network</span></h1>
+        <p>Connect • Grow • Explore</p>
+        <a href="registration.php" class="btn-main">Join Now</a>
     </div>
 </div>
 
 <div class="section">
-    <h2 class="title">Notable <span>Alumni</span></h2>
-    <p style="color: var(--text-muted);">The trailblazers leading the global industry.</p>
-    
+    <div class="section-head">
+        <span class="section-kicker">Directory</span>
+        <h2 class="title">Top <span>Alumni</span></h2>
+    </div>
+
     <div class="grid">
         <?php
         $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 4");
-        while($row = $res->fetch_assoc()){ ?>
-            <a href="profile.php?id=<?= $row['id'] ?>" class="elite-card">
-                <div class="alumni-img-wrapper">
-                    <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff3b3b&color=fff&bold=true" alt="User">
-                </div>
-                <h3 style="font-weight: 700;"><?= htmlspecialchars($row['name']) ?></h3>
-                <p style="color: var(--text-muted); font-size: 0.9rem;"><?= htmlspecialchars($row['course']) ?> • <?= htmlspecialchars($row['batch']) ?></p>
-                <div class="company-tag">
-                    <i class="fas fa-building"></i> <?= htmlspecialchars($row['company']) ?>
-                </div>
+        while ($row = $res->fetch_assoc()) { ?>
+            <a href="profile.php?id=<?= $row['id'] ?>" class="card">
+                <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff3b3b&color=fff&bold=true" style="width:60px; height:60px; border-radius:15px; margin-bottom:10px;">
+                <span class="tag"><?= $row['batch'] ?> Batch</span>
+                <h3><?= $row['name'] ?></h3>
+                <div class="meta-info"><i class="fas fa-building"></i> <?= $row['company'] ?></div>
             </a>
         <?php } ?>
     </div>
 </div>
 
-<div class="section" style="background: #fff; border-top: 1px solid #eee;">
-    <h2 class="title">Active <span>Openings</span></h2>
+<div class="section" style="background:#fff; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9;">
+    <div class="section-head">
+        <span class="section-kicker">Upcoming</span>
+        <h2 class="title">Community <span>Events</span></h2>
+    </div>
+
+    <div class="grid">
+        <?php
+        $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3");
+        if ($res->num_rows > 0) {
+            while ($row = $res->fetch_assoc()) {
+                $eDate = strtotime($row['event_date']);
+        ?>
+                <a href="event_details.php?id=<?= $row['id'] ?>" class="card event-card">
+                    <div class="event-date-box" style="
+                    position: absolute; 
+                    top: 25px; 
+                    right: 25px; 
+                    background: linear-gradient(135deg, #ff3b3b, #ff6b6b); 
+                    color: #fff; 
+                    padding: 10px; 
+                    border-radius: 15px; 
+                    text-align: center; 
+                    min-width: 55px;
+                    box-shadow: 0 8px 15px rgba(255, 59, 59, 0.2);
+                ">
+                        <span style="display: block; font-weight: 800; font-size: 20px; line-height: 1;"><?= date('d', $eDate) ?></span>
+                        <small style="font-size: 10px; text-transform: uppercase; font-weight: 700; opacity: 0.9;"><?= date('M', $eDate) ?></small>
+                    </div>
+
+                    <span class="tag" style="background: var(--primary-light); color: var(--primary); margin-bottom: 10px;">
+                        <i class="fas fa-calendar-check" style="margin-right: 5px; font-size: 10px;"></i> Alumni Meet
+                    </span>
+
+                    <h3 style="padding-right: 70px; font-size: 22px; font-weight: 800; color: #0f172a; margin-bottom: 15px;">
+                        <?= htmlspecialchars($row['title']) ?>
+                    </h3>
+
+                    <div class="meta-wrap" style="display: flex; flex-direction: column; gap: 8px;">
+                        <div class="meta-info" style="font-weight: 600; color: #475569;">
+                            <i class="fas fa-clock" style="color: var(--primary); width: 20px;"></i>
+                            <?= date('h:i A', strtotime($row['event_time'])) ?>
+                        </div>
+                        <div class="meta-info" style="font-weight: 600; color: #475569;">
+                            <i class="fas fa-location-dot" style="color: var(--primary); width: 20px;"></i>
+                            <?= htmlspecialchars($row['location']) ?>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 13px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 5px;">
+                        Get Invite <i class="fas fa-arrow-right" style="font-size: 11px;"></i>
+                    </div>
+                </a>
+        <?php
+            }
+        } else {
+            echo "<p style='color:var(--muted);'>No upcoming events found.</p>";
+        }
+        ?>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-head">
+        <span class="section-kicker">Career</span>
+        <h2 class="title">Latest <span>Jobs</span></h2>
+    </div>
+
     <div class="grid">
         <?php
         $res = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 3");
-        while($row = $res->fetch_assoc()){ ?>
-            <a href="job_details.php?id=<?= $row['id'] ?>" class="elite-card" style="background: var(--bg);">
-                <i class="fas fa-bolt" style="color: var(--primary); font-size: 1.5rem; margin-bottom: 15px;"></i>
-                <h3 style="font-weight: 700;"><?= htmlspecialchars($row['title']) ?></h3>
-                <p style="font-weight: 600; color: var(--dark);"><?= htmlspecialchars($row['company']) ?></p>
-                <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($row['location']) ?></p>
+        while ($row = $res->fetch_assoc()) { ?>
+            <a href="job_details.php?id=<?= $row['id'] ?>" class="card">
+                <div class="job-icon" style="width:50px; height:50px; background:#111; color:#fff; border-radius:15px; display:flex; align-items:center; justify-content:center; font-size:20px;">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h3><?= $row['title'] ?></h3>
+                <div class="meta-info"><strong><?= $row['company'] ?></strong></div>
+                <div class="meta-info"><i class="fas fa-location-dot"></i> <?= $row['location'] ?: 'Remote' ?></div>
+                <div style="margin-top:10px; font-weight:700; font-size:12px; color:var(--primary);">
+                    Apply Now <i class="fas fa-arrow-right"></i>
+                </div>
             </a>
         <?php } ?>
     </div>
 </div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script>
-    gsap.from(".animate-hero", {
-        opacity: 0, y: 30, duration: 1, stagger: 0.2, ease: "power3.out"
-    });
-</script>
 
 <?php include("includes/footer.php"); ?>
