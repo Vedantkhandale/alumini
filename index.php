@@ -3,7 +3,7 @@ include("includes/header.php");
 include("includes/db.php");
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
@@ -32,7 +32,7 @@ include("includes/db.php");
     ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
-    /* --- HERO SECTION --- */
+    /* --- HERO SECTION (EXACTLY SAME, NO CHANGES) --- */
     .hero-section {
         height: 100vh;
         display: flex;
@@ -87,46 +87,82 @@ include("includes/db.php");
     }
     .btn-neon:hover { transform: scale(1.05); box-shadow: 0 15px 40px var(--primary-glow); }
 
-    /* --- COMMON LAYOUT --- */
-    .container-fluid { padding: 80px 8%; }
-    .section-label { margin-bottom: 50px; }
-    .label-line { width: 50px; height: 4px; background: var(--primary); margin-bottom: 15px; }
-    .section-title { font-size: clamp(30px, 5vw, 55px); font-weight: 800; letter-spacing: -2px; }
+    /* ============================================================
+       ABB SHURU HOTI HAI SEXY CSS - BAKI SAB CHIZON KE LIYE
+       ============================================================ */
 
-    /* --- ALUMNI HORIZONTAL SCROLL --- */
+    /* General Layout Polish */
+    .container-fluid { padding: 120px 8%; position: relative; z-index: 2; }
+
+    /* Ultra Pro Section Headers */
+    .section-label { margin-bottom: 80px; position: relative; }
+    .label-line { 
+        width: 80px; height: 6px; 
+        background: var(--primary); 
+        margin-bottom: 20px; 
+        border-radius: 10px; 
+        box-shadow: 0 0 20px var(--primary); /* Neon Line */
+    }
+    .section-title { 
+        font-size: clamp(35px, 6vw, 65px); 
+        font-weight: 800; 
+        letter-spacing: -3px; 
+        line-height: 1; 
+        text-transform: uppercase; 
+        background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* --- HALL OF FAME (Sexy Cards) --- */
     .horizontal-scroll-container {
+        display: flex;
+        gap: 30px;
+        padding: 40px 0;
         overflow-x: auto;
-        white-space: nowrap;
-        padding: 20px 0;
         scrollbar-width: none; /* Firefox */
     }
-    .horizontal-scroll-container::-webkit-scrollbar { display: none; }
+    .horizontal-scroll-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
     .premium-alumni-card {
-        display: inline-block;
-        width: 300px;
-        background: var(--card-glass);
+        flex: 0 0 320px; /* Fixed width for horizontal scroll */
+        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
         border: 1px solid var(--border-glass);
-        border-radius: 30px;
-        padding: 35px;
-        margin-right: 25px;
-        vertical-align: top;
-        transition: 0.4s;
-        white-space: normal;
+        backdrop-filter: blur(15px);
+        border-radius: 40px;
+        padding: 50px 35px;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
     }
-    .premium-alumni-card:hover { border-color: var(--primary); background: rgba(255,255,255,0.05); transform: translateY(-10px); }
 
-    .alumni-avatar { width: 100px; height: 100px; border-radius: 25px; object-fit: cover; margin-bottom: 20px; border: 2px solid var(--border-glass); }
+    .premium-alumni-card:hover { 
+        border-color: var(--primary); 
+        transform: translateY(-20px) rotateX(5deg);
+        box-shadow: 0 20px 50px rgba(255, 59, 59, 0.2);
+    }
 
-    /* --- BENTO EVENTS GRID --- */
+    .alumni-avatar { 
+        width: 110px; height: 110px; 
+        border-radius: 35px; 
+        object-fit: cover; 
+        margin-bottom: 30px; 
+        border: 3px solid var(--border-glass);
+        transition: 0.3s;
+    }
+    .premium-alumni-card:hover .alumni-avatar { border-color: var(--primary); transform: scale(1.1); }
+
+    /* --- BENTO EVENTS GRID (Attractive & Sexy) --- */
     .bento-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 25px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
     }
     .bento-item {
-        min-height: 350px;
-        border-radius: 35px;
+        min-height: 400px;
+        border-radius: 45px;
         padding: 40px;
         position: relative;
         overflow: hidden;
@@ -134,48 +170,119 @@ include("includes/db.php");
         flex-direction: column;
         justify-content: flex-end;
         border: 1px solid var(--border-glass);
-        transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
     }
-    .bento-item.large { grid-column: span 2; background: var(--primary); }
-    .event-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); z-index: 1; }
-    .event-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.4; }
+    .bento-item.large { grid-column: span 2; }
+    
+    .bento-item:hover { transform: scale(0.98); border-color: rgba(255,255,255,0.2); }
 
-    /* --- LATEST POSTS / FEED --- */
+    .event-overlay { 
+        position: absolute; inset: 0; 
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.3) 50%, transparent 100%); 
+        z-index: 2; 
+    }
+    .event-img { 
+        position: absolute; inset: 0; width: 100%; height: 100%; 
+        object-fit: cover; opacity: 0.4; 
+        transition: 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); 
+        z-index: 1;
+    }
+    .bento-item:hover .event-img { transform: scale(1.1); opacity: 0.6; }
+
+    /* Sexy Date Badge */
+    .event-date-badge {
+        position: absolute; top: 30px; right: 30px;
+        background: var(--primary);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 14px;
+        text-transform: uppercase;
+        z-index: 5;
+        box-shadow: 0 5px 15px var(--primary-glow);
+    }
+
+    /* --- LATEST POSTS FEED (Clean & Glassy) --- */
+    .feed-container { display: flex; flex-direction: column; gap: 20px; }
     .post-card {
-        background: var(--card-glass);
+        background: rgba(255,255,255,0.02);
         border: 1px solid var(--border-glass);
-        border-radius: 25px;
-        padding: 25px;
-        margin-bottom: 25px;
+        backdrop-filter: blur(10px);
+        border-radius: 30px;
+        padding: 30px;
+        transition: 0.3s;
     }
-    .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 15px; }
-    .post-user-img { width: 45px; height: 45px; border-radius: 50%; }
+    .post-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+    .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+    .post-user-img { width: 55px; height: 55px; border-radius: 18px; border: 2px solid var(--border-glass); }
 
-    /* --- JOB BOARD --- */
+    /* --- CAREER BOARD (Premium Job Strips) --- */
+    .job-list { display: flex; flex-direction: column; gap: 15px; }
     .job-strip {
         background: var(--card-glass);
         border: 1px solid var(--border-glass);
-        padding: 20px 35px;
-        border-radius: 20px;
-        margin-bottom: 15px;
+        padding: 25px 40px;
+        border-radius: 25px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 20px;
+        transition: 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Hover Effect: Background turns white, text turns black */
+    .job-strip:hover { 
+        background: #fff; 
+        transform: translateY(-5px) scale(1.01);
+        box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+    }
+    .job-strip:hover * { color: #000 !important; }
+    
+    /* Sexy Job Icon */
+    .job-icon-box {
+        background: rgba(255,59,59,0.1); 
+        width: 60px; height: 60px; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 20px; color: var(--primary); 
+        font-size: 22px;
         transition: 0.3s;
     }
-    .job-strip:hover { background: #fff; color: #000; }
-    .job-strip:hover .job-btn { background: var(--primary); color: #fff; }
+    .job-strip:hover .job-icon-box { background: var(--primary); color: #fff !important; }
 
-    /* Responsive Fixes */
-    @media (max-width: 768px) {
-        .bento-item.large { grid-column: span 1; }
-        .job-strip { text-align: center; justify-content: center; }
-        .container-fluid { padding: 60px 5%; }
+    .job-btn {
+        padding: 12px 30px; 
+        border-radius: 14px; 
+        background: rgba(255,255,255,0.05); 
+        text-decoration: none; 
+        font-weight: 800; 
+        color: #fff;
+        font-size: 14px;
+        transition: 0.3s;
+        border: 1px solid var(--border-glass);
+    }
+    .job-strip:hover .job-btn { background: #000; color: #fff !important; border-color: #000; }
+
+    /* UTILS & RESPONSIVE */
+    .reveal { opacity: 0; transform: translateY(40px); }
+    
+    /* Background Sexy Glows */
+    .sexy-bg-glow {
+        position: absolute;
+        width: 40vw; height: 40vw;
+        background: radial-gradient(circle, rgba(255,59,59,0.07) 0%, rgba(5,5,5,0) 70%);
+        border-radius: 50%;
+        z-index: 1;
+        pointer-events: none;
     }
 
-    .reveal { opacity: 0; transform: translateY(30px); }
+    @media (max-width: 992px) {
+        .bento-grid { grid-template-columns: 1fr; }
+        .bento-item.large { grid-column: span 1; }
+        .job-strip { flex-direction: column; text-align: center; gap: 20px; padding: 30px; }
+        .container-fluid { padding: 80px 5%; }
+    }
 </style>
 
 <section class="hero-section">
@@ -195,6 +302,7 @@ include("includes/db.php");
 </section>
 
 <section class="container-fluid">
+    <div class="sexy-bg-glow" style="top: 10%; left: -10%;"></div>
     <div class="section-label reveal">
         <div class="label-line"></div>
         <h2 class="section-title">Hall of <span style="color: var(--primary);">Fame</span></h2>
@@ -206,16 +314,17 @@ include("includes/db.php");
         while ($row = $res->fetch_assoc()) { ?>
             <div class="premium-alumni-card reveal">
                 <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff3b3b&color=fff&size=200&bold=true" class="alumni-avatar">
-                <h3 style="font-size: 22px; font-weight: 800; margin-bottom: 5px;"><?= $row['name'] ?></h3>
-                <p style="color: var(--primary); font-weight: 700; font-size: 13px; text-transform: uppercase;"><?= $row['company'] ?></p>
-                <p style="color: var(--text-gray); font-size: 14px; margin-top: 15px;">Transforming the industry through leadership and innovation.</p>
+                <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px;"><?= $row['name'] ?></h3>
+                <p style="color: var(--primary); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;"><?= $row['company'] ?></p>
+                <p style="color: var(--text-gray); font-size: 14px; margin-top: 20px; line-height: 1.6; font-weight: 500;">Transforming the industry through visionary leadership and innovation.</p>
             </div>
         <?php } ?>
     </div>
 </section>
 
-<section class="container-fluid" style="background: rgba(255,255,255,0.02);">
-    <div class="row">
+<section class="container-fluid" style="background: rgba(255,255,255,0.01);">
+    <div class="sexy-bg-glow" style="bottom: 10%; right: -10%;"></div>
+    <div class="row g-5">
         <div class="col-lg-8">
             <div class="section-label reveal">
                 <div class="label-line"></div>
@@ -230,12 +339,14 @@ include("includes/db.php");
                     $isLarge = ($count == 1) ? 'large' : '';
                 ?>
                     <div class="bento-item <?= $isLarge ?> reveal">
+                        <div class="event-date-badge"><?= date('d M', strtotime($row['event_date'])) ?></div>
                         <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800" class="event-img">
                         <div class="event-overlay"></div>
                         <div style="position: relative; z-index: 5;">
-                            <span style="font-weight: 800; font-size: 32px;"><?= date('d M', strtotime($row['event_date'])) ?></span>
-                            <h3 style="font-size: 24px; font-weight: 800; margin: 10px 0;"><?= $row['title'] ?></h3>
-                            <p style="opacity: 0.9; font-size: 14px;"><i class="fas fa-map-marker-alt"></i> <?= $row['location'] ?></p>
+                            <h3 style="font-size: clamp(22px, 3vw, 32px); font-weight: 800; margin: 0 0 15px; line-height: 1.1;"><?= $row['title'] ?></h3>
+                            <p style="opacity: 0.8; font-size: 14px; font-weight: 600; color: #ddd; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> <?= $row['location'] ?>
+                            </p>
                         </div>
                     </div>
                 <?php } ?>
@@ -252,22 +363,22 @@ include("includes/db.php");
                     <div class="post-header">
                         <img src="https://i.pravatar.cc/100?img=12" class="post-user-img">
                         <div>
-                            <h4 style="font-size: 16px; font-weight: 700; margin: 0;">Rahul Sharma</h4>
-                            <small style="color: var(--text-gray);">2 hours ago</small>
+                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Rahul Sharma</h4>
+                            <small style="color: var(--primary); font-weight: 700;">2 hours ago</small>
                         </div>
                     </div>
-                    <p style="font-size: 14px; color: #ddd;">Just joined as a Senior Dev at Google! Grateful for the Raisoni network. 🚀</p>
+                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Just joined as a Senior Dev at Google! Grateful for the Raisoni network. 🚀</p>
                 </div>
                 
                 <div class="post-card reveal">
                     <div class="post-header">
                         <img src="https://i.pravatar.cc/100?img=5" class="post-user-img">
                         <div>
-                            <h4 style="font-size: 16px; font-weight: 700; margin: 0;">Priya Verma</h4>
-                            <small style="color: var(--text-gray);">Yesterday</small>
+                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Priya Verma</h4>
+                            <small style="color: var(--primary); font-weight: 700;">Yesterday</small>
                         </div>
                     </div>
-                    <p style="font-size: 14px; color: #ddd;">Anyone attending the Tech Summit next month? Let's connect!</p>
+                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Anyone attending the Tech Summit next month? Let's connect!</p>
                 </div>
             </div>
         </div>
@@ -285,18 +396,22 @@ include("includes/db.php");
         $res = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 5");
         while ($row = $res->fetch_assoc()) { ?>
             <div class="job-strip reveal">
-                <div style="display: flex; align-items: center; gap: 20px; flex: 1;">
-                    <div style="background: var(--primary); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; color: #fff;">
+                <div style="display: flex; align-items: center; gap: 30px; flex: 1;">
+                    <div class="job-icon-box">
                         <i class="fas fa-briefcase"></i>
                     </div>
                     <div>
-                        <h3 style="font-weight: 800; font-size: 20px; margin: 0;"><?= $row['title'] ?></h3>
-                        <p style="color: var(--text-gray); font-size: 14px; margin: 0;"><?= $row['company'] ?> • <?= $row['location'] ?: 'Remote' ?></p>
+                        <h3 style="font-weight: 800; font-size: 24px; margin: 0; letter-spacing: -0.5px;"><?= $row['title'] ?></h3>
+                        <p style="color: var(--text-gray); font-size: 16px; margin: 5px 0 0; font-weight: 600;">
+                            <?= $row['company'] ?> <span style="opacity: 0.3; margin: 0 10px;">|</span> <?= $row['location'] ?: 'Remote' ?>
+                        </p>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 20px;">
-                    <span style="font-weight: 600; font-size: 14px; opacity: 0.7;"><i class="far fa-clock"></i> Full-time</span>
-                    <a href="jobs.php" class="job-btn" style="padding: 10px 25px; border-radius: 10px; background: rgba(255,255,255,0.05); text-decoration: none; font-weight: 700; color: inherit;">APPLY</a>
+                <div style="display: flex; align-items: center; gap: 40px;">
+                    <span style="font-weight: 700; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="far fa-clock" style="margin-right: 8px; color: var(--primary);"></i> Full-time
+                    </span>
+                    <a href="jobs.php" class="job-btn">APPLY NOW</a>
                 </div>
             </div>
         <?php } ?>
@@ -306,32 +421,32 @@ include("includes/db.php");
 <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero Animations
+    // Hero Animations (Same as before)
     gsap.from("#mainTitle", { duration: 1.5, y: 100, opacity: 0, ease: "power4.out" });
     
-    // Reveal Observer for all sections
+    // Sexy Smooth Reveal for all items
     const revealItems = document.querySelectorAll('.reveal');
     revealItems.forEach((el) => {
         gsap.to(el, {
             scrollTrigger: {
                 trigger: el,
-                start: "top 85%",
+                start: "top 90%",
                 toggleActions: "play none none none"
             },
             opacity: 1,
             y: 0,
-            duration: 1,
-            ease: "power3.out"
+            duration: 1.2,
+            ease: "power4.out" // Smoother ease
         });
     });
 
-    // Premium Scroll Effect for Alumni Cards
+    // Premium Momentum Scroll for Alumni cards
     gsap.to(".horizontal-scroll-container", {
         scrollTrigger: {
             trigger: ".horizontal-scroll-container",
             start: "top bottom",
             end: "bottom top",
-            scrub: 1
+            scrub: 1.5
         },
         xPercent: -10,
         ease: "none"

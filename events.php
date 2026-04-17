@@ -3,139 +3,188 @@ include(__DIR__ . "/includes/header.php");
 include(__DIR__ . "/includes/db.php"); 
 ?>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
 <style>
-/* 🌍 GLOBAL PAGE STYLING */
-.page {
-    padding: 120px 8% 80px;
-    background: #f8fafc;
-    min-height: 100vh;
+/* 🌑 DEEP DARK THEME */
+:root {
+    --primary: #ff3b3b;
+    --bg-dark: #050505;
+    --card-bg: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.08);
 }
 
-/* 🔥 PREMIUM TITLE DESIGN */
+.page {
+    padding: 160px 8% 100px;
+    background: var(--bg-dark);
+    min-height: 100vh;
+    color: #fff;
+    overflow-x: hidden;
+}
+
+/* 🎭 MESH GRADIENT BACKGROUND */
+.mesh-bg {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 10% 20%, rgba(255, 59, 59, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(255, 59, 59, 0.05) 0%, transparent 50%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* 🔥 ULTRA TITLE */
 .page-header {
-    margin-bottom: 60px;
-    border-left: 8px solid #ff3b3b;
-    padding-left: 25px;
+    text-align: center;
+    margin-bottom: 100px;
+    z-index: 1;
+    position: relative;
+}
+
+.hero-tag {
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    font-size: 12px;
+    color: var(--primary);
+    font-weight: 800;
+    margin-bottom: 15px;
+    display: block;
 }
 
 .page-title {
-    font-size: clamp(32px, 5vw, 48px);
-    font-weight: 900;
-    color: #0f172a;
-    letter-spacing: -2px;
+    font-size: clamp(45px, 10vw, 100px);
+    font-weight: 950;
+    line-height: 0.8;
+    letter-spacing: -6px;
+    text-transform: uppercase;
 }
 
-/* 🏢 GRID SYSTEM */
+.page-title span {
+    display: block;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.2);
+}
+
+/* 💎 GRID */
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 35px;
-}
-
-/* 💎 ELITE EVENT CARD */
-.card {
-    background: #ffffff;
-    border-radius: 35px;
-    border: 1px solid rgba(0,0,0,0.03);
-    box-shadow: 0 15px 35px rgba(0,0,0,0.03);
-    transition: all 0.5s cubic-bezier(0.2, 1, 0.3, 1);
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 50px;
     position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+    z-index: 1;
 }
 
-/* 🖼️ IMAGE SECTION */
-.card-img {
-    width: 100%;
-    height: 200px;
-    position: relative;
-    overflow: hidden;
-}
-
-.card-img img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: 0.6s ease;
-}
-
-.card:hover .card-img img {
-    transform: scale(1.1);
-}
-
-/* 📅 FLOATING DATE OVERLAY */
-.date-badge {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(10px);
-    color: #fff;
-    padding: 12px;
-    border-radius: 20px;
-    text-align: center;
-    min-width: 55px;
-    z-index: 2;
-}
-
-.date-badge span { display: block; font-size: 20px; font-weight: 900; line-height: 1; }
-.date-badge small { font-size: 10px; text-transform: uppercase; font-weight: 700; color: #ff3b3b; }
-
-/* CARD CONTENT */
-.card-body {
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-.card h3 {
-    color: #0f172a;
-    font-size: 1.5rem;
-    font-weight: 850;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-}
-
-/* 📍 INFO CHIPS */
-.info-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.chip {
-    padding: 6px 14px;
-    background: #f1f5f9;
-    color: #475569;
+/* 🚀 THE "ELITE" EVENT CARD */
+.event-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 50px;
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    padding: 20px;
+    backdrop-filter: blur(20px);
+    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.chip i { color: #ff3b3b; }
-
-.card:hover {
-    transform: translateY(-15px);
+.event-card:hover {
+    transform: translateY(-20px) scale(1.02);
+    border-color: var(--primary);
     box-shadow: 0 30px 60px rgba(255, 59, 59, 0.15);
 }
 
-/* 📱 RESPONSIVE */
+/* IMAGE CONTAINER */
+.img-wrap {
+    width: 100%;
+    height: 320px;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+}
+
+.img-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: grayscale(40%);
+    transition: 0.8s;
+}
+
+.event-card:hover .img-wrap img {
+    filter: grayscale(0%);
+    transform: scale(1.1);
+}
+
+/* 📅 NEON DATE */
+.neon-date {
+    position: absolute;
+    bottom: 25px;
+    right: 25px;
+    background: var(--primary);
+    color: #fff;
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-weight: 900;
+    box-shadow: 0 10px 30px rgba(255, 59, 59, 0.4);
+}
+
+/* CONTENT */
+.content-area {
+    padding: 30px 15px 15px;
+}
+
+.event-card h3 {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 15px;
+    letter-spacing: -1px;
+}
+
+.meta-info {
+    display: flex;
+    gap: 20px;
+    color: #888;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.meta-info i { color: var(--primary); }
+
+/* 🔘 GLOW BUTTON */
+.btn-glow {
+    margin-top: 35px;
+    display: inline-block;
+    padding: 20px 45px;
+    background: #fff;
+    color: #000;
+    text-decoration: none;
+    border-radius: 50px;
+    font-weight: 900;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: 0.4s;
+    width: 100%;
+    text-align: center;
+}
+
+.btn-glow:hover {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 40px rgba(255, 59, 59, 0.6);
+}
+
+/* MOBILE */
 @media(max-width:768px){
-    .page { padding: 100px 20px 50px; }
     .grid { grid-template-columns: 1fr; }
+    .page-title { font-size: 60px; }
 }
 </style>
 
 <div class="page">
+    <div class="mesh-bg"></div>
+    
     <div class="page-header">
-        <h2 class="page-title">Upcoming <span>Events</span></h2>
-        <p style="color:#64748b; font-weight:500;">Premium gatherings for the AlumniX elite.</p>
+        <span class="hero-tag">Exclusive Gatherings</span>
+        <h1 class="page-title">
+            <span>Summit</span>
+            Nexus 2024
+        </h1>
     </div>
 
     <div class="grid">
@@ -146,40 +195,53 @@ include(__DIR__ . "/includes/db.php");
             while($row = $res->fetch_assoc()){ 
                 $eDate = strtotime($row['event_date']);
                 $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
-                $loc = !empty($row['location']) ? $row['location'] : 'Nagpur, India';
-                
-                // Image Handling: Agar DB me image h to wo, warna random high-quality image
-                $imgUrl = !empty($row['image']) ? 'uploads/events/'.$row['image'] : 'https://images.unsplash.com/photo-1540575861501-7cf05a4b125a?auto=format&fit=crop&w=800&q=80';
+                $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
+                $imgUrl = !empty($row['image']) ? 'uploads/events/'.$row['image'] : 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80';
             ?>
-                <div class="card reveal">
-                    <div class="card-img">
-                        <div class="date-badge">
-                            <span><?= date('d', $eDate) ?></span>
-                            <small><?= date('M', $eDate) ?></small>
+                <div class="event-card reveal">
+                    <div class="img-wrap">
+                        <img src="<?= $imgUrl ?>" alt="Event">
+                        <div class="neon-date">
+                            <?= date('d M', $eDate) ?>
                         </div>
-                        <img src="<?= $imgUrl ?>" alt="Event Banner">
                     </div>
 
-                    <div class="card-body">
-                        <h3><?= htmlspecialchars($row['title']) ?></h3>
-                        <p style="font-size:14px; color:#64748b;">Connect with industry leaders and old friends in this exclusive session.</p>
-                        
-                        <div class="info-row">
-                            <div class="chip"><i class="fas fa-clock"></i> <?= $time ?></div>
-                            <div class="chip"><i class="fas fa-location-dot"></i> <?= htmlspecialchars($loc) ?></div>
+                    <div class="content-area">
+                        <div class="meta-info">
+                            <span><i class="fas fa-clock"></i> <?= $time ?></span>
+                            <span><i class="fas fa-location-arrow"></i> <?= $loc ?></span>
                         </div>
-
-                        <a href="event_details.php?id=<?= $row['id'] ?>" style="margin-top:25px; font-weight:800; color:#ff3b3b; text-decoration:none; font-size:13px; text-transform:uppercase; letter-spacing:1px; display:inline-flex; align-items:center; gap:8px;">
-                            View Details <i class="fas fa-arrow-right"></i>
+                        <h3><?= htmlspecialchars($row['title']) ?></h3>
+                        
+                        <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-glow">
+                            Join Experience
                         </a>
                     </div>
                 </div>
             <?php }
         } else {
-            echo "<div style='grid-column: 1/-1; text-align:center; padding:100px; color:#94a3b8;'>No events planned yet.</div>";
+            echo "<div style='grid-column: 1/-1; text-align:center; padding:100px; color:#444; font-size: 24px; font-weight:800;'>COMING SOON...</div>";
         }
         ?>
     </div>
 </div>
+
+<script>
+    // GSAP Entry Animation
+    gsap.from(".reveal", {
+        y: 100,
+        opacity: 0,
+        duration: 1.2,
+        stagger: 0.2,
+        ease: "power4.out"
+    });
+
+    gsap.from(".page-title", {
+        scale: 0.8,
+        opacity: 0,
+        duration: 1.5,
+        ease: "expo.out"
+    });
+</script>
 
 <?php include(__DIR__ . "/includes/footer.php"); ?>
