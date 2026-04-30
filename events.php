@@ -3,211 +3,158 @@ include(__DIR__ . "/includes/header.php");
 include(__DIR__ . "/includes/db.php"); 
 ?>
 
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <style>
-/* 🔴 PREMIUM RED-BLACK-WHITE THEME */
+/* ⚪ PREMIUM HIGH-VISIBILITY THEME */
 :root {
     --primary: #ff3b3b;
-    --primary-glow: rgba(255, 59, 59, 0.3);
-    --bg-dark: #0a0a0a; /* Rich Charcoal Black */
-    --card-bg: rgba(255, 255, 255, 0.04);
-    --border: rgba(255, 255, 255, 0.12); /* Increased visibility */
-    --text-main: #ffffff;
-    --text-dim: #a1a1aa; /* Soft Gray */
+    --bg-white: #ffffff;
+    --card-bg: #ffffff;
+    --text-main: #000000;
+    --text-muted: #555555;
+    --border: #eeeeee;
 }
 
-/* Fix: Extra spacing and White Gap removal */
-html, body {
-    background-color: var(--bg-dark);
+body {
+    background-color: var(--bg-white);
     margin: 0;
     padding: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    overflow-x: hidden;
 }
 
 .page {
-    padding: 140px 8% 40px; /* Reduced bottom padding */
-    background: var(--bg-dark);
-    min-height: auto; /* Changed from 100vh to avoid stretching */
-    color: var(--text-main);
-    overflow-x: hidden;
+    padding: 140px 8% 80px;
     position: relative;
-    display: flex;
-    flex-direction: column;
+    z-index: 10;
 }
 
 .mesh-bg {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 10% 10%, rgba(255, 59, 59, 0.07) 0%, transparent 40%),
-                radial-gradient(circle at 90% 90%, rgba(255, 59, 59, 0.05) 0%, transparent 40%);
-    z-index: 0;
+    background: radial-gradient(circle at 10% 10%, rgba(255, 59, 59, 0.05) 0%, transparent 40%);
+    z-index: -1; 
     pointer-events: none;
 }
 
-.page-header {
-    text-align: center;
-    margin-bottom: 70px;
-    z-index: 2;
-}
-
-.hero-tag {
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    font-size: 12px;
-    color: var(--primary);
-    font-weight: 800;
-    margin-bottom: 15px;
-    display: block;
-}
+.page-header { text-align: center; margin-bottom: 60px; }
 
 .page-title {
-    font-size: clamp(40px, 8vw, 85px);
-    font-weight: 950;
-    line-height: 0.9;
-    letter-spacing: -3px;
+    font-size: clamp(40px, 7vw, 80px);
+    font-weight: 800;
+    color: var(--text-main);
     text-transform: uppercase;
+    letter-spacing: -2px;
 }
 
-.page-title span {
-    display: block;
-    color: transparent;
-    -webkit-text-stroke: 1.2px rgba(255, 255, 255, 0.3); /* Better visibility */
-}
+.page-title span { color: var(--primary); }
 
-/* 💎 3-COLUMN PREMIUM GRID */
+/* 💎 GRID SYSTEM */
 .grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr); 
     gap: 30px;
-    position: relative;
-    z-index: 2;
-    margin-bottom: 40px; /* Controlled gap before footer */
 }
 
 .event-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 30px;
-    padding: 18px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    border-radius: 24px;
+    padding: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    transition: border-color 0.4s ease;
+    will-change: transform, opacity; /* Performance boost */
 }
 
 .event-card:hover {
-    transform: translateY(-12px);
     border-color: var(--primary);
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 
-                0 0 15px var(--primary-glow);
 }
 
 .img-wrap {
     width: 100%;
-    height: 250px;
-    border-radius: 22px;
+    height: 220px;
+    border-radius: 18px;
     overflow: hidden;
     position: relative;
-    background: #111;
+    background: #f0f0f0;
 }
 
 .img-wrap img {
     width: 100%; height: 100%;
     object-fit: cover;
-    filter: brightness(0.8);
-    transition: 0.8s ease;
+    transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
 .event-card:hover .img-wrap img {
-    filter: brightness(1);
-    transform: scale(1.05);
+    transform: scale(1.1);
 }
 
-.neon-date {
+.date-badge {
     position: absolute;
     top: 15px;
     right: 15px;
     background: var(--primary);
     color: #fff;
-    padding: 10px 18px;
-    border-radius: 15px;
-    font-weight: 900;
-    font-size: 13px;
-    box-shadow: 0 8px 20px rgba(255, 59, 59, 0.4);
-}
-
-.content-area {
-    padding: 22px 10px 5px;
-}
-
-.meta-info {
-    display: flex; gap: 15px;
-    color: var(--text-dim); 
-    font-size: 11px; 
-    font-weight: 700; 
-    margin-bottom: 12px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.meta-info i { color: var(--primary); }
-
-.event-card h3 {
-    font-size: 24px;
-    font-weight: 800;
-    margin-bottom: 22px;
-    color: #fff;
-    min-height: 58px;
-    line-height: 1.2;
-}
-
-.btn-glow {
-    display: block;
-    padding: 16px;
-    background: #fff; /* High Contrast White */
-    color: #000;
-    text-decoration: none;
-    border-radius: 18px;
+    padding: 8px 15px;
+    border-radius: 12px;
     font-weight: 800;
     font-size: 12px;
+    z-index: 5;
+}
+
+.content-area { padding: 20px 5px 5px; }
+
+.meta-info {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 10px;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: 0.4s;
-    text-align: center;
 }
 
-.btn-glow:hover {
-    background: var(--primary);
+.meta-info i { color: var(--primary); margin-right: 5px; }
+
+.event-card h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 20px;
+    line-height: 1.2;
+    min-height: 50px;
+}
+
+.btn-premium {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    background: #000;
     color: #fff;
-    box-shadow: 0 10px 25px var(--primary-glow);
+    text-align: center;
+    text-decoration: none;
+    border-radius: 15px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
 }
 
-/* 🛑 FOOTER ALIGNMENT FIX */
-footer {
-    margin-top: 0 !important;
-    background: var(--bg-dark) !important;
-    border-top: 1px solid var(--border);
+.btn-premium:hover {
+    background: var(--primary);
+    letter-spacing: 1px; /* Sexy expansion effect */
 }
 
-@media(max-width:1100px){
-    .grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media(max-width:768px){
-    .grid { grid-template-columns: 1fr; }
-    .page { padding: 120px 6% 30px; }
-}
+@media(max-width:1100px){ .grid { grid-template-columns: repeat(2, 1fr); } }
+@media(max-width:768px){ .grid { grid-template-columns: 1fr; } }
 </style>
 
 <div class="page">
     <div class="mesh-bg"></div>
     
     <div class="page-header">
-        <span class="hero-tag">Premium Experience</span>
-        <h1 class="page-title">
-            <span>Summit</span>
-            Nexus 2026
-        </h1>
+        <h1 class="page-title reveal-header">Summit <span>2026</span></h1>
     </div>
 
     <div class="grid">
@@ -219,39 +166,79 @@ footer {
                 $eDate = strtotime($row['event_date']);
                 $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
                 $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
-                $imgUrl = !empty($row['image']) ? 'uploads/events/'.$row['image'] : 'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?auto=format&fit=crop&w=800&q=80';
+                $imgUrl = !empty($row['image']) ? 'uploads/events/'.$row['image'] : 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80';
             ?>
-                <div class="event-card reveal">
+                <div class="event-card reveal-card">
                     <div class="img-wrap">
                         <img src="<?= $imgUrl ?>" alt="Event">
-                        <div class="neon-date"><?= date('d M', $eDate) ?></div>
+                        <div class="date-badge"><?= date('d M', $eDate) ?></div>
                     </div>
                     <div class="content-area">
                         <div class="meta-info">
                             <span><i class="fas fa-clock"></i> <?= $time ?></span>
-                            <span><i class="fas fa-location-arrow"></i> <?= htmlspecialchars($loc) ?></span>
+                            <span style="margin-left:10px;"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($loc) ?></span>
                         </div>
                         <h3><?= htmlspecialchars($row['title']) ?></h3>
-                        <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-glow">Join Experience</a>
+                        <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-premium">View Event</a>
                     </div>
                 </div>
             <?php }
         } else {
-            echo "<div style='grid-column: 1/-1; text-align:center; padding:100px; z-index:10;'>
-                    <h2 style='color:var(--text-dim); letter-spacing:2px;'>NO ACTIVE SUMMITS</h2>
-                  </div>";
+            echo "<h2 style='grid-column:1/-1; text-align:center; color:#999;'>No Events Found</h2>";
         }
         ?>
     </div>
 </div>
 
 <script>
-    gsap.set(".reveal", { opacity: 0, y: 30 });
-    window.onload = () => {
-        gsap.to(".reveal", {
-            y: 0, opacity: 1, duration: 1.2, stagger: 0.1, ease: "power4.out"
+    document.addEventListener("DOMContentLoaded", function() {
+        gsap.registerPlugin(ScrollTrigger);
+
+        // 1. Header Animation
+        gsap.from(".reveal-header", {
+            y: -50,
+            opacity: 0,
+            duration: 1,
+            ease: "back.out(1.7)"
         });
-    };
+
+        // 2. Cards Entrance & Scroll Animation
+        gsap.from(".reveal-card", {
+            scrollTrigger: {
+                trigger: ".grid",
+                start: "top 85%", // Jab grid ka top 85% screen par ho
+                toggleActions: "play none none none"
+            },
+            y: 60,
+            opacity: 0,
+            duration: 1,
+            stagger: 0.15, // Ek ke baad ek aayenge
+            ease: "power4.out"
+        });
+
+        // 3. Sexy Hover Effect using GSAP (Tilt effect)
+        const cards = document.querySelectorAll(".event-card");
+        cards.forEach(card => {
+            card.addEventListener("mouseenter", () => {
+                gsap.to(card, { 
+                    y: -10, 
+                    scale: 1.02, 
+                    boxShadow: "0 30px 60px rgba(255, 59, 59, 0.15)",
+                    duration: 0.4, 
+                    ease: "power2.out" 
+                });
+            });
+            card.addEventListener("mouseleave", () => {
+                gsap.to(card, { 
+                    y: 0, 
+                    scale: 1, 
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                    duration: 0.4, 
+                    ease: "power2.out" 
+                });
+            });
+        });
+    });
 </script>
 
 <?php include(__DIR__ . "/includes/footer.php"); ?>

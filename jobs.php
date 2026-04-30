@@ -10,23 +10,21 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
 <style>
-    /* 🔴 LUXURY RED-BLACK-WHITE THEME */
+    /* 🔴 LUXURY WHITE-RED THEME (INDEX SYNC) */
     :root {
-        --primary: #ff3b3b;
-        --primary-glow: rgba(255, 59, 59, 0.3);
-        --bg-dark: #0a0a0a; /* Rich Charcoal */
-        --card-bg: rgba(255, 255, 255, 0.04);
-        --border: rgba(255, 255, 255, 0.12);
-        --text-main: #ffffff;
-        --text-dim: #a1a1aa;
+        --primary: #ff4d4d;
+        --bg-soft: #f8f8f8;
+        --white: #ffffff;
+        --text-main: #111111;
+        --text-gray: #6b7280;
+        --border-light: #e5e7eb;
     }
 
-    /* 🌑 FULL PAGE SETUP - NO WHITE GAP */
-    html, body { background-color: var(--bg-dark); margin: 0; padding: 0; }
+    html, body { background-color: var(--bg-soft); margin: 0; padding: 0; }
 
     .public-shell {
-        background: var(--bg-dark);
-        min-height: auto; /* Fix: No extra stretching */
+        background: var(--bg-soft);
+        min-height: auto;
         padding: 140px 8% 40px; 
         color: var(--text-main);
         position: relative;
@@ -35,14 +33,8 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
         flex-direction: column;
     }
 
-    .mesh-bg {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background: radial-gradient(circle at 15% 15%, rgba(255, 59, 59, 0.07) 0%, transparent 40%),
-                    radial-gradient(circle at 85% 85%, rgba(255, 59, 59, 0.05) 0%, transparent 40%);
-        z-index: 0;
-        pointer-events: none;
-    }
+    /* Mesh background hataya taaki clean white look aaye */
+    .mesh-bg { display: none; }
 
     .subpage-hero {
         text-align: center;
@@ -66,15 +58,14 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
         line-height: 0.9;
         letter-spacing: -3px;
         text-transform: uppercase;
+        color: var(--text-main);
     }
 
     .subpage-title span {
         display: block;
-        color: transparent;
-        -webkit-text-stroke: 1.2px rgba(255, 255, 255, 0.25);
+        color: var(--primary); /* Empty stroke ki jagah solid red */
     }
 
-    /* 💎 3-COLUMN GRID SYNC */
     .subpage-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr); 
@@ -84,116 +75,106 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
         margin-bottom: 40px;
     }
 
-    /* 💼 JOB CARD - SEXY PREMIUM VIBE */
+    /* 💼 JOB CARD - PREMIUM WHITE */
     .job-card {
-        background: var(--card-bg);
-        border: 1px solid var(--border);
+        background: var(--white);
+        border: 1px solid var(--border-light);
         border-radius: 30px;
         padding: 16px;
-        backdrop-filter: blur(25px);
-        -webkit-backdrop-filter: blur(25px);
         transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         display: flex;
         flex-direction: column;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     }
 
     .job-card:hover {
         transform: translateY(-12px);
         border-color: var(--primary);
-        background: rgba(255, 255, 255, 0.07);
-        box-shadow: 0 30px 60px -15px rgba(0,0,0,0.6), 0 0 15px var(--primary-glow);
+        box-shadow: 0 30px 60px -15px rgba(0,0,0,0.08);
     }
 
     .card-banner {
         width: 100%;
-        height: 240px;
+        height: 200px; /* Thoda chota kiya */
         border-radius: 22px;
         overflow: hidden;
         position: relative;
-        background: #000;
+        background: #eee;
     }
 
     .card-banner img {
         width: 100%; height: 100%;
         object-fit: cover;
-        filter: grayscale(100%) brightness(0.7);
         transition: 0.8s ease;
-    }
-
-    .job-card:hover .card-banner img {
-        filter: grayscale(0%) brightness(1);
-        transform: scale(1.08);
     }
 
     .floating-badge {
         position: absolute;
-        top: 20px;
-        right: 20px;
-        background: #fff;
-        color: #000;
-        padding: 8px 16px;
-        border-radius: 14px;
-        font-weight: 900;
-        font-size: 11px;
+        top: 15px;
+        right: 15px;
+        background: var(--primary);
+        color: #fff;
+        padding: 6px 14px;
+        border-radius: 12px;
+        font-weight: 800;
+        font-size: 10px;
         z-index: 3;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
 
     .card-content {
-        padding: 22px 10px 5px;
+        padding: 20px 10px 5px;
     }
 
     .card-title {
-        font-size: 24px;
+        font-size: 22px;
         font-weight: 800;
-        margin-bottom: 18px;
+        margin-bottom: 12px;
         letter-spacing: -0.5px;
-        color: #fff;
-        min-height: 58px; /* Keeps layout consistent */
+        color: var(--text-main);
+        min-height: 52px;
         line-height: 1.2;
     }
 
     .meta-row {
         display: flex;
         gap: 10px;
-        margin-bottom: 20px;
+        margin-bottom: 15px;
     }
 
     .chip {
         padding: 6px 12px;
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-dim);
-        border-radius: 12px;
+        background: var(--bg-soft);
+        color: var(--text-gray);
+        border-radius: 10px;
         font-size: 10px;
         font-weight: 700;
-        border: 1px solid var(--border);
+        border: 1px solid var(--border-light);
         text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
     .chip i { color: var(--primary); margin-right: 5px; }
 
     .job-desc {
         font-size: 14px;
-        color: var(--text-dim);
+        color: var(--text-gray);
         line-height: 1.6;
-        margin-bottom: 25px;
-        height: 65px; /* Alignment for text */
+        margin-bottom: 20px;
+        height: 65px;
         overflow: hidden;
     }
 
-    /* 🔘 APPLY BUTTON - CLEAN WHITE CONTRAST */
+    /* 🔘 APPLY BUTTON - CLEAN BLACK STYLE */
     .btn-apply {
         display: block;
-        padding: 15px;
-        background: #fff;
-        color: #000;
+        padding: 14px;
+        background: var(--text-main);
+        color: #fff;
         text-decoration: none;
-        border-radius: 18px;
+        border-radius: 15px;
         font-weight: 800;
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 1px;
         transition: 0.4s;
         text-align: center;
     }
@@ -201,20 +182,14 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
     .btn-apply:hover {
         background: var(--primary);
         color: #fff;
-        box-shadow: 0 10px 25px var(--primary-glow);
     }
 
-    /* 🛑 FOOTER FIX */
-    footer { margin-top: 0 !important; border-top: 1px solid var(--border); }
+    footer { margin-top: 0 !important; border-top: 1px solid var(--border-light); }
 
-    @media(max-width:1100px){
-        .subpage-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    @media(max-width:768px){
+    @media(max-width:1100px){ .subpage-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media(max-width:768px){ 
         .subpage-grid { grid-template-columns: 1fr; }
         .subpage-title { font-size: 50px; }
-        .public-shell { padding: 100px 6% 30px; }
     }
 </style>
 
@@ -262,8 +237,8 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
             <?php endforeach; ?>
         <?php else: ?>
             <div style="grid-column: 1/-1; text-align: center; padding: 100px; z-index: 10;">
-                <h2 style="color: var(--text-dim); letter-spacing: 2px;">NO OPEN POSITIONS</h2>
-                <p style="color: #444;">Check back soon for new opportunities.</p>
+                <h2 style="color: var(--text-gray); letter-spacing: 2px;">NO OPEN POSITIONS</h2>
+                <p style="color: #999;">Check back soon for new opportunities.</p>
             </div>
         <?php endif; ?>
     </div>
