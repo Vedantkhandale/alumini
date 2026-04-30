@@ -3,36 +3,33 @@ include("includes/header.php");
 include("includes/db.php");
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <style>
     :root {
-        --primary: #ff3b3b;
-        --primary-glow: rgba(255, 59, 59, 0.4);
-        --dark-bg: #050505;
-        --card-glass: rgba(255, 255, 255, 0.03);
-        --border-glass: rgba(255, 255, 255, 0.08);
-        --text-gray: #94a3b8;
+        --primary: #ff4d4d; /* Premium Coral Red */
+        --primary-hover: #ef4444;
+        --bg-soft: #f8f8f8; /* Soft White Background */
+        --white: #ffffff;
+        --text-rich: #111111; /* Rich Black */
+        --text-gray: #6b7280; /* Elegant Gray */
+        --border-light: #e5e7eb; /* Soft Gray Border */
+        --shadow-clean: 0 4px 20px rgba(0, 0, 0, 0.03);
+        --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.06);
     }
 
     body {
-        background: var(--dark-bg);
-        color: #fff;
+        background: var(--bg-soft);
+        color: var(--text-rich);
         font-family: 'Plus Jakarta Sans', sans-serif;
-        overflow-x: hidden;
         margin: 0;
+        -webkit-font-smoothing: antialiased;
     }
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: var(--dark-bg); }
-    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
-
-    /* --- HERO SECTION (EXACTLY SAME, NO CHANGES) --- */
+    /* --- HERO SECTION: CLEAN & POWERFUL --- */
     .hero-section {
         height: 100vh;
         display: flex;
@@ -40,248 +37,232 @@ include("includes/db.php");
         justify-content: center;
         position: relative;
         overflow: hidden;
-        padding: 0 20px;
+        background: #000;
     }
 
     .hero-video-wrap {
         position: absolute;
         inset: 0;
         z-index: 1;
-        opacity: 0.5;
     }
-    .hero-video-wrap video { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.4); }
+
+    .hero-video-wrap video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: brightness(0.6); /* Text visibility control */
+    }
 
     .hero-content {
         z-index: 10;
         text-align: center;
-        max-width: 1000px;
+        padding: 0 25px;
+    }
+
+    .hero-badge {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: #fff;
+        padding: 10px 24px;
+        border-radius: 100px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        margin-bottom: 30px;
+        display: inline-block;
     }
 
     .hero-content h1 {
-        font-size: clamp(45px, 12vw, 110px);
-        font-weight: 800;
-        letter-spacing: -4px;
-        line-height: 0.9;
-        margin-bottom: 25px;
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(60px, 14vw, 130px);
+        font-weight: 900;
+        letter-spacing: -6px;
+        line-height: 0.85;
+        color: #fff;
+        margin-bottom: 35px;
         text-transform: uppercase;
     }
 
     .hero-content h1 span {
         color: var(--primary);
-        background: linear-gradient(to bottom, #ff3b3b, #8b0000);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        filter: drop-shadow(0 0 20px var(--primary-glow));
     }
 
-    .btn-neon {
-        padding: 18px 40px;
+    .btn-premium {
         background: var(--primary);
         color: #fff;
-        border-radius: 100px;
-        text-decoration: none;
+        padding: 22px 55px;
+        border-radius: 12px;
         font-weight: 800;
+        text-decoration: none;
+        letter-spacing: 1px;
         display: inline-block;
-        transition: 0.3s;
-        box-shadow: 0 10px 30px var(--primary-glow);
-    }
-    .btn-neon:hover { transform: scale(1.05); box-shadow: 0 15px 40px var(--primary-glow); }
-
-    /* ============================================================
-       ABB SHURU HOTI HAI SEXY CSS - BAKI SAB CHIZON KE LIYE
-       ============================================================ */
-
-    /* General Layout Polish */
-    .container-fluid { padding: 120px 8%; position: relative; z-index: 2; }
-
-    /* Ultra Pro Section Headers */
-    .section-label { margin-bottom: 80px; position: relative; }
-    .label-line { 
-        width: 80px; height: 6px; 
-        background: var(--primary); 
-        margin-bottom: 20px; 
-        border-radius: 10px; 
-        box-shadow: 0 0 20px var(--primary); /* Neon Line */
-    }
-    .section-title { 
-        font-size: clamp(35px, 6vw, 65px); 
-        font-weight: 800; 
-        letter-spacing: -3px; 
-        line-height: 1; 
-        text-transform: uppercase; 
-        background: linear-gradient(180deg, #fff 0%, #aaa 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        text-transform: uppercase;
+        font-size: 14px;
     }
 
-    /* --- HALL OF FAME (Sexy Cards) --- */
-    .horizontal-scroll-container {
-        display: flex;
-        gap: 30px;
-        padding: 40px 0;
-        overflow-x: auto;
-        scrollbar-width: none; /* Firefox */
+    .btn-premium:hover {
+        background: var(--primary-hover);
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(255, 77, 77, 0.3);
     }
-    .horizontal-scroll-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
+    /* --- SECTION HEADINGS --- */
+    .container-fluid {
+        padding: 120px 10%;
+    }
+
+    .section-label {
+        margin-bottom: 60px;
+    }
+
+    .label-line {
+        width: 40px;
+        height: 3px;
+        background: var(--primary);
+        margin-bottom: 15px;
+        border-radius: 10px;
+    }
+
+    .section-title {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(35px, 6vw, 75px);
+        font-weight: 900;
+        letter-spacing: -3px;
+        line-height: 0.95;
+        color: var(--text-rich);
+        text-transform: uppercase;
+    }
+
+    /* --- PREMIUM WHITE CARDS (HALL OF FAME) --- */
     .premium-alumni-card {
-        flex: 0 0 320px; /* Fixed width for horizontal scroll */
-        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
-        border: 1px solid var(--border-glass);
-        backdrop-filter: blur(15px);
-        border-radius: 40px;
+        flex: 0 0 340px;
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 32px;
         padding: 50px 35px;
-        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         text-align: center;
+        transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+        box-shadow: var(--shadow-clean);
     }
 
-    .premium-alumni-card:hover { 
-        border-color: var(--primary); 
-        transform: translateY(-20px) rotateX(5deg);
-        box-shadow: 0 20px 50px rgba(255, 59, 59, 0.2);
+    .premium-alumni-card:hover {
+        transform: translateY(-10px);
+        box-shadow: var(--shadow-hover);
+        border-color: var(--primary);
     }
 
-    .alumni-avatar { 
-        width: 110px; height: 110px; 
-        border-radius: 35px; 
-        object-fit: cover; 
-        margin-bottom: 30px; 
-        border: 3px solid var(--border-glass);
-        transition: 0.3s;
+    .alumni-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-bottom: 25px;
+        border: 4px solid var(--bg-soft);
     }
-    .premium-alumni-card:hover .alumni-avatar { border-color: var(--primary); transform: scale(1.1); }
 
-    /* --- BENTO EVENTS GRID (Attractive & Sexy) --- */
+    /* --- BENTO EVENTS (REAL WEB LOOK) --- */
     .bento-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 30px;
+        gap: 25px;
     }
+
     .bento-item {
-        min-height: 400px;
-        border-radius: 45px;
-        padding: 40px;
+        min-height: 420px;
+        border-radius: 32px;
         position: relative;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        border: 1px solid var(--border-glass);
-        transition: 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+        background: #000;
     }
+
     .bento-item.large { grid-column: span 2; }
-    
-    .bento-item:hover { transform: scale(0.98); border-color: rgba(255,255,255,0.2); }
 
-    .event-overlay { 
-        position: absolute; inset: 0; 
-        background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.3) 50%, transparent 100%); 
-        z-index: 2; 
+    .event-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        opacity: 0.75;
+        transition: 0.5s;
     }
-    .event-img { 
-        position: absolute; inset: 0; width: 100%; height: 100%; 
-        object-fit: cover; opacity: 0.4; 
-        transition: 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); 
-        z-index: 1;
-    }
-    .bento-item:hover .event-img { transform: scale(1.1); opacity: 0.6; }
 
-    /* Sexy Date Badge */
-    .event-date-badge {
-        position: absolute; top: 30px; right: 30px;
-        background: var(--primary);
-        color: #fff;
-        padding: 10px 20px;
-        border-radius: 50px;
-        font-weight: 800;
-        font-size: 14px;
-        text-transform: uppercase;
+    .bento-item:hover .event-img { transform: scale(1.05); }
+
+    .event-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%);
+    }
+
+    .event-content {
+        position: absolute;
+        bottom: 35px;
+        left: 35px;
         z-index: 5;
-        box-shadow: 0 5px 15px var(--primary-glow);
     }
 
-    /* --- LATEST POSTS FEED (Clean & Glassy) --- */
-    .feed-container { display: flex; flex-direction: column; gap: 20px; }
+    /* --- FEED & JOB STRIPS --- */
     .post-card {
-        background: rgba(255,255,255,0.02);
-        border: 1px solid var(--border-glass);
-        backdrop-filter: blur(10px);
-        border-radius: 30px;
+        background: var(--white);
+        border: 1px solid var(--border-light);
+        border-radius: 24px;
         padding: 30px;
-        transition: 0.3s;
+        box-shadow: var(--shadow-clean);
+        margin-bottom: 20px;
     }
-    .post-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
-    .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-    .post-user-img { width: 55px; height: 55px; border-radius: 18px; border: 2px solid var(--border-glass); }
 
-    /* --- CAREER BOARD (Premium Job Strips) --- */
-    .job-list { display: flex; flex-direction: column; gap: 15px; }
     .job-strip {
-        background: var(--card-glass);
-        border: 1px solid var(--border-glass);
+        background: var(--white);
+        border: 1px solid var(--border-light);
         padding: 25px 40px;
-        border-radius: 25px;
+        border-radius: 20px;
+        margin-bottom: 15px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    /* Hover Effect: Background turns white, text turns black */
-    .job-strip:hover { 
-        background: #fff; 
-        transform: translateY(-5px) scale(1.01);
-        box-shadow: 0 10px 30px rgba(255,255,255,0.1);
-    }
-    .job-strip:hover * { color: #000 !important; }
-    
-    /* Sexy Job Icon */
-    .job-icon-box {
-        background: rgba(255,59,59,0.1); 
-        width: 60px; height: 60px; 
-        display: flex; align-items: center; justify-content: center; 
-        border-radius: 20px; color: var(--primary); 
-        font-size: 22px;
         transition: 0.3s;
+        box-shadow: var(--shadow-clean);
     }
-    .job-strip:hover .job-icon-box { background: var(--primary); color: #fff !important; }
+
+    .job-strip:hover {
+        border-color: var(--primary);
+        box-shadow: var(--shadow-hover);
+        transform: scale(1.005);
+    }
+
+    .job-icon-box {
+        width: 55px;
+        height: 55px;
+        background: #fff5f5; /* Light Red Tint */
+        color: var(--primary);
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
 
     .job-btn {
-        padding: 12px 30px; 
-        border-radius: 14px; 
-        background: rgba(255,255,255,0.05); 
-        text-decoration: none; 
-        font-weight: 800; 
+        background: var(--text-rich);
         color: #fff;
-        font-size: 14px;
+        padding: 12px 30px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-decoration: none;
+        font-size: 13px;
         transition: 0.3s;
-        border: 1px solid var(--border-glass);
     }
-    .job-strip:hover .job-btn { background: #000; color: #fff !important; border-color: #000; }
 
-    /* UTILS & RESPONSIVE */
-    .reveal { opacity: 0; transform: translateY(40px); }
-    
-    /* Background Sexy Glows */
-    .sexy-bg-glow {
-        position: absolute;
-        width: 40vw; height: 40vw;
-        background: radial-gradient(circle, rgba(255,59,59,0.07) 0%, rgba(5,5,5,0) 70%);
-        border-radius: 50%;
-        z-index: 1;
-        pointer-events: none;
-    }
+    .job-btn:hover { background: var(--primary); }
+
+    .reveal { opacity: 0; transform: translateY(30px); }
 
     @media (max-width: 992px) {
         .bento-grid { grid-template-columns: 1fr; }
         .bento-item.large { grid-column: span 1; }
-        .job-strip { flex-direction: column; text-align: center; gap: 20px; padding: 30px; }
-        .container-fluid { padding: 80px 5%; }
+        .job-strip { flex-direction: column; text-align: center; gap: 20px; }
     }
 </style>
 
@@ -292,61 +273,59 @@ include("includes/db.php");
         </video>
     </div>
     <div class="hero-content">
-        <span class="reveal" style="color: var(--primary); letter-spacing: 4px; font-weight: 800; text-transform: uppercase; font-size: 14px;">The Official Alumni Network</span>
-        <h1 id="mainTitle">Nexus <span>Elite</span></h1>
-        <p class="reveal" style="font-size: 18px; color: var(--text-gray); margin-bottom: 30px;">Where legacy meets opportunity. Connect with the legends of G H Raisoni.</p>
+        <div class="hero-badge reveal">AluminiX Excellence</div>
+        <h1 class="reveal" id="mainTitle">ALUMNI <span>X</span></h1>
+        <p class="reveal" style="font-size: 20px; color: rgba(255,255,255,0.8); max-width: 650px; margin: 0 auto 40px; font-weight: 400; line-height: 1.6;">
+            A premium network for the visionaries. Connect, collaborate, and carry the legacy forward.
+        </p>
         <div class="reveal">
-            <a href="registration.php" class="btn-neon">JOIN THE ELITE</a>
+            <a href="registration.php" class="btn-premium">Claim Your Access</a>
         </div>
     </div>
 </section>
 
 <section class="container-fluid">
-    <div class="sexy-bg-glow" style="top: 10%; left: -10%;"></div>
     <div class="section-label reveal">
         <div class="label-line"></div>
-        <h2 class="section-title">Hall of <span style="color: var(--primary);">Fame</span></h2>
+        <h2 class="section-title">Hall Of <span style="color: var(--primary);">Fame</span></h2>
     </div>
-    
-    <div class="horizontal-scroll-container">
+
+    <div class="horizontal-scroll-container" style="display: flex; gap: 30px; overflow-x: auto; padding-bottom: 40px; scrollbar-width: none;">
         <?php
         $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 8");
         while ($row = $res->fetch_assoc()) { ?>
             <div class="premium-alumni-card reveal">
-                <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff3b3b&color=fff&size=200&bold=true" class="alumni-avatar">
-                <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px;"><?= $row['name'] ?></h3>
-                <p style="color: var(--primary); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;"><?= $row['company'] ?></p>
-                <p style="color: var(--text-gray); font-size: 14px; margin-top: 20px; line-height: 1.6; font-weight: 500;">Transforming the industry through visionary leadership and innovation.</p>
+                <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff4d4d&color=fff&size=200&bold=true" class="alumni-avatar">
+                <h3 style="font-weight: 800; font-size: 22px; margin-bottom: 5px; color: var(--text-rich);"><?= $row['name'] ?></h3>
+                <p style="color: var(--primary); font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;"><?= $row['company'] ?></p>
+                <p style="color: var(--text-gray); font-size: 14px; margin-top: 15px; line-height: 1.6; font-weight: 500;">Pioneering excellence and leadership in the global tech ecosystem.</p>
             </div>
         <?php } ?>
     </div>
 </section>
 
-<section class="container-fluid" style="background: rgba(255,255,255,0.01);">
-    <div class="sexy-bg-glow" style="bottom: 10%; right: -10%;"></div>
+<section class="container-fluid" style="background: var(--white); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light);">
     <div class="row g-5">
         <div class="col-lg-8">
             <div class="section-label reveal">
                 <div class="label-line"></div>
-                <h2 class="section-title">Upcoming <span style="color: var(--primary);">Summits</span></h2>
+                <h2 class="section-title">Global <span style="color: var(--primary);">Summits</span></h2>
             </div>
             <div class="bento-grid">
                 <?php
                 $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3");
                 $count = 0;
-                while ($row = $res->fetch_assoc()) { 
+                while ($row = $res->fetch_assoc()) {
                     $count++;
                     $isLarge = ($count == 1) ? 'large' : '';
                 ?>
                     <div class="bento-item <?= $isLarge ?> reveal">
-                        <div class="event-date-badge"><?= date('d M', strtotime($row['event_date'])) ?></div>
                         <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800" class="event-img">
                         <div class="event-overlay"></div>
-                        <div style="position: relative; z-index: 5;">
-                            <h3 style="font-size: clamp(22px, 3vw, 32px); font-weight: 800; margin: 0 0 15px; line-height: 1.1;"><?= $row['title'] ?></h3>
-                            <p style="opacity: 0.8; font-size: 14px; font-weight: 600; color: #ddd; display: flex; align-items: center; gap: 8px;">
-                                <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> <?= $row['location'] ?>
-                            </p>
+                        <div class="event-content">
+                            <span style="background: var(--primary); color: #fff; padding: 5px 15px; border-radius: 50px; font-size: 11px; font-weight: 800;"><?= date('M d, Y', strtotime($row['event_date'])) ?></span>
+                            <h3 style="font-size: 28px; font-weight: 800; color: #fff; margin-top: 12px;"><?= $row['title'] ?></h3>
+                            <p style="color: rgba(255,255,255,0.7); font-size: 14px; font-weight: 500;"><i class="fas fa-location-dot"></i> <?= $row['location'] ?></p>
                         </div>
                     </div>
                 <?php } ?>
@@ -358,28 +337,25 @@ include("includes/db.php");
                 <div class="label-line"></div>
                 <h2 class="section-title">Latest <span style="color: var(--primary);">Feed</span></h2>
             </div>
-            <div class="feed-container">
-                <div class="post-card reveal">
-                    <div class="post-header">
-                        <img src="https://i.pravatar.cc/100?img=12" class="post-user-img">
-                        <div>
-                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Rahul Sharma</h4>
-                            <small style="color: var(--primary); font-weight: 700;">2 hours ago</small>
-                        </div>
+            <div class="post-card reveal">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <img src="https://i.pravatar.cc/100?img=12" style="width: 45px; height: 45px; border-radius: 10px;">
+                    <div>
+                        <h4 style="font-weight: 800; margin: 0; font-size: 16px;">Rahul Sharma</h4>
+                        <small style="color: var(--text-gray); font-weight: 600;">2 hours ago</small>
                     </div>
-                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Just joined as a Senior Dev at Google! Grateful for the Raisoni network. 🚀</p>
                 </div>
-                
-                <div class="post-card reveal">
-                    <div class="post-header">
-                        <img src="https://i.pravatar.cc/100?img=5" class="post-user-img">
-                        <div>
-                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Priya Verma</h4>
-                            <small style="color: var(--primary); font-weight: 700;">Yesterday</small>
-                        </div>
+                <p style="color: var(--text-gray); font-size: 14px; line-height: 1.5; font-weight: 500;">Thrilled to announce my new role at Microsoft! Huge thanks to the Raisoni community for the mentorship. 🚀</p>
+            </div>
+            <div class="post-card reveal">
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                    <img src="https://i.pravatar.cc/100?img=5" style="width: 45px; height: 45px; border-radius: 10px;">
+                    <div>
+                        <h4 style="font-weight: 800; margin: 0; font-size: 16px;">Priya Verma</h4>
+                        <small style="color: var(--text-gray); font-weight: 600;">Yesterday</small>
                     </div>
-                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Anyone attending the Tech Summit next month? Let's connect!</p>
                 </div>
+                <p style="color: var(--text-gray); font-size: 14px; line-height: 1.5; font-weight: 500;">Attending the annual tech meet. Looking forward to meeting fellow alumni! 👋</p>
             </div>
         </div>
     </div>
@@ -390,28 +366,22 @@ include("includes/db.php");
         <div class="label-line"></div>
         <h2 class="section-title">Career <span style="color: var(--primary);">Board</span></h2>
     </div>
-    
+
     <div class="job-list">
         <?php
         $res = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 5");
         while ($row = $res->fetch_assoc()) { ?>
             <div class="job-strip reveal">
-                <div style="display: flex; align-items: center; gap: 30px; flex: 1;">
-                    <div class="job-icon-box">
-                        <i class="fas fa-briefcase"></i>
-                    </div>
+                <div style="display: flex; align-items: center; gap: 25px;">
+                    <div class="job-icon-box"><i class="fas fa-briefcase"></i></div>
                     <div>
-                        <h3 style="font-weight: 800; font-size: 24px; margin: 0; letter-spacing: -0.5px;"><?= $row['title'] ?></h3>
-                        <p style="color: var(--text-gray); font-size: 16px; margin: 5px 0 0; font-weight: 600;">
-                            <?= $row['company'] ?> <span style="opacity: 0.3; margin: 0 10px;">|</span> <?= $row['location'] ?: 'Remote' ?>
-                        </p>
+                        <h3 style="font-weight: 800; font-size: 20px; margin: 0; color: var(--text-rich);"><?= $row['title'] ?></h3>
+                        <p style="color: var(--text-gray); font-weight: 600; margin-top: 4px; font-size: 14px;"><?= $row['company'] ?> • <?= $row['location'] ?: 'Remote' ?></p>
                     </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 40px;">
-                    <span style="font-weight: 700; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">
-                        <i class="far fa-clock" style="margin-right: 8px; color: var(--primary);"></i> Full-time
-                    </span>
-                    <a href="jobs.php" class="job-btn">APPLY NOW</a>
+                <div style="display: flex; align-items: center; gap: 30px;">
+                    <span style="font-weight: 700; color: var(--text-gray); font-size: 12px; text-transform: uppercase;">Full-Time</span>
+                    <a href="jobs.php" class="job-btn">Apply Now</a>
                 </div>
             </div>
         <?php } ?>
@@ -421,35 +391,12 @@ include("includes/db.php");
 <script>
     gsap.registerPlugin(ScrollTrigger);
 
-    // Hero Animations (Same as before)
-    gsap.from("#mainTitle", { duration: 1.5, y: 100, opacity: 0, ease: "power4.out" });
-    
-    // Sexy Smooth Reveal for all items
-    const revealItems = document.querySelectorAll('.reveal');
-    revealItems.forEach((el) => {
+    const reveals = document.querySelectorAll('.reveal');
+    reveals.forEach(el => {
         gsap.to(el, {
-            scrollTrigger: {
-                trigger: el,
-                start: "top 90%",
-                toggleActions: "play none none none"
-            },
-            opacity: 1,
-            y: 0,
-            duration: 1.2,
-            ease: "power4.out" // Smoother ease
+            scrollTrigger: { trigger: el, start: "top 90%" },
+            opacity: 1, y: 0, duration: 1, ease: "expo.out"
         });
-    });
-
-    // Premium Momentum Scroll for Alumni cards
-    gsap.to(".horizontal-scroll-container", {
-        scrollTrigger: {
-            trigger: ".horizontal-scroll-container",
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 1.5
-        },
-        xPercent: -10,
-        ease: "none"
     });
 </script>
 
