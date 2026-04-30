@@ -201,6 +201,3 @@
         &copy; 2026 ALUMNIX PORTAL. CRAFTED FOR THE ELITE.
     </div>
 </footer>
-
-</body>
-</html>

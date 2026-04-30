@@ -1,833 +1,456 @@
 <?php
-$pageTitle = "AlumniX | Home";
-include(__DIR__ . "/includes/header.php");
-include(__DIR__ . "/includes/db.php");
-
-function homeEsc($value) {
-    return htmlspecialchars((string) $value, ENT_QUOTES, "UTF-8");
-}
-
-function homeCount(mysqli $conn, string $sql): int {
-    $result = $conn->query($sql);
-    if ($result && ($row = $result->fetch_assoc()) && isset($row["total"])) {
-        return (int) $row["total"];
-    }
-    return 0;
-}
-
-$alumniCount = homeCount($conn, "SELECT COUNT(*) AS total FROM alumni");
-$eventCount = homeCount($conn, "SELECT COUNT(*) AS total FROM events");
-$jobCount = homeCount($conn, "SELECT COUNT(*) AS total FROM jobs WHERE status='approved'");
-
-$latestAlumni = $conn->query("SELECT id, name, company, course, image FROM alumni ORDER BY id DESC LIMIT 8");
-$upcomingEvents = $conn->query("SELECT id, title, event_date, location, image FROM events ORDER BY event_date ASC LIMIT 4");
-$recentJobs = $conn->query("SELECT id, title, company, location, description FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 5");
+include("includes/header.php");
+include("includes/db.php");
 ?>
 
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <style>
     :root {
-        --home-bg: #06080f;
-        --home-surface: rgba(21, 27, 43, 0.72);
-        --home-surface-soft: rgba(255, 255, 255, 0.04);
-        --home-line: rgba(255, 255, 255, 0.12);
-        --home-text: #f8fafc;
-        --home-muted: #9ba8c1;
-        --home-accent: #ff4d4d;
-        --home-accent-soft: rgba(255, 77, 77, 0.16);
+        --primary: #ff3b3b;
+        --primary-glow: rgba(255, 59, 59, 0.4);
+        --dark-bg: #050505;
+        --card-glass: rgba(255, 255, 255, 0.03);
+        --border-glass: rgba(255, 255, 255, 0.08);
+        --text-gray: #94a3b8;
     }
 
     body {
-        background:
-            radial-gradient(circle at 12% 15%, rgba(255, 77, 77, 0.17), transparent 36%),
-            radial-gradient(circle at 88% 72%, rgba(49, 130, 246, 0.2), transparent 38%),
-            var(--home-bg);
-        color: var(--home-text);
+        background: var(--dark-bg);
+        color: #fff;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        overflow-x: hidden;
+        margin: 0;
     }
 
-    .home-shell {
-        overflow: hidden;
-    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--dark-bg); }
+    ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
 
-    .hero {
+    /* --- HERO SECTION (EXACTLY SAME, NO CHANGES) --- */
+    .hero-section {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         position: relative;
-        min-height: 100vh;
-        display: grid;
-        grid-template-columns: 1.15fr 0.85fr;
-        gap: 30px;
-        align-items: end;
-        padding: 170px 7% 70px;
-    }
-
-    .hero-video {
-        position: absolute;
-        inset: 0;
-        z-index: 0;
         overflow: hidden;
+        padding: 0 20px;
     }
 
-    .hero-video video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: brightness(0.36) contrast(1.1);
-        transform: scale(1.06);
-    }
-
-    .hero-layer {
+    .hero-video-wrap {
         position: absolute;
         inset: 0;
         z-index: 1;
-        background:
-            linear-gradient(180deg, rgba(2, 6, 16, 0.18) 0%, rgba(2, 6, 16, 0.78) 70%, rgba(2, 6, 16, 0.95) 100%),
-            radial-gradient(circle at 18% 8%, rgba(255, 77, 77, 0.22), transparent 34%);
+        opacity: 0.5;
+    }
+    .hero-video-wrap video { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.4); }
+
+    .hero-content {
+        z-index: 10;
+        text-align: center;
+        max-width: 1000px;
     }
 
-    .hero-copy,
-    .hero-panel {
-        position: relative;
-        z-index: 2;
-    }
-
-    .hero-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        margin-bottom: 18px;
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        font-size: 12px;
-        letter-spacing: 0.12em;
+    .hero-content h1 {
+        font-size: clamp(45px, 12vw, 110px);
+        font-weight: 800;
+        letter-spacing: -4px;
+        line-height: 0.9;
+        margin-bottom: 25px;
         text-transform: uppercase;
-        color: #f2f5fb;
-        font-weight: 600;
     }
 
-    .hero-copy h1 {
-        margin: 0;
-        max-width: 800px;
-        font-size: clamp(2.3rem, 5.6vw, 5.6rem);
-        line-height: 0.94;
-        letter-spacing: -0.04em;
+    .hero-content h1 span {
+        color: var(--primary);
+        background: linear-gradient(to bottom, #ff3b3b, #8b0000);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 20px var(--primary-glow));
     }
 
-    .hero-copy h1 .accent {
-        color: var(--home-accent);
-    }
-
-    .hero-copy p {
-        margin-top: 20px;
-        max-width: 680px;
-        color: #ced7e9;
-        font-size: clamp(1rem, 1.5vw, 1.2rem);
-        line-height: 1.75;
-    }
-
-    .hero-actions {
-        margin-top: 30px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 14px;
-    }
-
-    .btn-main,
-    .btn-soft {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 9px;
+    .btn-neon {
+        padding: 18px 40px;
+        background: var(--primary);
+        color: #fff;
+        border-radius: 100px;
         text-decoration: none;
-        border-radius: 999px;
-        padding: 13px 24px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        font-weight: 800;
+        display: inline-block;
+        transition: 0.3s;
+        box-shadow: 0 10px 30px var(--primary-glow);
+    }
+    .btn-neon:hover { transform: scale(1.05); box-shadow: 0 15px 40px var(--primary-glow); }
+
+    /* ============================================================
+       ABB SHURU HOTI HAI SEXY CSS - BAKI SAB CHIZON KE LIYE
+       ============================================================ */
+
+    /* General Layout Polish */
+    .container-fluid { padding: 120px 8%; position: relative; z-index: 2; }
+
+    /* Ultra Pro Section Headers */
+    .section-label { margin-bottom: 80px; position: relative; }
+    .label-line { 
+        width: 80px; height: 6px; 
+        background: var(--primary); 
+        margin-bottom: 20px; 
+        border-radius: 10px; 
+        box-shadow: 0 0 20px var(--primary); /* Neon Line */
+    }
+    .section-title { 
+        font-size: clamp(35px, 6vw, 65px); 
+        font-weight: 800; 
+        letter-spacing: -3px; 
+        line-height: 1; 
+        text-transform: uppercase; 
+        background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
-    .btn-main {
-        color: #fff;
-        background: linear-gradient(120deg, #ff4d4d, #ff7a45);
-        box-shadow: 0 14px 28px rgba(255, 77, 77, 0.35);
-    }
-
-    .btn-main:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 18px 34px rgba(255, 77, 77, 0.42);
-    }
-
-    .btn-soft {
-        color: #f4f7ff;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .btn-soft:hover {
-        transform: translateY(-2px);
-        background: rgba(255, 255, 255, 0.17);
-    }
-
-    .hero-panel {
-        margin-left: auto;
-        width: min(390px, 100%);
-        border-radius: 26px;
-        padding: 24px;
-        background: var(--home-surface);
-        border: 1px solid var(--home-line);
-        backdrop-filter: blur(14px);
-        box-shadow: 0 30px 50px rgba(0, 0, 0, 0.35);
-    }
-
-    .hero-panel h3 {
-        margin: 0 0 18px;
-        font-size: 1.1rem;
-        letter-spacing: -0.01em;
-    }
-
-    .hero-list {
-        list-style: none;
-        display: grid;
-        gap: 10px;
-    }
-
-    .hero-list li {
+    /* --- HALL OF FAME (Sexy Cards) --- */
+    .horizontal-scroll-container {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 10px;
-        padding: 11px 12px;
-        border-radius: 14px;
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-    .hero-list li span {
-        color: #d8e1f2;
-        font-size: 13px;
-    }
-
-    .hero-list li strong {
-        color: #fff;
-        font-size: 14px;
-    }
-
-    .hero-note {
-        margin-top: 15px;
-        color: var(--home-muted);
-        font-size: 12px;
-        line-height: 1.6;
-    }
-
-    .section-wrap {
-        padding: 25px 7% 0;
-    }
-
-    .section {
-        margin-bottom: 36px;
-        border-radius: 26px;
-        border: 1px solid var(--home-line);
-        background: linear-gradient(150deg, rgba(17, 24, 39, 0.74), rgba(11, 14, 26, 0.88));
-        backdrop-filter: blur(12px);
-        padding: 26px;
-    }
-
-    .section-head {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 24px;
-    }
-
-    .section-kicker {
-        font-size: 12px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: #ff9a7c;
-        font-weight: 700;
-    }
-
-    .section-title {
-        margin-top: 8px;
-        font-size: clamp(1.7rem, 3.2vw, 2.9rem);
-        letter-spacing: -0.03em;
-        line-height: 1.05;
-    }
-
-    .section-copy {
-        max-width: 620px;
-        color: var(--home-muted);
-        line-height: 1.7;
-        font-size: 14px;
-    }
-
-    .section-link {
-        text-decoration: none;
-        color: #fff;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 10px 16px;
-        border-radius: 999px;
-        background: var(--home-accent-soft);
-        border: 1px solid rgba(255, 77, 77, 0.24);
-        white-space: nowrap;
-    }
-
-    .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .stat-card {
-        border-radius: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 20px 16px;
-    }
-
-    .stat-card strong {
-        display: block;
-        font-size: clamp(1.8rem, 3.8vw, 2.8rem);
-        letter-spacing: -0.04em;
-    }
-
-    .stat-card span {
-        display: block;
-        margin-top: 8px;
-        color: var(--home-muted);
-        font-size: 13px;
-    }
-
-    .alumni-track {
-        display: grid;
-        grid-auto-flow: column;
-        grid-auto-columns: minmax(240px, 1fr);
-        gap: 14px;
+        gap: 30px;
+        padding: 40px 0;
         overflow-x: auto;
-        padding-bottom: 6px;
-        scrollbar-width: thin;
+        scrollbar-width: none; /* Firefox */
     }
+    .horizontal-scroll-container::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
-    .alumni-track::-webkit-scrollbar {
-        height: 8px;
-    }
-
-    .alumni-track::-webkit-scrollbar-thumb {
-        border-radius: 999px;
-        background: rgba(255, 255, 255, 0.18);
-    }
-
-    .alumni-card {
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 18px;
-        transition: transform 0.28s ease, border-color 0.28s ease;
-    }
-
-    .alumni-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(255, 77, 77, 0.5);
-    }
-
-    .alumni-top {
+    .premium-alumni-card {
+        flex: 0 0 320px; /* Fixed width for horizontal scroll */
+        background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 100%);
+        border: 1px solid var(--border-glass);
+        backdrop-filter: blur(15px);
+        border-radius: 40px;
+        padding: 50px 35px;
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 12px;
-    }
-
-    .alumni-avatar {
-        width: 58px;
-        height: 58px;
-        border-radius: 16px;
-        object-fit: cover;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .alumni-card h4 {
-        margin: 0;
-        font-size: 1rem;
-    }
-
-    .alumni-card p {
-        margin: 5px 0 0;
-        color: #d3dcf0;
-        font-size: 13px;
-    }
-
-    .alumni-badge {
-        margin-top: 14px;
-        display: inline-flex;
-        align-items: center;
-        border-radius: 999px;
-        padding: 7px 12px;
-        background: rgba(255, 255, 255, 0.06);
-        color: var(--home-muted);
-        font-size: 11px;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-    }
-
-    .event-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .event-card {
-        position: relative;
-        border-radius: 20px;
-        min-height: 260px;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.13);
-        background: rgba(255, 255, 255, 0.06);
-    }
-
-    .event-card img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        filter: brightness(0.65);
-        transition: transform 0.45s ease;
-    }
-
-    .event-card:hover img {
-        transform: scale(1.06);
-    }
-
-    .event-overlay {
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(180deg, rgba(4, 7, 14, 0.12), rgba(4, 7, 14, 0.9));
-    }
-
-    .event-content {
-        position: absolute;
-        left: 16px;
-        right: 16px;
-        bottom: 16px;
-        z-index: 2;
-    }
-
-    .event-date {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 10px;
-        padding: 7px 12px;
-        border-radius: 999px;
-        background: rgba(255, 77, 77, 0.82);
-        color: #fff;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-    }
-
-    .event-content h4 {
-        margin: 0;
-        font-size: 1.2rem;
-        line-height: 1.28;
-    }
-
-    .event-content p {
-        margin-top: 8px;
-        color: #d0d9ed;
-        font-size: 13px;
-    }
-
-    .job-stack {
-        display: grid;
-        gap: 12px;
-    }
-
-    .job-card {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        border-radius: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.11);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 16px;
-    }
-
-    .job-main h4 {
-        margin: 0;
-        font-size: 1.06rem;
-    }
-
-    .job-meta {
-        margin-top: 6px;
-        color: #cad3e5;
-        font-size: 13px;
-    }
-
-    .job-desc {
-        margin-top: 8px;
-        color: var(--home-muted);
-        font-size: 13px;
-        line-height: 1.6;
-        max-width: 660px;
-    }
-
-    .job-link {
-        text-decoration: none;
-        color: #fff;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        padding: 11px 16px;
-        border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        background: rgba(255, 255, 255, 0.08);
-        white-space: nowrap;
-    }
-
-    .empty-state {
-        border-radius: 18px;
-        border: 1px dashed rgba(255, 255, 255, 0.24);
-        background: rgba(255, 255, 255, 0.03);
-        padding: 24px;
-        color: var(--home-muted);
         text-align: center;
     }
 
-    .reveal {
-        opacity: 0;
-        transform: translateY(26px);
+    .premium-alumni-card:hover { 
+        border-color: var(--primary); 
+        transform: translateY(-20px) rotateX(5deg);
+        box-shadow: 0 20px 50px rgba(255, 59, 59, 0.2);
     }
 
-    @media (max-width: 1100px) {
-        .hero {
-            grid-template-columns: 1fr;
-            align-items: center;
-            padding-bottom: 52px;
-        }
+    .alumni-avatar { 
+        width: 110px; height: 110px; 
+        border-radius: 35px; 
+        object-fit: cover; 
+        margin-bottom: 30px; 
+        border: 3px solid var(--border-glass);
+        transition: 0.3s;
+    }
+    .premium-alumni-card:hover .alumni-avatar { border-color: var(--primary); transform: scale(1.1); }
 
-        .hero-panel {
-            margin: 0;
-            width: 100%;
-        }
+    /* --- BENTO EVENTS GRID (Attractive & Sexy) --- */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 30px;
+    }
+    .bento-item {
+        min-height: 400px;
+        border-radius: 45px;
+        padding: 40px;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        border: 1px solid var(--border-glass);
+        transition: 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+    }
+    .bento-item.large { grid-column: span 2; }
+    
+    .bento-item:hover { transform: scale(0.98); border-color: rgba(255,255,255,0.2); }
 
-        .stats-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
+    .event-overlay { 
+        position: absolute; inset: 0; 
+        background: linear-gradient(to top, rgba(0,0,0,0.95) 10%, rgba(0,0,0,0.3) 50%, transparent 100%); 
+        z-index: 2; 
+    }
+    .event-img { 
+        position: absolute; inset: 0; width: 100%; height: 100%; 
+        object-fit: cover; opacity: 0.4; 
+        transition: 0.8s cubic-bezier(0.165, 0.84, 0.44, 1); 
+        z-index: 1;
+    }
+    .bento-item:hover .event-img { transform: scale(1.1); opacity: 0.6; }
+
+    /* Sexy Date Badge */
+    .event-date-badge {
+        position: absolute; top: 30px; right: 30px;
+        background: var(--primary);
+        color: #fff;
+        padding: 10px 20px;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 14px;
+        text-transform: uppercase;
+        z-index: 5;
+        box-shadow: 0 5px 15px var(--primary-glow);
     }
 
-    @media (max-width: 760px) {
-        .hero {
-            padding: 135px 5% 48px;
-        }
+    /* --- LATEST POSTS FEED (Clean & Glassy) --- */
+    .feed-container { display: flex; flex-direction: column; gap: 20px; }
+    .post-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--border-glass);
+        backdrop-filter: blur(10px);
+        border-radius: 30px;
+        padding: 30px;
+        transition: 0.3s;
+    }
+    .post-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.15); }
+    .post-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+    .post-user-img { width: 55px; height: 55px; border-radius: 18px; border: 2px solid var(--border-glass); }
 
-        .section-wrap {
-            padding: 10px 5% 0;
-        }
+    /* --- CAREER BOARD (Premium Job Strips) --- */
+    .job-list { display: flex; flex-direction: column; gap: 15px; }
+    .job-strip {
+        background: var(--card-glass);
+        border: 1px solid var(--border-glass);
+        padding: 25px 40px;
+        border-radius: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: 0.4s cubic-bezier(0.075, 0.82, 0.165, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    /* Hover Effect: Background turns white, text turns black */
+    .job-strip:hover { 
+        background: #fff; 
+        transform: translateY(-5px) scale(1.01);
+        box-shadow: 0 10px 30px rgba(255,255,255,0.1);
+    }
+    .job-strip:hover * { color: #000 !important; }
+    
+    /* Sexy Job Icon */
+    .job-icon-box {
+        background: rgba(255,59,59,0.1); 
+        width: 60px; height: 60px; 
+        display: flex; align-items: center; justify-content: center; 
+        border-radius: 20px; color: var(--primary); 
+        font-size: 22px;
+        transition: 0.3s;
+    }
+    .job-strip:hover .job-icon-box { background: var(--primary); color: #fff !important; }
 
-        .section {
-            padding: 20px;
-        }
+    .job-btn {
+        padding: 12px 30px; 
+        border-radius: 14px; 
+        background: rgba(255,255,255,0.05); 
+        text-decoration: none; 
+        font-weight: 800; 
+        color: #fff;
+        font-size: 14px;
+        transition: 0.3s;
+        border: 1px solid var(--border-glass);
+    }
+    .job-strip:hover .job-btn { background: #000; color: #fff !important; border-color: #000; }
 
-        .section-head {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .event-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .job-card {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-
-        .job-link {
-            width: 100%;
-            text-align: center;
-        }
+    /* UTILS & RESPONSIVE */
+    .reveal { opacity: 0; transform: translateY(40px); }
+    
+    /* Background Sexy Glows */
+    .sexy-bg-glow {
+        position: absolute;
+        width: 40vw; height: 40vw;
+        background: radial-gradient(circle, rgba(255,59,59,0.07) 0%, rgba(5,5,5,0) 70%);
+        border-radius: 50%;
+        z-index: 1;
+        pointer-events: none;
     }
 
-    @media (max-width: 540px) {
-        .stats-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .alumni-track {
-            grid-auto-columns: minmax(220px, 84%);
-        }
+    @media (max-width: 992px) {
+        .bento-grid { grid-template-columns: 1fr; }
+        .bento-item.large { grid-column: span 1; }
+        .job-strip { flex-direction: column; text-align: center; gap: 20px; padding: 30px; }
+        .container-fluid { padding: 80px 5%; }
     }
 </style>
 
-<main class="home-shell">
-    <section class="hero">
-        <div class="hero-video">
-            <video autoplay muted loop playsinline>
-                <source src="images/hero.mp4" type="video/mp4">
-            </video>
-        </div>
-        <div class="hero-layer"></div>
-
-        <div class="hero-copy reveal">
-            <span class="hero-kicker">
-                <i class="fa-solid fa-bolt"></i>
-                G H Raisoni Alumni Network
-            </span>
-            <h1>Meet alumni. Build <span class="accent">real opportunities</span>. Move faster together.</h1>
-            <p>
-                AlumniX brings mentors, hiring partners, founders, and ambitious grads into one focused community.
-                Discover events, crack referrals, and grow with people who already know the path.
-            </p>
-            <div class="hero-actions">
-                <a href="registration.php" class="btn-main">Join The Network</a>
-                <a href="events.php" class="btn-soft">See Upcoming Events</a>
-            </div>
-        </div>
-
-        <aside class="hero-panel reveal">
-            <h3>Network Pulse</h3>
-            <ul class="hero-list">
-                <li>
-                    <span>Active Alumni</span>
-                    <strong><?= number_format($alumniCount) ?>+</strong>
-                </li>
-                <li>
-                    <span>Upcoming Events</span>
-                    <strong><?= number_format($eventCount) ?></strong>
-                </li>
-                <li>
-                    <span>Open Jobs</span>
-                    <strong><?= number_format($jobCount) ?></strong>
-                </li>
-            </ul>
-            <p class="hero-note">
-                Use this network as your unfair advantage: mentorship, events, and opportunities curated for alumni.
-            </p>
-        </aside>
-    </section>
-
-    <div class="section-wrap">
-        <section class="section reveal">
-            <div class="stats-grid">
-                <article class="stat-card">
-                    <strong><?= number_format($alumniCount) ?>+</strong>
-                    <span>Verified Alumni Profiles</span>
-                </article>
-                <article class="stat-card">
-                    <strong><?= number_format($eventCount) ?></strong>
-                    <span>Community Events Planned</span>
-                </article>
-                <article class="stat-card">
-                    <strong><?= number_format($jobCount) ?></strong>
-                    <span>Approved Job Listings</span>
-                </article>
-                <article class="stat-card">
-                    <strong>24x7</strong>
-                    <span>Access To Network Resources</span>
-                </article>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head reveal">
-                <div>
-                    <span class="section-kicker">Featured Alumni</span>
-                    <h2 class="section-title">People You Can Learn From Right Now</h2>
-                    <p class="section-copy">
-                        Find seniors across tech, product, business, and leadership. Reach out, learn fast, and build
-                        genuine connections.
-                    </p>
-                </div>
-                <a href="alumni.php" class="section-link">View Directory</a>
-            </div>
-
-            <div class="alumni-track reveal">
-                <?php if ($latestAlumni && $latestAlumni->num_rows > 0): ?>
-                    <?php while ($alumni = $latestAlumni->fetch_assoc()): ?>
-                        <?php
-                        $name = homeEsc($alumni["name"] ?? "Alumni");
-                        $company = homeEsc($alumni["company"] ?? "Independent");
-                        $course = homeEsc($alumni["course"] ?? "Community Member");
-                        $avatar = "";
-                        if (!empty($alumni["image"])) {
-                            $raw = (string) $alumni["image"];
-                            $localPath = __DIR__ . "/uploads/profiles/" . $raw;
-                            if (file_exists($localPath)) {
-                                $avatar = "uploads/profiles/" . rawurlencode($raw);
-                            }
-                        }
-                        if ($avatar === "") {
-                            $avatar = "https://ui-avatars.com/api/?name=" . urlencode((string) $alumni["name"]) . "&background=1f2937&color=fff&size=160";
-                        }
-                        ?>
-                        <article class="alumni-card">
-                            <div class="alumni-top">
-                                <img class="alumni-avatar" src="<?= homeEsc($avatar) ?>" alt="<?= $name ?>">
-                                <div>
-                                    <h4><?= $name ?></h4>
-                                    <p><?= $company ?></p>
-                                </div>
-                            </div>
-                            <span class="alumni-badge"><?= $course ?></span>
-                        </article>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <div class="empty-state">No alumni profiles available yet.</div>
-                <?php endif; ?>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head reveal">
-                <div>
-                    <span class="section-kicker">Upcoming Events</span>
-                    <h2 class="section-title">Meetups, Summits, and Career Rooms</h2>
-                    <p class="section-copy">
-                        Join discussions with peers and industry leaders. Attend the next event and turn connections
-                        into momentum.
-                    </p>
-                </div>
-                <a href="events.php" class="section-link">Explore Events</a>
-            </div>
-
-            <div class="event-grid reveal">
-                <?php if ($upcomingEvents && $upcomingEvents->num_rows > 0): ?>
-                    <?php while ($event = $upcomingEvents->fetch_assoc()): ?>
-                        <?php
-                        $eventTitle = homeEsc($event["title"] ?? "Community Event");
-                        $eventLocation = homeEsc($event["location"] ?: "Campus Venue");
-                        $eventDateRaw = $event["event_date"] ?? "";
-                        $eventDate = $eventDateRaw ? date("d M Y", strtotime((string) $eventDateRaw)) : "Date TBA";
-                        $eventImage = "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200&auto=format&fit=crop";
-                        if (!empty($event["image"])) {
-                            $raw = (string) $event["image"];
-                            $localPath = __DIR__ . "/uploads/events/" . $raw;
-                            if (file_exists($localPath)) {
-                                $eventImage = "uploads/events/" . rawurlencode($raw);
-                            }
-                        }
-                        ?>
-                        <article class="event-card">
-                            <img src="<?= homeEsc($eventImage) ?>" alt="<?= $eventTitle ?>">
-                            <div class="event-overlay"></div>
-                            <div class="event-content">
-                                <span class="event-date"><i class="fa-regular fa-calendar"></i> <?= homeEsc($eventDate) ?></span>
-                                <h4><?= $eventTitle ?></h4>
-                                <p><i class="fa-solid fa-location-dot"></i> <?= $eventLocation ?></p>
-                            </div>
-                        </article>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <div class="empty-state">No events scheduled right now. Check back soon.</div>
-                <?php endif; ?>
-            </div>
-        </section>
-
-        <section class="section">
-            <div class="section-head reveal">
-                <div>
-                    <span class="section-kicker">Career Board</span>
-                    <h2 class="section-title">Latest Roles Shared By The Community</h2>
-                    <p class="section-copy">
-                        Alumni-posted openings from trusted companies. Use this board for faster hiring loops and
-                        stronger referrals.
-                    </p>
-                </div>
-                <a href="jobs.php" class="section-link">Open Jobs</a>
-            </div>
-
-            <div class="job-stack reveal">
-                <?php if ($recentJobs && $recentJobs->num_rows > 0): ?>
-                    <?php while ($job = $recentJobs->fetch_assoc()): ?>
-                        <?php
-                        $jobTitle = homeEsc($job["title"] ?? "Untitled Role");
-                        $jobCompany = homeEsc($job["company"] ?? "Unknown Company");
-                        $jobLocation = homeEsc($job["location"] ?: "Remote");
-                        $rawDesc = trim((string) ($job["description"] ?? ""));
-                        if ($rawDesc === "") {
-                            $rawDesc = "Role details are available on the job board.";
-                        }
-                        if (strlen($rawDesc) > 170) {
-                            $rawDesc = substr($rawDesc, 0, 167) . "...";
-                        }
-                        $jobDesc = homeEsc($rawDesc);
-                        ?>
-                        <article class="job-card">
-                            <div class="job-main">
-                                <h4><?= $jobTitle ?></h4>
-                                <p class="job-meta"><?= $jobCompany ?> . <?= $jobLocation ?></p>
-                                <p class="job-desc"><?= $jobDesc ?></p>
-                            </div>
-                            <a class="job-link" href="jobs.php">Apply Now</a>
-                        </article>
-                    <?php endwhile; ?>
-                <?php else: ?>
-                    <div class="empty-state">No active openings yet. New roles will appear here.</div>
-                <?php endif; ?>
-            </div>
-        </section>
+<section class="hero-section">
+    <div class="hero-video-wrap">
+        <video autoplay muted loop playsinline>
+            <source src="images/hero.mp4" type="video/mp4">
+        </video>
     </div>
-</main>
+    <div class="hero-content">
+        <span class="reveal" style="color: var(--primary); letter-spacing: 4px; font-weight: 800; text-transform: uppercase; font-size: 14px;">The Official Alumni Network</span>
+        <h1 id="mainTitle">Nexus <span>Elite</span></h1>
+        <p class="reveal" style="font-size: 18px; color: var(--text-gray); margin-bottom: 30px;">Where legacy meets opportunity. Connect with the legends of G H Raisoni.</p>
+        <div class="reveal">
+            <a href="registration.php" class="btn-neon">JOIN THE ELITE</a>
+        </div>
+    </div>
+</section>
+
+<section class="container-fluid">
+    <div class="sexy-bg-glow" style="top: 10%; left: -10%;"></div>
+    <div class="section-label reveal">
+        <div class="label-line"></div>
+        <h2 class="section-title">Hall of <span style="color: var(--primary);">Fame</span></h2>
+    </div>
+    
+    <div class="horizontal-scroll-container">
+        <?php
+        $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 8");
+        while ($row = $res->fetch_assoc()) { ?>
+            <div class="premium-alumni-card reveal">
+                <img src="https://ui-avatars.com/api/?name=<?= urlencode($row['name']) ?>&background=ff3b3b&color=fff&size=200&bold=true" class="alumni-avatar">
+                <h3 style="font-size: 24px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px;"><?= $row['name'] ?></h3>
+                <p style="color: var(--primary); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px;"><?= $row['company'] ?></p>
+                <p style="color: var(--text-gray); font-size: 14px; margin-top: 20px; line-height: 1.6; font-weight: 500;">Transforming the industry through visionary leadership and innovation.</p>
+            </div>
+        <?php } ?>
+    </div>
+</section>
+
+<section class="container-fluid" style="background: rgba(255,255,255,0.01);">
+    <div class="sexy-bg-glow" style="bottom: 10%; right: -10%;"></div>
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <div class="section-label reveal">
+                <div class="label-line"></div>
+                <h2 class="section-title">Upcoming <span style="color: var(--primary);">Summits</span></h2>
+            </div>
+            <div class="bento-grid">
+                <?php
+                $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 3");
+                $count = 0;
+                while ($row = $res->fetch_assoc()) { 
+                    $count++;
+                    $isLarge = ($count == 1) ? 'large' : '';
+                ?>
+                    <div class="bento-item <?= $isLarge ?> reveal">
+                        <div class="event-date-badge"><?= date('d M', strtotime($row['event_date'])) ?></div>
+                        <img src="https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=800" class="event-img">
+                        <div class="event-overlay"></div>
+                        <div style="position: relative; z-index: 5;">
+                            <h3 style="font-size: clamp(22px, 3vw, 32px); font-weight: 800; margin: 0 0 15px; line-height: 1.1;"><?= $row['title'] ?></h3>
+                            <p style="opacity: 0.8; font-size: 14px; font-weight: 600; color: #ddd; display: flex; align-items: center; gap: 8px;">
+                                <i class="fas fa-map-marker-alt" style="color: var(--primary);"></i> <?= $row['location'] ?>
+                            </p>
+                        </div>
+                    </div>
+                <?php } ?>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="section-label reveal">
+                <div class="label-line"></div>
+                <h2 class="section-title">Latest <span style="color: var(--primary);">Feed</span></h2>
+            </div>
+            <div class="feed-container">
+                <div class="post-card reveal">
+                    <div class="post-header">
+                        <img src="https://i.pravatar.cc/100?img=12" class="post-user-img">
+                        <div>
+                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Rahul Sharma</h4>
+                            <small style="color: var(--primary); font-weight: 700;">2 hours ago</small>
+                        </div>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Just joined as a Senior Dev at Google! Grateful for the Raisoni network. 🚀</p>
+                </div>
+                
+                <div class="post-card reveal">
+                    <div class="post-header">
+                        <img src="https://i.pravatar.cc/100?img=5" class="post-user-img">
+                        <div>
+                            <h4 style="font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.3px;">Priya Verma</h4>
+                            <small style="color: var(--primary); font-weight: 700;">Yesterday</small>
+                        </div>
+                    </div>
+                    <p style="font-size: 15px; color: var(--text-gray); line-height: 1.6; font-weight: 500;">Anyone attending the Tech Summit next month? Let's connect!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container-fluid">
+    <div class="section-label reveal">
+        <div class="label-line"></div>
+        <h2 class="section-title">Career <span style="color: var(--primary);">Board</span></h2>
+    </div>
+    
+    <div class="job-list">
+        <?php
+        $res = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 5");
+        while ($row = $res->fetch_assoc()) { ?>
+            <div class="job-strip reveal">
+                <div style="display: flex; align-items: center; gap: 30px; flex: 1;">
+                    <div class="job-icon-box">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div>
+                        <h3 style="font-weight: 800; font-size: 24px; margin: 0; letter-spacing: -0.5px;"><?= $row['title'] ?></h3>
+                        <p style="color: var(--text-gray); font-size: 16px; margin: 5px 0 0; font-weight: 600;">
+                            <?= $row['company'] ?> <span style="opacity: 0.3; margin: 0 10px;">|</span> <?= $row['location'] ?: 'Remote' ?>
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 40px;">
+                    <span style="font-weight: 700; font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="far fa-clock" style="margin-right: 8px; color: var(--primary);"></i> Full-time
+                    </span>
+                    <a href="jobs.php" class="job-btn">APPLY NOW</a>
+                </div>
+            </div>
+        <?php } ?>
+    </div>
+</section>
 
 <script>
-    (function () {
-        const reveals = document.querySelectorAll(".reveal");
-        const showAll = () => {
-            reveals.forEach((node) => {
-                node.style.opacity = "1";
-                node.style.transform = "translateY(0)";
-            });
-        };
+    gsap.registerPlugin(ScrollTrigger);
 
-        if (!window.gsap || !window.ScrollTrigger) {
-            showAll();
-            return;
-        }
-
-        const gsap = window.gsap;
-        gsap.registerPlugin(window.ScrollTrigger);
-
-        gsap.from(".hero-copy", {
-            y: 32,
-            opacity: 0,
-            duration: 0.9,
-            ease: "power3.out"
+    // Hero Animations (Same as before)
+    gsap.from("#mainTitle", { duration: 1.5, y: 100, opacity: 0, ease: "power4.out" });
+    
+    // Sexy Smooth Reveal for all items
+    const revealItems = document.querySelectorAll('.reveal');
+    revealItems.forEach((el) => {
+        gsap.to(el, {
+            scrollTrigger: {
+                trigger: el,
+                start: "top 90%",
+                toggleActions: "play none none none"
+            },
+            opacity: 1,
+            y: 0,
+            duration: 1.2,
+            ease: "power4.out" // Smoother ease
         });
+    });
 
-        gsap.from(".hero-panel", {
-            y: 36,
-            opacity: 0,
-            duration: 1.05,
-            delay: 0.15,
-            ease: "power3.out"
-        });
-
-        reveals.forEach((node, index) => {
-            gsap.to(node, {
-                opacity: 1,
-                y: 0,
-                duration: 0.85,
-                ease: "power2.out",
-                delay: index % 4 === 0 ? 0 : 0.05,
-                scrollTrigger: {
-                    trigger: node,
-                    start: "top 88%",
-                    once: true
-                }
-            });
-        });
-    })();
+    // Premium Momentum Scroll for Alumni cards
+    gsap.to(".horizontal-scroll-container", {
+        scrollTrigger: {
+            trigger: ".horizontal-scroll-container",
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 1.5
+        },
+        xPercent: -10,
+        ease: "none"
+    });
 </script>
 
-<?php include(__DIR__ . "/includes/footer.php"); ?>
+<?php include("includes/footer.php"); ?>
