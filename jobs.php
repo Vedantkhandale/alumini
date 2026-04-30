@@ -10,45 +10,50 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 
 <style>
+    /* 🔴 LUXURY RED-BLACK-WHITE THEME */
     :root {
         --primary: #ff3b3b;
-        --bg-dark: #050505;
-        --card-bg: rgba(255, 255, 255, 0.03);
-        --border: rgba(255, 255, 255, 0.08);
+        --primary-glow: rgba(255, 59, 59, 0.3);
+        --bg-dark: #0a0a0a; /* Rich Charcoal */
+        --card-bg: rgba(255, 255, 255, 0.04);
+        --border: rgba(255, 255, 255, 0.12);
+        --text-main: #ffffff;
+        --text-dim: #a1a1aa;
     }
 
-    /* 🌑 FULL PAGE SETUP */
+    /* 🌑 FULL PAGE SETUP - NO WHITE GAP */
+    html, body { background-color: var(--bg-dark); margin: 0; padding: 0; }
+
     .public-shell {
         background: var(--bg-dark);
-        min-height: 100vh;
-        padding: 160px 8% 0px; /* Space adjusted for footer */
-        color: #fff;
+        min-height: auto; /* Fix: No extra stretching */
+        padding: 140px 8% 40px; 
+        color: var(--text-main);
         position: relative;
         overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* 🎭 MESH BACKGROUND (Events Page Matching) */
     .mesh-bg {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
-        background: radial-gradient(circle at 10% 20%, rgba(255, 59, 59, 0.08) 0%, transparent 50%),
-                    radial-gradient(circle at 90% 80%, rgba(255, 59, 59, 0.08) 0%, transparent 50%);
+        background: radial-gradient(circle at 15% 15%, rgba(255, 59, 59, 0.07) 0%, transparent 40%),
+                    radial-gradient(circle at 85% 85%, rgba(255, 59, 59, 0.05) 0%, transparent 40%);
         z-index: 0;
         pointer-events: none;
     }
 
-    /* 🔥 HEADER SYNCED WITH EVENTS */
     .subpage-hero {
         text-align: center;
-        margin-bottom: 100px;
+        margin-bottom: 70px;
         z-index: 2;
-        position: relative;
     }
 
     .hero-tag {
         text-transform: uppercase;
-        letter-spacing: 5px;
-        font-size: 12px;
+        letter-spacing: 4px;
+        font-size: 11px;
         color: var(--primary);
         font-weight: 800;
         margin-bottom: 15px;
@@ -56,134 +61,139 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
     }
 
     .subpage-title {
-        font-size: clamp(45px, 10vw, 100px);
+        font-size: clamp(40px, 8vw, 85px);
         font-weight: 950;
-        line-height: 0.8;
-        letter-spacing: -6px;
+        line-height: 0.9;
+        letter-spacing: -3px;
         text-transform: uppercase;
     }
 
     .subpage-title span {
         display: block;
         color: transparent;
-        -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.2);
+        -webkit-text-stroke: 1.2px rgba(255, 255, 255, 0.25);
     }
 
-    /* 💎 BENTO GRID SYNC */
+    /* 💎 3-COLUMN GRID SYNC */
     .subpage-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-        gap: 40px;
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 30px;
         position: relative;
         z-index: 2;
-        margin-bottom: 60px; /* Space between last card and footer */
+        margin-bottom: 40px;
     }
 
-    /* 💼 JOB CARD - SEXY DARK VIBE */
+    /* 💼 JOB CARD - SEXY PREMIUM VIBE */
     .job-card {
         background: var(--card-bg);
         border: 1px solid var(--border);
-        border-radius: 50px;
-        padding: 20px;
-        backdrop-filter: blur(20px);
-        transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+        border-radius: 30px;
+        padding: 16px;
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
         display: flex;
         flex-direction: column;
     }
 
     .job-card:hover {
-        transform: translateY(-15px) scale(1.02);
+        transform: translateY(-12px);
         border-color: var(--primary);
-        box-shadow: 0 30px 60px rgba(255, 59, 59, 0.15);
+        background: rgba(255, 255, 255, 0.07);
+        box-shadow: 0 30px 60px -15px rgba(0,0,0,0.6), 0 0 15px var(--primary-glow);
     }
 
     .card-banner {
         width: 100%;
-        height: 280px;
-        border-radius: 40px;
+        height: 240px;
+        border-radius: 22px;
         overflow: hidden;
         position: relative;
-        background: #111;
+        background: #000;
     }
 
     .card-banner img {
         width: 100%; height: 100%;
         object-fit: cover;
-        filter: grayscale(100%);
-        opacity: 0.5;
-        transition: 0.8s;
+        filter: grayscale(100%) brightness(0.7);
+        transition: 0.8s ease;
     }
 
     .job-card:hover .card-banner img {
-        filter: grayscale(0%);
-        opacity: 0.8;
-        transform: scale(1.1);
+        filter: grayscale(0%) brightness(1);
+        transform: scale(1.08);
     }
 
     .floating-badge {
         position: absolute;
-        bottom: 25px;
-        right: 25px;
-        background: var(--primary);
-        color: #fff;
-        padding: 12px 22px;
-        border-radius: 20px;
+        top: 20px;
+        right: 20px;
+        background: #fff;
+        color: #000;
+        padding: 8px 16px;
+        border-radius: 14px;
         font-weight: 900;
-        box-shadow: 0 10px 30px rgba(255, 59, 59, 0.4);
+        font-size: 11px;
         z-index: 3;
-        font-size: 13px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
     }
 
-    /* CARD CONTENT */
     .card-content {
-        padding: 25px 15px 10px;
+        padding: 22px 10px 5px;
     }
 
     .card-title {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: 800;
-        margin-bottom: 12px;
-        letter-spacing: -1px;
+        margin-bottom: 18px;
+        letter-spacing: -0.5px;
         color: #fff;
+        min-height: 58px; /* Keeps layout consistent */
+        line-height: 1.2;
     }
 
     .meta-row {
         display: flex;
-        gap: 12px;
+        gap: 10px;
         margin-bottom: 20px;
     }
 
     .chip {
-        padding: 8px 15px;
+        padding: 6px 12px;
         background: rgba(255, 255, 255, 0.05);
-        color: #94a3b8;
-        border-radius: 15px;
-        font-size: 11px;
+        color: var(--text-dim);
+        border-radius: 12px;
+        font-size: 10px;
         font-weight: 700;
         border: 1px solid var(--border);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
     .chip i { color: var(--primary); margin-right: 5px; }
 
     .job-desc {
         font-size: 14px;
-        color: #888;
+        color: var(--text-dim);
         line-height: 1.6;
         margin-bottom: 25px;
+        height: 65px; /* Alignment for text */
+        overflow: hidden;
     }
 
-    /* 🔘 APPLY BUTTON SYNC */
+    /* 🔘 APPLY BUTTON - CLEAN WHITE CONTRAST */
     .btn-apply {
         display: block;
-        padding: 18px;
+        padding: 15px;
         background: #fff;
         color: #000;
         text-decoration: none;
-        border-radius: 25px;
-        font-weight: 900;
-        font-size: 13px;
+        border-radius: 18px;
+        font-weight: 800;
+        font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 2px;
+        letter-spacing: 1.5px;
         transition: 0.4s;
         text-align: center;
     }
@@ -191,16 +201,20 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
     .btn-apply:hover {
         background: var(--primary);
         color: #fff;
-        box-shadow: 0 0 30px rgba(255, 59, 59, 0.5);
+        box-shadow: 0 10px 25px var(--primary-glow);
     }
 
-    /* FOOTER FIX */
-    footer { margin-top: 0 !important; }
+    /* 🛑 FOOTER FIX */
+    footer { margin-top: 0 !important; border-top: 1px solid var(--border); }
+
+    @media(max-width:1100px){
+        .subpage-grid { grid-template-columns: repeat(2, 1fr); }
+    }
 
     @media(max-width:768px){
         .subpage-grid { grid-template-columns: 1fr; }
-        .subpage-title { font-size: 55px; }
-        .public-shell { padding: 120px 5% 0px; }
+        .subpage-title { font-size: 50px; }
+        .public-shell { padding: 100px 6% 30px; }
     }
 </style>
 
@@ -233,46 +247,33 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
                         
                         <div class="meta-row">
                             <div class="chip"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($job["location"] ?: "Remote") ?></div>
-                            <div class="chip"><i class="fas fa-clock"></i> Full-Time</div>
+                            <div class="chip"><i class="fas fa-briefcase"></i> Full-Time</div>
                         </div>
 
                         <p class="job-desc">
-                            <?= substr(htmlspecialchars($job["description"]), 0, 110) ?>...
+                            <?= substr(htmlspecialchars($job["description"]), 0, 100) ?>...
                         </p>
 
                         <a href="<?= htmlspecialchars($jobLink) ?>" class="btn-apply">
-                            View Position <i class="fas fa-arrow-right"></i>
+                            View Position <i class="fas fa-arrow-right" style="margin-left:5px;"></i>
                         </a>
                     </div>
                 </article>
             <?php endforeach; ?>
         <?php else: ?>
-            <div style="grid-column: 1/-1; text-align: center; padding: 100px; z-index: 10; position: relative;">
-                <h2 style="color: #444; letter-spacing: 2px;">NO OPEN POSITIONS</h2>
-                <p style="color: #666;">Our network is currently full. Check back soon!</p>
+            <div style="grid-column: 1/-1; text-align: center; padding: 100px; z-index: 10;">
+                <h2 style="color: var(--text-dim); letter-spacing: 2px;">NO OPEN POSITIONS</h2>
+                <p style="color: #444;">Check back soon for new opportunities.</p>
             </div>
         <?php endif; ?>
     </div>
 </div>
 
 <script>
-    // GSAP Sync Animation
-    gsap.set(".reveal", { opacity: 0, y: 50 });
-
+    gsap.set(".reveal", { opacity: 0, y: 30 });
     window.onload = () => {
         gsap.to(".reveal", {
-            y: 0,
-            opacity: 1,
-            duration: 1,
-            stagger: 0.15,
-            ease: "power4.out"
-        });
-
-        gsap.from(".subpage-title", {
-            scale: 0.9,
-            opacity: 0,
-            duration: 1.2,
-            ease: "expo.out"
+            y: 0, opacity: 1, duration: 1.2, stagger: 0.1, ease: "power4.out"
         });
     };
 </script>
