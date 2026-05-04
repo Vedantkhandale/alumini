@@ -3,111 +3,147 @@ session_start();
 include("includes/db.php");
 $message = "";
 
-// Logic: Sirf tabhi naya captcha banao jab page pehli baar load ho ya submit ho chuka ho
-if (!isset($_SESSION['captcha_ans']) || isset($_POST['reset_request'])) {
-    // Purana answer delete karo submit ke pehle ya baad
-    $num1 = rand(1, 10);
-    $num2 = rand(1, 10);
-    $new_ans = $num1 + $num2;
-    $new_text = "$num1 + $num2";
-}
-
-if(isset($_POST['reset_request'])){
+// 1. Pehle Check karo agar form submit hua hai (Validation First)
+if(isset($_POST['get_code'])){
     $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $user_captcha = intval($_POST['captcha']); // Number me convert karo
-    $correct_ans = intval($_SESSION['captcha_ans']);
+    $user_captcha = intval($_POST['captcha']);
+    
+    // Session se wahi answer uthao jo screen par dikh raha tha
+    $correct_ans = isset($_SESSION['captcha_ans']) ? intval($_SESSION['captcha_ans']) : 0;
 
-    // Captcha Matching
     if($user_captcha !== $correct_ans){
-        $message = "<div style='color: #ef4444; background: #fef2f2; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 13px; border: 1px solid #fee2e2;'>❌ Wrong Captcha! Try again.</div>";
+        $message = "❌ Wrong Captcha! Try again.";
     } else {
-        // Email database check
         $check = $conn->query("SELECT * FROM users WHERE email='$email'");
-        
         if($check->num_rows > 0){
-            $message = "<div style='color: #10b981; background: #f0fdf4; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 13px; border: 1px solid #dcfce7;'>✅ Success! Reset link sent to $email</div>";
+            $reset_code = rand(100000, 999999);
+            $_SESSION['reset_email'] = $email;
+            $_SESSION['reset_token'] = $reset_code;
+            
+            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
+            echo "<script>
+                setTimeout(function() {
+                    Swal.fire({
+                        title: 'Verification Code',
+                        html: 'Copy this code to reset:<br><b style=\"font-size:40px; color:#ff4d4d; letter-spacing:3px;\">$reset_code</b>',
+                        icon: 'success',
+                        background: '#ffffff',
+                        confirmButtonColor: '#1e293b',
+                        confirmButtonText: 'Proceed to Reset'
+                    }).then(() => { window.location.href = 'reset_password.php'; });
+                }, 100);
+            </script>";
         } else {
-            $message = "<div style='color: #ef4444; background: #fef2f2; padding: 10px; border-radius: 5px; margin-bottom: 20px; font-size: 13px; border: 1px solid #fee2e2;'>⚠️ Email not found in our records!</div>";
+            $message = "⚠️ Email not registered!";
         }
     }
-    
-    // Har submit ke baad session update karo taaki naya captcha dikhe
-    $_SESSION['captcha_ans'] = $new_ans;
-    $_SESSION['captcha_text'] = $new_text;
-} else {
-    // First time load pe session set karo agar nahi hai
-    if(!isset($_SESSION['captcha_ans'])) {
-        $_SESSION['captcha_ans'] = $num1 + $num2;
-        $_SESSION['captcha_text'] = "$num1 + $num2";
-    }
 }
+
+// 2. Naya Captcha sirf tab generate hoga jab submit ho chuka ho ya pehli baar load ho
+$num1 = rand(10, 30);
+$num2 = rand(1, 9);
+$_SESSION['captcha_ans'] = $num1 + $num2;
+$_SESSION['captcha_text'] = "$num1 + $num2";
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Reset Password | AlumniX</title>
-    <link rel="stylesheet" href="assets/login.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forgot Password | AlumniX</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .container { display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8fafc; }
-        .wrapper { width: 100%; max-width: 400px; padding: 20px; }
-        .captcha-box {
-            background: #f1f5f9;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            color: #1e293b;
-            margin: 10px 0;
-            border: 1px dashed #cbd5e1;
-            font-size: 18px;
-            letter-spacing: 2px;
+        :root { --primary: #ff4d4d; --dark: #1e293b; --bg: #f8fafc; }
+        
+        body { 
+            background: var(--bg); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            display: flex; justify-content: center; align-items: center; 
+            height: 100vh; margin: 0; 
+            overflow: hidden;
         }
-        .form-control-alumnix {
-            width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ddd; border-radius: 8px;
+
+        /* Sexy Glassmorphism Card */
+        .card { 
+            width: 100%; max-width: 360px; 
+            background: #ffffff; padding: 40px 30px; 
+            border-radius: 30px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06); 
+            border: 1px solid rgba(255,255,255,0.8);
+            text-align: center;
+            position: relative;
         }
+
+        h2 { font-size: 26px; font-weight: 800; color: var(--dark); margin-bottom: 8px; letter-spacing: -1px; }
+        h2 span { color: var(--primary); }
+        p.desc { color: #94a3b8; font-size: 13px; margin-bottom: 30px; }
+
+        .input-group { text-align: left; margin-bottom: 20px; }
+        .label { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; display: block; }
+
+        .input-field { 
+            width: 100%; padding: 14px 18px; border: 1.5px solid #f1f5f9; 
+            border-radius: 15px; font-size: 14px; outline: none; 
+            transition: 0.3s; box-sizing: border-box; background: #fdfdfe;
+        }
+        .input-field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(255, 77, 77, 0.05); }
+
+        /* Stylish Captcha Box */
+        .captcha-wrapper {
+            background: #fff5f5; border: 2px dashed #ffcaca; padding: 15px;
+            border-radius: 18px; margin: 10px 0 20px 0;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .captcha-text { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: 2px; }
+        
+        .btn { 
+            width: 100%; padding: 16px; background: var(--dark); color: #fff; 
+            border: none; border-radius: 15px; font-weight: 700; 
+            font-size: 14px; cursor: pointer; transition: 0.3s; 
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:hover { background: var(--primary); transform: translateY(-3px); box-shadow: 0 10px 20px rgba(255, 77, 77, 0.2); }
+
+        .error-msg { 
+            background: #fff1f2; color: #e11d48; padding: 12px; 
+            border-radius: 12px; font-size: 12px; font-weight: 600; 
+            margin-bottom: 20px; border: 1px solid #ffe4e6;
+        }
+
+        .back-link { margin-top: 25px; display: block; color: #94a3b8; font-size: 12px; text-decoration: none; font-weight: 600; }
+        .back-link:hover { color: var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="wrapper">
-        <div class="alumnix-card" style="padding: 40px; background: #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #eee;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="font-size: 28px; font-weight: 800; color: #1e293b; margin: 0;">Trouble <span style="color: #ff4d4d;">Logging In?</span></h1>
-                <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Verify your identity to proceed.</p>
-            </div>
+<div class="card">
+    <h2>Forgot <span>Access?</span></h2>
+    <p class="desc">Verify your identity to get the reset code.</p>
 
-            <?php echo $message; ?>
+    <?php if($message): ?>
+        <div class="error-msg"><?php echo $message; ?></div>
+    <?php endif; ?>
 
-            <form method="POST">
-                <div style="margin-bottom: 20px;">
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Email Address</label>
-                    <input type="email" name="email" class="form-control-alumnix" placeholder="Enter registered email" required>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <label style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">Security Check</label>
-                    <div class="captcha-box">
-                        <?php echo $_SESSION['captcha_text']; ?> = ?
-                    </div>
-                    <input type="number" name="captcha" class="form-control-alumnix" placeholder="Enter result" required>
-                </div>
-
-                <button type="submit" name="reset_request" class="btn-alumnix" style="width: 100%; padding: 14px; background: #ff4d4d; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; text-transform: uppercase;">
-                    Send Reset Link
-                </button>
-            </form>
-
-            <div style="text-align: center; margin-top: 25px;">
-                <a href="login.php" style="color: #64748b; font-size: 12px; text-decoration: none; font-weight: 600;">← Back to Login</a>
-            </div>
+    <form method="POST" autocomplete="off">
+        <div class="input-group">
+            <label class="label">Email Address</label>
+            <input type="email" name="email" class="input-field" placeholder="name@example.com" required>
         </div>
-    </div>
+
+        <div class="input-group">
+            <label class="label">Security Challenge</label>
+            <div class="captcha-wrapper">
+                <span style="font-size: 10px; color: #ff9494; font-weight: 700; margin-bottom: 5px;">SOLVE THIS MATH</span>
+                <div class="captcha-text"><?php echo $_SESSION['captcha_text']; ?></div>
+            </div>
+            <input type="number" name="captcha" class="input-field" placeholder="Enter result" required>
+        </div>
+
+        <button type="submit" name="get_code" class="btn">Get Verification Code</button>
+    </form>
+
+    <a href="login.php" class="back-link">← Back to Login</a>
 </div>
 
 </body>

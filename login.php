@@ -8,30 +8,40 @@ $redirect_url = "";
 
 if(isset($_POST['login'])){
     $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $pass = mysqli_real_escape_string($conn, $_POST['password']);
+    $pass = $_POST['password']; // Plain password from form
 
-    // Login Logic
-    $result = $conn->query("SELECT * FROM users WHERE email='$email' AND password='$pass'");
+    // 1. Pehle user ko email se find karo
+    $result = $conn->query("SELECT * FROM users WHERE email='$email'");
 
     if($result->num_rows > 0){
         $user = $result->fetch_assoc();
-        $status = strtolower((string) ($user['status'] ?? 'approved'));
+        
+        // 2. Password Verify karo (Kyuki humne reset page pe password_hash use kiya hai)
+        if(password_verify($pass, $user['password'])){
+            
+            // 3. Status Check Karo
+            $status = strtolower(trim((string)($user['status'] ?? 'pending')));
 
-        if(in_array($status, ['pending', 'rejected', 'blocked'], true)){
-            $error = "Your account is not active yet. Please contact admin.";
-        } else {
-            $_SESSION['user'] = $user;
+            if($status === 'approved'){
+                // LOGIN SUCCESS
+                $_SESSION['user'] = $user;
 
-            if(($user['role'] ?? '') === 'admin'){
-                $_SESSION['admin'] = $user['full_name'] ?? $user['email'];
-                $redirect_url = "admin/admin_dashboard.php";
+                if(($user['role'] ?? '') === 'admin'){
+                    $_SESSION['admin'] = $user['full_name'] ?? $user['email'];
+                    $redirect_url = "admin/admin_dashboard.php";
+                } else {
+                    $redirect_url = "alumini/dashboard.php";
+                }
+                $success = true;
             } else {
-                $redirect_url = "alumini/dashboard.php";
+                // STATUS NOT APPROVED
+                $error = "🚫 Your account is $status. Please wait for Admin Approval.";
             }
-            $success = true;
+        } else {
+            $error = "❌ Incorrect password!";
         }
     } else {
-        $error = "Incorrect email or password!";
+        $error = "⚠️ Account not found with this email.";
     }
 }
 ?>
