@@ -1,5 +1,5 @@
-<?php 
-include('./includes/db.php'); 
+<?php
+include('./includes/db.php');
 require_once(__DIR__ . "/includes/public_helpers.php");
 
 $id = $_GET['id'] ?? 1;
@@ -8,13 +8,14 @@ $stmt->bind_param("i", $id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 
-if(!$user) die("User not found.");
+if (!$user) die("User not found.");
 
 // Profile Image logic
-$imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https://ui-avatars.com/api/?name=".urlencode($user['name'])."&background=111&color=fff&bold=true&size=800";
+$imgUrl = !empty($user['image']) ? "uploads/profiles/" . $user['image'] : "https://ui-avatars.com/api/?name=" . urlencode($user['name']) . "&background=111&color=fff&bold=true&size=800";
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -31,7 +32,8 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         }
 
         body {
-            margin: 0; padding: 0;
+            margin: 0;
+            padding: 0;
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: var(--bg-dark);
             color: #fff;
@@ -41,7 +43,10 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         /* 📸 BACKGROUND PROFILE IMAGE (BLURRED) */
         .bg-image-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: url('<?= $imgUrl ?>') center/cover no-repeat;
             filter: blur(80px) brightness(0.3);
             z-index: -1;
@@ -70,15 +75,16 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
             height: 100%;
             background: url('<?= $imgUrl ?>') center/cover no-repeat;
             border-radius: 40px;
-            box-shadow: 0 50px 100px rgba(0,0,0,0.8);
-            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
             z-index: 2;
         }
 
         .floating-label {
             position: absolute;
-            top: 40px; right: -30px;
+            top: 40px;
+            right: -30px;
             background: var(--primary);
             padding: 15px 30px;
             border-radius: 20px;
@@ -86,7 +92,7 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
             letter-spacing: 2px;
             transform: rotate(5deg);
             z-index: 3;
-            box-shadow: 0 20px 40px rgba(255,59,59,0.4);
+            box-shadow: 0 20px 40px rgba(255, 59, 59, 0.4);
         }
 
         /* 📝 TYPOGRAPHY & DETAILS */
@@ -115,26 +121,29 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
 
         .user-name span {
             color: transparent;
-            -webkit-text-stroke: 1.5px rgba(255,255,255,0.3);
+            -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.3);
         }
 
         .company-pill {
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             padding: 18px 30px;
             border-radius: 100px;
-            border: 1px solid rgba(255,255,255,0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             margin-bottom: 40px;
         }
 
         .pill-logo {
-            width: 40px; height: 40px;
+            width: 40px;
+            height: 40px;
             background: var(--primary);
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 900;
         }
 
@@ -145,15 +154,15 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         }
 
         .stat-card {
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.06);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
             padding: 30px;
             border-radius: 30px;
             transition: 0.4s;
         }
 
         .stat-card:hover {
-            background: rgba(255,255,255,0.07);
+            background: rgba(255, 255, 255, 0.07);
             border-color: var(--primary);
         }
 
@@ -195,12 +204,12 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         .btn-main:hover {
             background: var(--primary);
             color: #fff;
-            box-shadow: 0 15px 30px rgba(255,59,59,0.3);
+            box-shadow: 0 15px 30px rgba(255, 59, 59, 0.3);
             transform: translateY(-5px);
         }
 
         .btn-secondary {
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 22px 30px;
             border-radius: 20px;
             color: #fff;
@@ -208,22 +217,34 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
             transition: 0.3s;
         }
 
-        .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
 
         @media(max-width: 1100px) {
-            .profile-hero { grid-template-columns: 1fr; padding: 100px 5%; }
-            .image-container { height: 60vh; }
-            .user-name { font-size: 70px; }
+            .profile-hero {
+                grid-template-columns: 1fr;
+                padding: 100px 5%;
+            }
+
+            .image-container {
+                height: 60vh;
+            }
+
+            .user-name {
+                font-size: 70px;
+            }
         }
     </style>
-    
+
 </head>
+
 <body>
 
     <div class="bg-image-overlay"></div>
 
     <div class="profile-hero">
-        
+
         <div class="image-container">
             <div class="floating-label">ELITE MEMBER</div>
             <div class="main-frame"></div>
@@ -301,4 +322,5 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         });
     </script>
 </body>
+
 </html>
