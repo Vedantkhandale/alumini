@@ -27,7 +27,7 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
         :root {
             --primary: #ff3b3b;
             --accent: #ff7b7b;
-            --bg-dark: #000000;
+            --bg-dark: #f7ecec;
         }
 
         body {
@@ -216,6 +216,7 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/".$user['image'] : "https:/
             .user-name { font-size: 70px; }
         }
     </style>
+    
 </head>
 <body>
 
