@@ -131,7 +131,7 @@
         <div class="logo">Alumni<span>X</span></div>
         <a href="jobs.php" class="nav-item active"><i class="fas fa-th-large"></i> Overview</a>
         <a href="#" class="nav-item"><i class="fas fa-briefcase"></i> Jobs</a>
-        <a href="events.php" class="nav-item"><i class="fas fa-calendar"></i> Events</a>
+        <a href="jobs.php" class="nav-item"><i class="fas fa-calendar"></i> Events</a>
         <a href="logout.php" class="nav-item" style="margin-top: auto; color: #ff4d4d;"><i class="fas fa-power-off"></i> Logout</a>
     </aside>
 
@@ -215,8 +215,38 @@
 
     // Success Message from PHP
     <?php if(isset($_GET['msg']) && $_GET['msg'] == 'applied'): ?>
-        Swal.fire('Success!', 'Event ke liye register ho gaya bhai!', 'success');
+        Swal.fire('Success!', 'Succesful Apply For these Events!', 'success');
     <?php endif; ?>
+    function showModal() {
+    Swal.fire({
+        title: 'Post a New Job',
+        html: `
+            <input id="job-title" class="swal2-input" placeholder="Job Title (e.g. Web Developer)">
+            <input id="job-company" class="swal2-input" placeholder="Company Name">
+        `,
+        confirmButtonText: 'Post Now',
+        confirmButtonColor: '#e11d48',
+        showLoaderOnConfirm: true,
+        preConfirm: () => {
+            const title = document.getElementById('job-title').value;
+            const company = document.getElementById('job-company').value;
+            if (!title || !company) {
+                Swal.showValidationMessage('Fill Both Fields!');
+                return;
+            }
+            // AJAX call bina page reload kiye job post karne ke liye
+            return fetch('post_job_action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `title=${title}&company=${company}`
+            }).then(response => response.json());
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value.status === 'success') {
+            Swal.fire('Done!', 'Job post ho gayi hai!', 'success').then(() => location.reload());
+        }
+    });
+}
 </script>
 
 </body>

@@ -2,6 +2,7 @@
 require_once __DIR__ . "/helpers.php";
 adminOnly();
 
+// --- ⚡ ADMIN CORE ACTIONS ---
 if (isset($_GET["approve_user"])) {
     $id = (int) $_GET["approve_user"];
     $conn->query("UPDATE users SET status='approved' WHERE id='$id'");
@@ -9,13 +10,7 @@ if (isset($_GET["approve_user"])) {
     exit();
 }
 
-if (isset($_GET["delete_job"])) {
-    $id = (int) $_GET["delete_job"];
-    $conn->query("DELETE FROM jobs WHERE id='$id'");
-    header("Location: admin_dashboard.php?res=deleted");
-    exit();
-}
-
+// Stats Collection
 $stats = [
     "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
     "active_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
@@ -31,118 +26,216 @@ $recentJobs = adminRows($conn, "SELECT id, title, company, status FROM jobs ORDE
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | AlumniX</title>
+    <title>Console Pro | AlumniX Admin</title>
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
     <style>
-        :root { --bg: #f7f6f2; --surface: #ffffff; --ink: #142338; --muted: #657489; --accent: #ff6b57; --line: rgba(20, 35, 56, 0.08); --shadow: 0 18px 40px rgba(20, 35, 56, 0.08); }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: "Manrope", sans-serif; background: linear-gradient(180deg, #fff9f3 0%, var(--bg) 100%); color: var(--ink); min-height: 100vh; }
-        .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 40px; }
-        .topbar, .panel, .stat, .launch { background: rgba(255,255,255,0.88); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.86); box-shadow: var(--shadow); }
-        .topbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 20px 24px; border-radius: 28px; }
-        .title h1, .section-title, .launch h2 { font-family: "Space Grotesk", sans-serif; letter-spacing: -0.05em; }
-        .title h1 { font-size: 2rem; }
-        .title p { color: var(--muted); margin-top: 6px; }
-        .actions { display: flex; flex-wrap: wrap; gap: 10px; }
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 999px; font-weight: 800; text-decoration: none; }
-        .btn-primary { background: linear-gradient(135deg, var(--accent), #ff8d63); color: #fff; }
-        .btn-soft { background: #fff; color: var(--ink); border: 1px solid var(--line); }
-        .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-top: 18px; }
-        .stat { padding: 22px; border-radius: 24px; }
-        .stat span { color: var(--muted); font-size: 0.82rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; }
-        .stat strong { display: block; margin-top: 10px; font-family: "Space Grotesk", sans-serif; font-size: 2.3rem; }
-        .grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-top: 18px; }
-        .panel { padding: 24px; border-radius: 28px; }
-        .section-title { font-size: 1.55rem; }
-        .panel p { color: var(--muted); margin-top: 6px; }
-        .list { display: grid; gap: 14px; margin-top: 18px; }
-        .item { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 22px; background: #fff; border: 1px solid var(--line); }
-        .item strong { display: block; }
-        .item small { color: var(--muted); }
-        .pill { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: rgba(255, 107, 87, 0.12); color: var(--accent); font-size: 0.78rem; font-weight: 800; text-transform: uppercase; }
-        .launch { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; margin-top: 18px; padding: 24px; border-radius: 28px; }
-        .launch p { color: var(--muted); margin-top: 8px; }
-        @media (max-width: 980px) { .stats, .grid, .launch { grid-template-columns: 1fr 1fr; } .grid { grid-template-columns: 1fr; } .launch { grid-template-columns: 1fr; } }
-        @media (max-width: 640px) { .shell { width: min(100% - 18px, 1180px); } .topbar, .actions { flex-direction: column; align-items: stretch; } .stats { grid-template-columns: 1fr; } }
+        :root {
+            --primary: #ff3e3e;
+            --secondary: #0f172a;
+            --bg: #fafafa;
+            --white: #ffffff;
+            --border: rgba(15, 23, 42, 0.08);
+            --text-main: #1e293b;
+            --text-dim: #64748b;
+            --grad: linear-gradient(135deg, #ff3e3e, #ff8144);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background-color: var(--bg); color: var(--text-main); min-height: 100vh; overflow-x: hidden; }
+
+        /* --- 🛸 MODERN BACKGROUND --- */
+        .bg-mesh {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(255, 62, 62, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(15, 23, 42, 0.05) 0px, transparent 50%);
+        }
+
+        .shell { width: min(1280px, calc(100% - 40px)); margin: 0 auto; padding: 40px 0; }
+
+        /* --- 🏛️ GLASS HEADER --- */
+        header.top-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--white);
+            border-radius: 32px;
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.05);
+            margin-bottom: 30px;
+        }
+
+        h1 { font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; letter-spacing: -2px; }
+        h1 span { color: var(--primary); }
+        .header-meta p { color: var(--text-dim); font-size: 0.95rem; font-weight: 500; }
+
+        /* --- ⚡ QUICK ACTIONS --- */
+        .btn {
+            padding: 12px 24px; border-radius: 16px; font-weight: 800; font-size: 0.85rem;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-main { background: var(--secondary); color: var(--white); }
+        .btn-main:hover { transform: translateY(-5px); background: var(--primary); box-shadow: 0 10px 20px rgba(255, 62, 62, 0.2); }
+        .btn-outline { background: var(--white); color: var(--secondary); border: 1px solid var(--border); }
+        .btn-outline:hover { background: #f8fafc; border-color: var(--secondary); }
+
+        /* --- 📈 STATS BENTO --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card {
+            background: var(--white); border-radius: 28px; padding: 30px;
+            border: 1px solid var(--border); transition: 0.3s;
+        }
+        .stat-card:hover { border-color: var(--primary); transform: translateY(-3px); }
+        .stat-card label { font-size: 0.75rem; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card .val { display: block; font-size: 2.5rem; font-weight: 800; margin-top: 5px; font-family: 'Space Grotesk', sans-serif; }
+
+        /* --- 📑 MAIN CONTENT GRID --- */
+        .content-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 30px; }
+        .panel {
+            background: var(--white); border-radius: 35px; padding: 35px;
+            border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .panel-header h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.6rem; letter-spacing: -1px; }
+
+        /* --- 📝 LIST ITEMS --- */
+        .data-list { display: flex; flex-direction: column; gap: 15px; }
+        .data-item {
+            padding: 20px; border-radius: 24px; background: #fcfcfd;
+            border: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;
+            transition: 0.3s;
+        }
+        .data-item:hover { background: #fff; border-color: var(--primary); transform: scale(1.02); }
+        
+        .user-info strong { display: block; font-size: 1.05rem; }
+        .user-info span { font-size: 0.85rem; color: var(--text-dim); font-weight: 600; }
+
+        .status-pill {
+            padding: 6px 14px; border-radius: 99px; font-size: 0.7rem; font-weight: 800;
+            text-transform: uppercase; background: #fff1f1; color: var(--primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) { .stats-grid { grid-template-columns: 1fr 1fr; } .content-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 640px) { header.top-panel { flex-direction: column; gap: 20px; text-align: center; } .stats-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-    <div class="shell">
-        <header class="topbar">
-            <div class="title">
-                <h1>AlumniX Admin</h1>
-                <p>Moderate the network, approve members, and keep the public portal fresh.</p>
-            </div>
-            <div class="actions">
-                <a href="event.php" class="btn btn-soft"><i class="fas fa-calendar-plus"></i> Manage Events</a>
-                <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Review Jobs</a>
-                <a href="logout.php" class="btn btn-primary"><i class="fas fa-right-from-bracket"></i> Logout</a>
-            </div>
-        </header>
 
-        <section class="stats">
-            <div class="stat"><span>Pending Alumni</span><strong><?php echo number_format($stats["pending_alumni"]); ?></strong></div>
-            <div class="stat"><span>Active Alumni</span><strong><?php echo number_format($stats["active_alumni"]); ?></strong></div>
-            <div class="stat"><span>Pending Jobs</span><strong><?php echo number_format($stats["pending_jobs"]); ?></strong></div>
-            <div class="stat"><span>Live Events</span><strong><?php echo number_format($stats["live_events"]); ?></strong></div>
-        </section>
+<div class="bg-mesh"></div>
 
-        <section class="grid">
-            <article class="panel">
-                <h2 class="section-title">Approval Queue</h2>
-                <p>Recent alumni registrations waiting for review.</p>
-                <div class="list">
-                    <?php if ($pendingUsers): ?>
-                        <?php foreach ($pendingUsers as $user): ?>
-                            <div class="item">
-                                <div>
-                                    <strong><?php echo adminE($user["full_name"]); ?></strong>
-                                    <small><?php echo adminE($user["email"]); ?><?php echo !empty($user["batch"]) ? " | Batch " . adminE($user["batch"]) : ""; ?></small>
-                                </div>
-                                <a href="?approve_user=<?php echo (int) $user["id"]; ?>" class="btn btn-primary">Approve</a>
+<div class="shell">
+    <header class="top-panel">
+        <div class="header-meta">
+            <h1>Alumni<span>X</span>.admin</h1>
+            <p>System Online: Welcome back to the command center.</p>
+        </div>
+        <div class="actions">
+            <a href="alumni_list.php" class="btn btn-outline"><i class="fas fa-users"></i> Directory</a>
+            <a href="logout.php" class="btn btn-main"><i class="fas fa-power-off"></i> Logout</a>
+        </div>
+    </header>
+
+    <section class="stats-grid">
+        <div class="stat-card">
+            <label>Verify Requests</label>
+            <span class="val" style="color: var(--primary);"><?= $stats['pending_alumni'] ?></span>
+        </div>
+        <div class="stat-card">
+            <label>Active Members</label>
+            <span class="val"><?= $stats['active_alumni'] ?></span>
+        </div>
+        <div class="stat-card">
+            <label>Pending Jobs</label>
+            <span class="val"><?= $stats['pending_jobs'] ?></span>
+        </div>
+        <div class="stat-card">
+            <label>Live Events</label>
+            <span class="val"><?= $stats['live_events'] ?></span>
+        </div>
+    </section>
+
+    <div class="content-grid">
+        <!-- Approval Queue -->
+        <article class="panel">
+            <div class="panel-header">
+                <h2>Approval Queue</h2>
+                <a href="alumni_list.php" style="color: var(--primary); font-weight: 800; font-size: 0.8rem; text-decoration: none;">VIEW ALL →</a>
+            </div>
+            <div class="data-list">
+                <?php if ($pendingUsers): ?>
+                    <?php foreach ($pendingUsers as $user): ?>
+                        <div class="data-item">
+                            <div class="user-info">
+                                <strong><?= adminE($user["full_name"]) ?></strong>
+                                <span><?= adminE($user["email"]) ?> • Batch <?= adminE($user["batch"]) ?></span>
                             </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="item"><div><strong>All clear</strong><small>No pending alumni approvals right now.</small></div><span class="pill">Stable</span></div>
-                    <?php endif; ?>
-                </div>
-            </article>
+                            <a href="?approve_user=<?= (int) $user["id"] ?>" class="btn btn-main" style="padding: 10px 20px; border-radius: 12px;">Approve</a>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div style="text-align: center; padding: 40px; color: var(--text-dim);">
+                        <i class="fas fa-check-circle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                        <p>No pending approvals. Enjoy the silence!</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </article>
 
-            <article class="panel">
-                <h2 class="section-title">Latest Job Activity</h2>
-                <p>Quick glance at the newest job posts and their current status.</p>
-                <div class="list">
-                    <?php if ($recentJobs): ?>
-                        <?php foreach ($recentJobs as $job): ?>
-                            <div class="item">
-                                <div>
-                                    <strong><?php echo adminE($job["title"]); ?></strong>
-                                    <small><?php echo adminE($job["company"]); ?></small>
-                                </div>
-                                <span class="pill"><?php echo adminE($job["status"]); ?></span>
+        <!-- Job Feed -->
+        <article class="panel">
+            <div class="panel-header">
+                <h2>Job Activity</h2>
+                <a href="jobs.php" style="color: var(--secondary); font-weight: 800; font-size: 0.8rem; text-decoration: none;">MODERATE →</a>
+            </div>
+            <div class="data-list">
+                <?php if ($recentJobs): ?>
+                    <?php foreach ($recentJobs as $job): ?>
+                        <div class="data-item">
+                            <div class="user-info">
+                                <strong><?= adminE($job["title"]) ?></strong>
+                                <span><?= adminE($job["company"]) ?></span>
                             </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="item"><div><strong>No jobs yet</strong><small>Job moderation items will appear here once posted.</small></div><span class="pill">Empty</span></div>
-                    <?php endif; ?>
-                </div>
-            </article>
-        </section>
-
-        <section class="launch">
-            <div>
-                <h2>Quick launch pad</h2>
-                <p>Use the dedicated pages for deeper moderation and cleaner data management.</p>
+                            <span class="status-pill"><?= adminE($job["status"]) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <div style="text-align: center; padding: 40px;">
+                        <p>No job activity found.</p>
+                    </div>
+                <?php endif; ?>
             </div>
-            <div class="actions">
-                <a href="jobs.php" class="btn btn-soft">Job Queue</a>
-                <a href="event.php" class="btn btn-soft">Events</a>
-                <a href="alumni_list.php" class="btn btn-primary">Alumni Directory</a>
-            </div>
-        </section>
+        </article>
     </div>
+
+    <!-- Quick Navigation Pad -->
+    <section class="panel" style="margin-top: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div>
+            <h2 style="font-family: 'Space Grotesk';">Management Hub</h2>
+            <p style="color: var(--text-dim);">Quickly jump to specialized moderation pages.</p>
+        </div>
+        <div class="actions">
+            <a href="jobs.php" class="btn btn-outline"><i class="fas fa-briefcase"></i> Job Queue</a>
+            <a href="event.php" class="btn btn-outline"><i class="fas fa-calendar-alt"></i> Events</a>
+            <a href="alumni_list.php" class="btn btn-main">Member Directory</a>
+        </div>
+    </section>
+</div>
+
+<script>
+    // --- 🎭 SMOOTH GSAP ANIMATIONS ---
+    gsap.from(".stat-card", { opacity: 0, y: 20, stagger: 0.1, duration: 0.8, ease: "power4.out" });
+    gsap.from(".panel", { opacity: 0, y: 30, duration: 1, delay: 0.4, ease: "power4.out" });
+    gsap.from("header.top-panel", { opacity: 0, scale: 0.9, duration: 1, ease: "elastic.out(1, 0.7)" });
+</script>
+
 </body>
 </html>
