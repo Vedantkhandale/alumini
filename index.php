@@ -10,26 +10,27 @@ include("includes/db.php");
 
 <style>
     :root {
-        --primary: #ff4d4d;
-        --primary-hover: #ef4444;
-        --bg-soft: #f8f8f8;
-        --white: #ffffff;
-        --text-rich: #111111;
-        --text-gray: #6b7280;
-        --border-light: #e5e7eb;
-        --shadow-clean: 0 4px 20px rgba(0, 0, 0, 0.03);
-        --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.06);
-    }
+    --primary: #ff4d4d;
+    --primary-hover: #ef4444;
+    --bg-soft: #ffffff;   /* changed from #f8f8f8 to pure white */
+    --white: #ffffff;
+    --text-rich: #111111;
+    --text-gray: #6b7280;
+    --border-light: #e5e7eb;
+    --shadow-clean: 0 4px 20px rgba(0, 0, 0, 0.03);
+    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.06);
+}
 
-    body {
-        background: var(--bg-soft);
-        color: var(--text-rich);
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        margin: 0;
-        overflow-x: hidden;
-        -webkit-font-smoothing: antialiased;
-    }
-
+html,
+body {
+    background: #ffffff;
+    color: var(--text-rich);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
     /* --- HERO SECTION --- */
     .hero-section {
         height: 100vh;
