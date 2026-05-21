@@ -170,5 +170,3 @@ $isHomePage = ($currentPage == 'index.php');
             });
         }
     </script>
-</body>
-</html>

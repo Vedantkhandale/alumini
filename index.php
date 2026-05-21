@@ -12,18 +12,19 @@ include("includes/db.php");
     :root {
     --primary: #ff4d4d;
     --primary-hover: #ef4444;
-    --bg-soft: #ffffff;   /* changed from #f8f8f8 to pure white */
+    --bg-soft: #f8fbff;
+    --bg-deep: #05060d;
     --white: #ffffff;
-    --text-rich: #111111;
+    --text-rich: #0f172a;
     --text-gray: #6b7280;
-    --border-light: #e5e7eb;
-    --shadow-clean: 0 4px 20px rgba(0, 0, 0, 0.03);
-    --shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.06);
+    --border-light: rgba(148, 163, 184, 0.2);
+    --shadow-clean: 0 18px 60px rgba(15, 23, 42, 0.08);
+    --shadow-hover: 0 20px 40px rgba(15, 23, 42, 0.12);
 }
 
 html,
 body {
-    background: #ffffff;
+    background: #f8fbff;
     color: var(--text-rich);
     font-family: 'Plus Jakarta Sans', sans-serif;
     margin: 0;
@@ -39,7 +40,108 @@ body {
         justify-content: center;
         position: relative;
         overflow: hidden;
-        background: #000;
+        background: linear-gradient(180deg, #090b13 0%, #05060d 100%);
+    }
+
+    .hero-section::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(circle at top center, rgba(255, 77, 77, 0.14), transparent 20%),
+                    radial-gradient(circle at 20% 70%, rgba(255, 255, 255, 0.06), transparent 18%);
+    }
+
+    .hero-content {
+        z-index: 10;
+        text-align: center;
+        padding: 0 24px;
+        width: 100%;
+        max-width: 920px;
+    }
+
+    .hero-badge {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        color: #fff;
+        padding: 14px 36px;
+        border-radius: 100px;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-transform: uppercase;
+        margin-bottom: 32px;
+        display: inline-block;
+    }
+
+    .hero-content h1 {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(48px, 11vw, 110px);
+        font-weight: 900;
+        letter-spacing: -3px;
+        line-height: 1.05;
+        color: #fff;
+        margin: 0 auto 28px;
+        text-transform: uppercase;
+        max-width: 1000px;
+        text-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    .hero-content h1 span {
+        background: linear-gradient(135deg, #ff4d4d, #ff7a64);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-content p {
+        font-size: clamp(16px, 2vw, 21px);
+        color: rgba(255, 255, 255, 0.85);
+        max-width: 700px;
+        margin: 0 auto 42px;
+        font-weight: 400;
+        line-height: 1.65;
+        text-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-premium {
+        background: linear-gradient(135deg, #ff4d4d, #ff7a64);
+        color: #fff;
+        padding: 18px 52px;
+        border-radius: 16px;
+        font-weight: 800;
+        text-decoration: none;
+        letter-spacing: 1px;
+        display: inline-block;
+        transition: 0.35s ease;
+        text-transform: uppercase;
+        font-size: 14px;
+        box-shadow: 0 18px 50px rgba(255, 77, 77, 0.2);
+    }
+
+    .btn-premium:hover {
+        background: linear-gradient(135deg, #ef4444, #ff6a5c);
+        transform: translateY(-3px);
+        box-shadow: 0 22px 55px rgba(255, 77, 77, 0.25);
+    }
+
+    .section-title {
+        font-family: 'Inter', sans-serif;
+        font-size: clamp(40px, 5.5vw, 75px);
+        font-weight: 900;
+        letter-spacing: -3px;
+        line-height: 1.1;
+        color: var(--text-rich);
+        text-transform: uppercase;
+    }
+
+    .section-card {
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 28px 85px rgba(15, 23, 42, 0.1);
+        border-radius: 35px;
+        border: 1.5px solid rgba(148, 163, 184, 0.18);
+        padding: 48px;
     }
 
     .hero-video-wrap {
@@ -55,64 +157,6 @@ body {
         filter: brightness(0.5);
     }
 
-    .hero-content {
-        z-index: 10;
-        text-align: center;
-        padding: 0 5%;
-        width: 100%;
-    }
-
-    .hero-badge {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
-        padding: 12px 28px;
-        border-radius: 100px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 4px;
-        text-transform: uppercase;
-        margin-bottom: 30px;
-        display: inline-block;
-    }
-
-    .hero-content h1 {
-        font-family: 'Inter', sans-serif;
-        font-size: clamp(55px, 12vw, 115px);
-        font-weight: 900;
-        letter-spacing: -4px;
-        line-height: 0.9;
-        color: #fff;
-        margin: 0 auto 30px;
-        text-transform: uppercase;
-        max-width: 1000px;
-    }
-
-    .hero-content h1 span {
-        color: var(--primary);
-    }
-
-    .btn-premium {
-        background: var(--primary);
-        color: #fff;
-        padding: 20px 50px;
-        border-radius: 14px;
-        font-weight: 800;
-        text-decoration: none;
-        letter-spacing: 1px;
-        display: inline-block;
-        transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-        text-transform: uppercase;
-        font-size: 14px;
-    }
-
-    .btn-premium:hover {
-        background: var(--primary-hover);
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(255, 77, 77, 0.35);
-    }
-
     /* --- SECTION ALIGNMENTS --- */
     .container-fluid {
         padding: 100px 8%;
@@ -126,20 +170,49 @@ body {
 
     .label-line {
         width: 60px;
-        height: 6px;
-        background: linear-gradient(90deg, var(--primary), transparent);
-        margin-bottom: 15px;
+        height: 5px;
+        background: linear-gradient(90deg, #ff4d4d, rgba(255, 77, 77, 0.3));
+        margin-bottom: 18px;
         border-radius: 10px;
     }
 
     .section-title {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(35px, 5vw, 65px);
+        font-size: clamp(40px, 5.5vw, 75px);
         font-weight: 900;
-        letter-spacing: -2px;
-        line-height: 1;
+        letter-spacing: -3px;
+        line-height: 1.1;
         color: var(--text-rich);
         text-transform: uppercase;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        justify-content: space-between;
+        margin: 0 -15px;
+    }
+
+    .col-lg-8,
+    .col-lg-4 {
+        box-sizing: border-box;
+        padding: 0 15px;
+    }
+
+    .col-lg-8 {
+        flex: 0 0 65%;
+        max-width: 65%;
+    }
+
+    .col-lg-4 {
+        flex: 0 0 32%;
+        max-width: 32%;
+    }
+
+    .hero-content {
+        max-width: 1100px;
+        margin: 0 auto;
     }
 
     /* --- HORIZONTAL SCROLL FIX --- */
@@ -158,42 +231,42 @@ body {
 
     .premium-alumni-card {
         flex: 0 0 320px;
-        background: var(--white);
-        border: 1px solid var(--border-light);
+        background: rgba(255, 255, 255, 0.98);
+        border: 1.5px solid rgba(148, 163, 184, 0.22);
         border-radius: 35px;
-        padding: 45px 30px;
+        padding: 48px 32px;
         text-align: center;
         transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        box-shadow: var(--shadow-clean);
+        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.09);
         position: relative;
     }
 
     .premium-alumni-card:hover {
-        transform: translateY(-20px) scale(1.02);
-        box-shadow: var(--shadow-hover);
-        border-color: var(--primary);
+        transform: translateY(-20px) scale(1.03);
+        box-shadow: 0 40px 100px rgba(255, 77, 77, 0.15);
+        border-color: #ff4d4d;
     }
 
     .alumni-avatar {
-        width: 110px;
-        height: 110px;
+        width: 120px;
+        height: 120px;
         border-radius: 35px;
         object-fit: cover;
-        margin-bottom: 25px;
-        border: 4px solid var(--bg-soft);
-        transition: 0.5s;
+        margin-bottom: 28px;
+        border: 4px solid rgba(255, 77, 77, 0.1);
+        transition: all 0.5s;
     }
 
     .premium-alumni-card:hover .alumni-avatar {
         border-radius: 50%;
-        transform: rotate(5deg);
+        transform: rotate(5deg) scale(1.08);
     }
 
     /* --- BENTO GRID --- */
     .bento-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 25px;
+        gap: 28px;
     }
 
     .sexy-event-card {
@@ -201,76 +274,100 @@ body {
         border-radius: 35px;
         overflow: hidden;
         background: #000;
-        transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
+    }
+
+    .sexy-event-card:hover {
+        transform: translateY(-12px) scale(1.02);
+        box-shadow: 0 40px 100px rgba(255, 77, 77, 0.2);
     }
 
     /* --- LATEST FEED FIX --- */
     .timeline-container {
         position: relative;
-        padding-left: 20px;
+        padding-left: 0;
         width: 100%;
         box-sizing: border-box;
     }
 
     .sexy-post {
-        background: var(--white) !important;
-        border: 1px solid var(--border-light) !important;
+        background: rgba(255, 255, 255, 0.97) !important;
+        border: 1px solid rgba(148, 163, 184, 0.25) !important;
         border-radius: 28px !important;
-        padding: 25px !important;
+        padding: 28px !important;
         margin-bottom: 25px !important;
-        transition: 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
+        transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
         width: 100% !important;
         box-sizing: border-box;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05) !important;
     }
 
     .sexy-post:hover {
         transform: translateX(12px) !important;
-        border-color: var(--primary) !important;
-        box-shadow: var(--shadow-hover) !important;
+        border-color: #ff4d4d !important;
+        box-shadow: 0 18px 50px rgba(255, 77, 77, 0.12) !important;
     }
 
     /* --- JOBS STRIPS --- */
     .job-strip {
-        background: var(--white);
-        border: 1px solid var(--border-light);
-        padding: 30px 40px;
-        border-radius: 25px;
+        background: rgba(255, 255, 255, 0.96);
+        border: 1.5px solid rgba(148, 163, 184, 0.25);
+        padding: 32px 42px;
+        border-radius: 28px;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        transition: 0.4s ease;
-        box-shadow: var(--shadow-clean);
+        transition: all 0.4s ease;
+        box-shadow: 0 16px 50px rgba(15, 23, 42, 0.07);
     }
 
     .job-strip:hover {
-        border-color: var(--primary);
+        border-color: #ff4d4d;
         transform: scale(1.01) translateY(-5px);
-        box-shadow: var(--shadow-hover);
+        box-shadow: 0 24px 65px rgba(255, 77, 77, 0.15);
     }
 
     .job-icon-box {
-        width: 65px;
-        height: 65px;
-        background: #fff5f5;
-        color: var(--primary);
-        border-radius: 20px;
+        width: 70px;
+        height: 70px;
+        background: linear-gradient(135deg, #fff5f5, #fff0f0);
+        color: #ff4d4d;
+        border-radius: 22px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
+        font-size: 28px;
+        transition: all 0.3s;
+        border: 1px solid rgba(255, 77, 77, 0.15);
+    }
+
+    .job-strip:hover .job-icon-box {
+        background: linear-gradient(135deg, #ff4d4d, #ff7a64);
+        color: #fff;
+        transform: scale(1.1) rotate(5deg);
     }
 
     .job-btn {
-        background: var(--text-rich);
+        background: linear-gradient(135deg, #0f172a, #1a2341);
         color: #fff;
-        padding: 15px 35px;
-        border-radius: 15px;
+        padding: 14px 36px;
+        border-radius: 16px;
         font-weight: 800;
         text-decoration: none;
-        font-size: 14px;
-        transition: 0.3s;
+        font-size: 13px;
+        transition: all 0.3s;
         text-transform: uppercase;
+        letter-spacing: 1px;
+        border: 1px solid rgba(255, 77, 77, 0.3);
+    }
+
+    .job-btn:hover {
+        background: linear-gradient(135deg, #ff4d4d, #ff7a64);
+        color: #fff;
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(255, 77, 77, 0.25);
     }
 
     .reveal {
@@ -305,7 +402,7 @@ body {
     </div>
 </section>
 
-<section class="container-fluid" style="padding: 100px 8%; background: var(--bg-soft); overflow: hidden;">
+<section class="container-fluid" style="padding: 100px 8%; background: rgba(248, 251, 255, 0.95); overflow: hidden;">
     <div class="section-label reveal" style="margin-bottom: 60px;">
         <div class="label-line" style="width: 80px; height: 6px; background: linear-gradient(90deg, var(--primary), transparent); border-radius: 10px; margin-bottom: 15px;"></div>
         <h2 class="section-title" style="font-size: clamp(45px, 6vw, 80px); font-weight: 900; letter-spacing: -3px; text-transform: uppercase; line-height: 0.9; margin: 0;">
@@ -332,7 +429,7 @@ body {
     </div>
 </section>
 
-<section class="container-fluid" style="background: var(--white); border-top: 1px solid var(--border-light); border-bottom: 1px solid var(--border-light); padding: 120px 8%;">
+<section class="container-fluid" style="background: rgba(255, 255, 255, 0.98); padding: 120px 8%; box-shadow: 0 24px 80px rgba(15, 23, 42, 0.05); border-radius: 40px;">
     <div class="row g-lg-5"> 
         <div class="col-lg-8" style="padding-bottom: 40px;">
             <div class="section-label reveal" style="margin-bottom: 50px;">
@@ -393,7 +490,7 @@ body {
     </div>
 </section>
 
-<section class="container-fluid" style="padding-top: 50px;">
+<section class="container-fluid" style="padding-top: 50px; background: transparent;">
     <div class="section-label reveal" style="margin-bottom: 60px;">
         <div class="label-line" style="width: 100px; height: 8px; background: var(--primary); border-radius: 10px; margin-bottom: 15px;"></div>
         <h2 class="section-title" style="font-size: clamp(45px, 6vw, 85px); font-weight: 900; letter-spacing: -4px; text-transform: uppercase;">Career <span style="color: var(--primary);">Board</span></h2>
