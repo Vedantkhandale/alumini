@@ -159,13 +159,27 @@ body {
 
     /* --- SECTION ALIGNMENTS --- */
     .container-fluid {
-        padding: 100px 8%;
-        max-width: 1600px;
+        padding: 120px 6%;
+        max-width: 1500px;
         margin: 0 auto;
+        position: relative;
     }
 
     .section-label {
-        margin-bottom: 40px;
+        margin-bottom: 70px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .section-label::after {
+        content: '';
+        position: absolute;
+        bottom: -20px;
+        left: 0;
+        width: 100px;
+        height: 3px;
+        background: linear-gradient(90deg, #ff4d4d, rgba(255, 77, 77, 0.2));
+        border-radius: 10px;
     }
 
     .label-line {
@@ -189,25 +203,26 @@ body {
     .row {
         display: flex;
         flex-wrap: wrap;
-        gap: 30px;
+        gap: 50px;
         justify-content: space-between;
-        margin: 0 -15px;
+        margin: 0;
+        align-items: flex-start;
     }
 
     .col-lg-8,
     .col-lg-4 {
         box-sizing: border-box;
-        padding: 0 15px;
+        padding: 0;
     }
 
     .col-lg-8 {
-        flex: 0 0 65%;
-        max-width: 65%;
+        flex: 0 0 62%;
+        max-width: 62%;
     }
 
     .col-lg-4 {
-        flex: 0 0 32%;
-        max-width: 32%;
+        flex: 0 0 35%;
+        max-width: 35%;
     }
 
     .hero-content {
@@ -218,9 +233,9 @@ body {
     /* --- HORIZONTAL SCROLL FIX --- */
     .horizontal-scroll-container {
         display: flex;
-        gap: 25px;
+        gap: 35px;
         overflow-x: auto;
-        padding: 10px 0 50px;
+        padding: 30px 0 70px;
         scrollbar-width: none;
         -ms-overflow-style: none;
     }
@@ -230,15 +245,28 @@ body {
     }
 
     .premium-alumni-card {
-        flex: 0 0 320px;
-        background: rgba(255, 255, 255, 0.98);
-        border: 1.5px solid rgba(148, 163, 184, 0.22);
-        border-radius: 35px;
-        padding: 48px 32px;
+        flex: 0 0 300px;
+        background: rgba(255, 255, 255, 0.99);
+        border: 2px solid rgba(148, 163, 184, 0.2);
+        border-radius: 32px;
+        padding: 50px 35px;
         text-align: center;
         transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.09);
+        box-shadow: 0 20px 70px rgba(15, 23, 42, 0.1);
         position: relative;
+        overflow: hidden;
+    }
+
+    .premium-alumni-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(255, 77, 77, 0.1), transparent);
+        border-radius: 50%;
+        z-index: 0;
     }
 
     .premium-alumni-card:hover {
@@ -266,21 +294,31 @@ body {
     .bento-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
-        gap: 28px;
+        gap: 35px;
+        margin-bottom: 0;
     }
 
     .sexy-event-card {
         position: relative;
-        border-radius: 35px;
+        border-radius: 38px;
         overflow: hidden;
         background: #000;
         transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.15);
+        box-shadow: 0 32px 90px rgba(15, 23, 42, 0.18);
+    }
+
+    .sexy-event-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, transparent, rgba(255, 77, 77, 0.05));
+        z-index: 2;
+        pointer-events: none;
     }
 
     .sexy-event-card:hover {
-        transform: translateY(-12px) scale(1.02);
-        box-shadow: 0 40px 100px rgba(255, 77, 77, 0.2);
+        transform: translateY(-14px) scale(1.02);
+        box-shadow: 0 45px 120px rgba(255, 77, 77, 0.25);
     }
 
     /* --- LATEST FEED FIX --- */
@@ -289,38 +327,70 @@ body {
         padding-left: 0;
         width: 100%;
         box-sizing: border-box;
+        margin-top: 0;
     }
 
     .sexy-post {
-        background: rgba(255, 255, 255, 0.97) !important;
-        border: 1px solid rgba(148, 163, 184, 0.25) !important;
+        background: rgba(255, 255, 255, 0.98) !important;
+        border: 1.5px solid rgba(148, 163, 184, 0.28) !important;
         border-radius: 28px !important;
-        padding: 28px !important;
-        margin-bottom: 25px !important;
+        padding: 32px !important;
+        margin-bottom: 28px !important;
         transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) !important;
         width: 100% !important;
         box-sizing: border-box;
-        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.05) !important;
+        box-shadow: 0 14px 45px rgba(15, 23, 42, 0.06) !important;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sexy-post::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 77, 77, 0.04), transparent);
+        transition: left 0.6s ease;
+    }
+
+    .sexy-post:hover::before {
+        left: 100%;
     }
 
     .sexy-post:hover {
         transform: translateX(12px) !important;
         border-color: #ff4d4d !important;
-        box-shadow: 0 18px 50px rgba(255, 77, 77, 0.12) !important;
+        box-shadow: 0 20px 60px rgba(255, 77, 77, 0.14) !important;
     }
 
     /* --- JOBS STRIPS --- */
     .job-strip {
         background: rgba(255, 255, 255, 0.96);
         border: 1.5px solid rgba(148, 163, 184, 0.25);
-        padding: 32px 42px;
+        padding: 35px 45px;
         border-radius: 28px;
-        margin-bottom: 20px;
+        margin-bottom: 22px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         transition: all 0.4s ease;
         box-shadow: 0 16px 50px rgba(15, 23, 42, 0.07);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .job-strip::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, #ff4d4d, transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
     }
 
     .job-strip:hover {
@@ -329,24 +399,30 @@ body {
         box-shadow: 0 24px 65px rgba(255, 77, 77, 0.15);
     }
 
+    .job-strip:hover::before {
+        opacity: 1;
+    }
+
     .job-icon-box {
-        width: 70px;
-        height: 70px;
+        width: 75px;
+        height: 75px;
         background: linear-gradient(135deg, #fff5f5, #fff0f0);
         color: #ff4d4d;
-        border-radius: 22px;
+        border-radius: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 28px;
-        transition: all 0.3s;
-        border: 1px solid rgba(255, 77, 77, 0.15);
+        font-size: 32px;
+        transition: all 0.3s ease;
+        border: 1.5px solid rgba(255, 77, 77, 0.2);
+        box-shadow: 0 8px 20px rgba(255, 77, 77, 0.08);
     }
 
     .job-strip:hover .job-icon-box {
         background: linear-gradient(135deg, #ff4d4d, #ff7a64);
         color: #fff;
-        transform: scale(1.1) rotate(5deg);
+        transform: scale(1.15) rotate(8deg);
+        box-shadow: 0 12px 30px rgba(255, 77, 77, 0.2);
     }
 
     .job-btn {
@@ -377,10 +453,11 @@ body {
 
     @media (max-width: 992px) {
         .container-fluid { padding: 60px 6%; }
-        .bento-grid { grid-template-columns: 1fr !important; }
+        .bento-grid { grid-template-columns: 1fr !important; gap: 24px; }
         .job-strip { flex-direction: column; text-align: center; gap: 20px; }
         .timeline-container { padding-left: 0; }
         .col-lg-4 { padding-left: 15px !important; border-left: none !important; margin-top: 60px; }
+        .hero-section { height: 85vh; }
     }
 </style>
 
@@ -402,7 +479,7 @@ body {
     </div>
 </section>
 
-<section class="container-fluid" style="padding: 100px 8%; background: rgba(248, 251, 255, 0.95); overflow: hidden;">
+<section class="container-fluid" style="background: rgba(248, 251, 255, 0.95); overflow: hidden;">
     <div class="section-label reveal" style="margin-bottom: 60px;">
         <div class="label-line" style="width: 80px; height: 6px; background: linear-gradient(90deg, var(--primary), transparent); border-radius: 10px; margin-bottom: 15px;"></div>
         <h2 class="section-title" style="font-size: clamp(45px, 6vw, 80px); font-weight: 900; letter-spacing: -3px; text-transform: uppercase; line-height: 0.9; margin: 0;">
