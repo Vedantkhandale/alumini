@@ -480,14 +480,14 @@ body {
 </section>
 
 <section class="container-fluid" style="background: rgba(248, 251, 255, 0.95); overflow: hidden;">
-    <div class="section-label reveal" style="margin-bottom: 60px;">
-        <div class="label-line" style="width: 80px; height: 6px; background: linear-gradient(90deg, var(--primary), transparent); border-radius: 10px; margin-bottom: 15px;"></div>
-        <h2 class="section-title" style="font-size: clamp(45px, 6vw, 80px); font-weight: 900; letter-spacing: -3px; text-transform: uppercase; line-height: 0.9; margin: 0;">
+    <div class="section-label reveal">
+        <div class="label-line"></div>
+        <h2 class="section-title">
             Hall Of <span style="color: var(--primary);">Fame</span>
         </h2>
     </div>
 
-    <div class="horizontal-scroll-container reveal" id="alumniTrack" style="display: flex; gap: 30px; overflow-x: auto; padding: 40px 10px 80px; cursor: grab;">
+    <div class="horizontal-scroll-container reveal" id="alumniTrack" style="display: flex; cursor: grab;">
         <?php
         $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 8");
         while ($row = $res->fetch_assoc()) { ?>
@@ -506,7 +506,7 @@ body {
     </div>
 </section>
 
-<section class="container-fluid" style="background: rgba(255, 255, 255, 0.98); padding: 120px 8%; box-shadow: 0 24px 80px rgba(15, 23, 42, 0.05); border-radius: 40px;">
+<section class="container-fluid" style="background: rgba(255, 255, 255, 0.98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.05); border-radius: 40px;">
     <div class="row g-lg-5"> 
         <div class="col-lg-8" style="padding-bottom: 40px;">
             <div class="section-label reveal" style="margin-bottom: 50px;">
