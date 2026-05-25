@@ -183,10 +183,10 @@ body {
     }
 
     .label-line {
-        width: 60px;
-        height: 5px;
-        background: linear-gradient(90deg, #ff4d4d, rgba(255, 77, 77, 0.3));
-        margin-bottom: 18px;
+        width: 100px;
+        height: 4px;
+        background: linear-gradient(90deg, #ff4d4d, rgba(255, 77, 77, 0.2));
+        margin-bottom: 20px;
         border-radius: 10px;
     }
 
@@ -452,11 +452,13 @@ body {
     }
 
     @media (max-width: 992px) {
-        .container-fluid { padding: 60px 6%; }
+        .container-fluid { padding: 80px 5%; }
         .bento-grid { grid-template-columns: 1fr !important; gap: 24px; }
         .job-strip { flex-direction: column; text-align: center; gap: 20px; }
         .timeline-container { padding-left: 0; }
-        .col-lg-4 { padding-left: 15px !important; border-left: none !important; margin-top: 60px; }
+        .col-lg-4 { max-width: 100% !important; flex: 1 1 100%; border-left: none !important; margin-top: 60px; }
+        .col-lg-8 { max-width: 100% !important; flex: 1 1 100%; }
+        .row { gap: 40px; }
         .hero-section { height: 85vh; }
     }
 </style>
@@ -508,10 +510,10 @@ body {
 
 <section class="container-fluid" style="background: rgba(255, 255, 255, 0.98); box-shadow: 0 24px 80px rgba(15, 23, 42, 0.05); border-radius: 40px;">
     <div class="row g-lg-5"> 
-        <div class="col-lg-8" style="padding-bottom: 40px;">
-            <div class="section-label reveal" style="margin-bottom: 50px;">
-                <div class="label-line" style="width: 80px; height: 6px; background: linear-gradient(90deg, var(--primary), transparent); border-radius: 10px; margin-bottom: 20px;"></div>
-                <h2 class="section-title" style="font-size: clamp(45px, 6vw, 75px); font-weight: 900; letter-spacing: -3px; text-transform: uppercase; line-height: 0.9; margin: 0;">Global <br><span style="color: var(--primary);">Summits</span></h2>
+        <div class="col-lg-8">
+            <div class="section-label reveal">
+                <div class="label-line"></div>
+                <h2 class="section-title">Global <br><span style="color: var(--primary);">Summits</span></h2>
             </div>
             <div class="bento-grid">
                 <?php
