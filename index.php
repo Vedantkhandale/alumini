@@ -601,9 +601,13 @@ $eventsCount = $stats['events_count'] ?? 0;
                 $count = 0;
                 while ($row = $res->fetch_assoc()) {
                     $count++;
-                    $heroImage = $count === 1
-                        ? 'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=1200&q=80'
-                        : 'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=1200&q=80';
+                    $heroImage = !empty($row['image'])
+                        ? 'uploads/events/' . $row['image']
+                        : ($count === 1
+                            ? 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=1200&q=80'
+                            : ($count === 2
+                                ? 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80'
+                                : 'https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=1200&q=80'));
                 ?>
                     <div class="reveal sexy-event-card" style="background-image: url('<?= $heroImage ?>'); min-height: <?= ($count == 1) ? '440px' : '320px' ?>;">
                         <div class="event-meta">

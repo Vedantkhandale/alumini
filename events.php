@@ -27,7 +27,7 @@ body {
 }
 
 .page {
-    padding: 140px 8% 80px;
+    padding: 100px 6% 60px;
     position: relative;
     z-index: 10;
 }
@@ -36,18 +36,18 @@ body {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: radial-gradient(circle at 10% 10%, rgba(255, 59, 59, 0.05) 0%, transparent 40%);
-    z-index: -1; 
+    z-index: -1;
     pointer-events: none;
 }
 
-.page-header { text-align: center; margin-bottom: 60px; }
+.page-header { text-align: center; margin-bottom: 40px; }
 
 .page-title {
-    font-size: clamp(40px, 7vw, 80px);
+    font-size: clamp(36px, 6vw, 72px);
     font-weight: 800;
     color: var(--text-main);
     text-transform: uppercase;
-    letter-spacing: -2px;
+    letter-spacing: -1.5px;
 }
 
 .page-title span { color: var(--primary); }
@@ -55,27 +55,29 @@ body {
 /* 💎 GRID SYSTEM */
 .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 30px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 22px;
 }
 
 .event-card {
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 24px;
-    padding: 15px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-    transition: border-color 0.4s ease;
-    will-change: transform, opacity; /* Performance boost */
+    padding: 14px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+    transition: border-color 0.4s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform, opacity;
 }
 
 .event-card:hover {
     border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
 }
 
 .img-wrap {
     width: 100%;
-    height: 220px;
+    aspect-ratio: 16 / 10;
     border-radius: 18px;
     overflow: hidden;
     position: relative;
@@ -83,67 +85,75 @@ body {
 }
 
 .img-wrap img {
-    width: 100%; height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
+    object-position: center;
+    display: block;
     transition: transform 0.8s cubic-bezier(0.2, 1, 0.3, 1);
 }
 
 .event-card:hover .img-wrap img {
-    transform: scale(1.1);
+    transform: scale(1.08);
 }
 
 .date-badge {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    top: 14px;
+    right: 14px;
     background: var(--primary);
     color: #fff;
-    padding: 8px 15px;
-    border-radius: 12px;
+    padding: 8px 14px;
+    border-radius: 14px;
     font-weight: 800;
     font-size: 12px;
     z-index: 5;
 }
 
-.content-area { padding: 20px 5px 5px; }
+.content-area {
+    padding: 16px 16px 18px;
+}
 
 .meta-info {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--text-muted);
     margin-bottom: 10px;
     text-transform: uppercase;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.meta-info i { color: var(--primary); margin-right: 5px; }
+.meta-info i { color: var(--primary); }
 
 .event-card h3 {
     font-size: 22px;
     font-weight: 700;
     color: var(--text-main);
-    margin-bottom: 20px;
+    margin: 0 0 14px;
     line-height: 1.2;
-    min-height: 50px;
+    min-height: 48px;
 }
 
 .btn-premium {
     display: block;
     width: 100%;
-    padding: 15px;
+    padding: 14px;
     background: #000;
     color: #fff;
     text-align: center;
     text-decoration: none;
-    border-radius: 15px;
+    border-radius: 14px;
     font-weight: 700;
-    font-size: 12px;
+    font-size: 13px;
     text-transform: uppercase;
     transition: all 0.3s ease;
 }
 
 .btn-premium:hover {
     background: var(--primary);
-    letter-spacing: 1px; /* Sexy expansion effect */
+    letter-spacing: 0.5px;
 }
 
 @media(max-width:1100px){ .grid { grid-template-columns: repeat(2, 1fr); } }
@@ -166,11 +176,18 @@ body {
                 $eDate = strtotime($row['event_date']);
                 $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
                 $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
-                $imgUrl = !empty($row['image']) ? 'uploads/events/'.$row['image'] : 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80';
+                $defaultImages = [
+                    'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
+                    'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=800&q=80'
+                ];
+                $imgUrl = !empty($row['image'])
+                    ? 'uploads/events/' . $row['image']
+                    : $defaultImages[$row['id'] % count($defaultImages)];
             ?>
                 <div class="event-card reveal-card">
                     <div class="img-wrap">
-                        <img src="<?= $imgUrl ?>" alt="Event">
+                        <img src="<?= $imgUrl ?>" alt="Event" loading="lazy">
                         <div class="date-badge"><?= date('d M', $eDate) ?></div>
                     </div>
                     <div class="content-area">
