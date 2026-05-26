@@ -922,7 +922,7 @@ $eventsCount = $stats['events_count'] ?? 0;
 
     // Kickstart slider
     updateActiveCard();
-    startAutoSlide();
+    autoScroll();
 </script>
 
 
