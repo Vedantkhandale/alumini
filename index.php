@@ -216,37 +216,6 @@ include("includes/db.php");
     .section-title span { color: var(--primary); }
 
     .container-fluid.section-glow { position: relative; }
-    .slider-controls {
-        position: absolute;
-        top: 24px;
-        right: clamp(24px, 6vw, 72px);
-        display: flex;
-        gap: 12px;
-        z-index: 2;
-    }
-    .slide-arrow {
-        border: none;
-        width: 46px;
-        height: 46px;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.95);
-        color: var(--text-rich);
-        display: grid;
-        place-items: center;
-        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
-        cursor: pointer;
-        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-        backdrop-filter: blur(12px);
-    }
-    .slide-arrow:hover {
-        transform: scale(1.06);
-        box-shadow: 0 22px 52px rgba(15, 23, 42, 0.18);
-        background: #fff;
-    }
-    .slide-arrow:focus-visible {
-        outline: 2px solid var(--primary);
-        outline-offset: 3px;
-    }
 
     .row {
         display: flex;
@@ -593,10 +562,6 @@ $eventsCount = $stats['events_count'] ?? 0;
         <div class="label-line"></div>
         <h2 class="section-title">Hall Of <span>Fame</span></h2>
     </div>
-    <div class="slider-controls reveal">
-        <button class="slide-arrow prev" aria-label="Previous alumni"><i class="fas fa-chevron-left"></i></button>
-        <button class="slide-arrow next" aria-label="Next alumni"><i class="fas fa-chevron-right"></i></button>
-    </div>
 
     <div class="stats-grid reveal">
         <div class="stat-card">
@@ -801,8 +766,6 @@ $eventsCount = $stats['events_count'] ?? 0;
     // Final Touch: Smooth auto-slide for Hall of Fame
     const track = document.getElementById('alumniTrack');
     const cards = track ? Array.from(track.querySelectorAll('.premium-alumni-card')) : [];
-    const prevArrow = document.querySelector('.slide-arrow.prev');
-    const nextArrow = document.querySelector('.slide-arrow.next');
     let isDown = false;
     let startX;
     let scrollLeft;
@@ -838,16 +801,6 @@ $eventsCount = $stats['events_count'] ?? 0;
         currentIndex = (currentIndex - 1 + cards.length) % cards.length;
         scrollToCard(currentIndex);
     }
-
-    prevArrow?.addEventListener('click', () => {
-        prevCard();
-        resetAutoSlide();
-    });
-
-    nextArrow?.addEventListener('click', () => {
-        nextCard();
-        resetAutoSlide();
-    });
 
     function updateActiveCard() {
         if (!track) return;
@@ -886,12 +839,6 @@ $eventsCount = $stats['events_count'] ?? 0;
         }
         updateActiveCard();
         autoScrollFrame = requestAnimationFrame(autoScroll);
-    }
-
-    function resetAutoSlide() {
-        updateActiveCard();
-        if (autoScrollFrame) cancelAnimationFrame(autoScrollFrame);
-        autoScroll();
     }
 
     if (track) {
