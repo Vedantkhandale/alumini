@@ -215,6 +215,39 @@ include("includes/db.php");
 
     .section-title span { color: var(--primary); }
 
+    .container-fluid.section-glow { position: relative; }
+    .slider-controls {
+        position: absolute;
+        top: 24px;
+        right: clamp(24px, 6vw, 72px);
+        display: flex;
+        gap: 12px;
+        z-index: 2;
+    }
+    .slide-arrow {
+        border: none;
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.95);
+        color: var(--text-rich);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+        cursor: pointer;
+        transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        backdrop-filter: blur(12px);
+    }
+    .slide-arrow:hover {
+        transform: scale(1.06);
+        box-shadow: 0 22px 52px rgba(15, 23, 42, 0.18);
+        background: #fff;
+    }
+    .slide-arrow:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 3px;
+    }
+
     .row {
         display: flex;
         flex-wrap: wrap;
@@ -290,24 +323,33 @@ include("includes/db.php");
         flex: 0 0 auto;
         width: clamp(260px, 18vw, 340px);
         max-width: 100%;
-        background: linear-gradient(180deg, rgba(255,255,255,0.98), #fff);
-        border: 1px solid rgba(148, 163, 184, 0.12);
+        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255, 248, 248, 0.95));
         border-radius: 28px;
         padding: 30px 24px 26px;
         text-align: center;
         transition: transform 0.36s cubic-bezier(.22,1,.36,1), box-shadow 0.36s ease, opacity 0.32s ease, filter 0.32s ease;
-        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 28px 90px rgba(255, 77, 77, 0.12);
         position: relative;
         overflow: hidden;
         scroll-snap-align: center;
+        scroll-snap-stop: always;
         transform: scale(var(--card-scale));
     }
 
+    .premium-alumni-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.18), transparent 35%),
+                    radial-gradient(circle at bottom right, rgba(255, 59, 59, 0.08), transparent 25%);
+        pointer-events: none;
+        opacity: 0.95;
+        mix-blend-mode: screen;
+    }
+
     .premium-alumni-card:hover {
-        transform: scale(calc(var(--card-scale, 1) + 0.04));
-        transition: transform 0.2s ease, box-shadow 0.36s ease;
-        box-shadow: 0 42px 110px rgba(15, 23, 42, 0.14);
-        border-color: rgba(255, 77, 77, 0.3);
+        transform: translateY(-12px) scale(calc(var(--card-scale, 1) + 0.04));
+        box-shadow: 0 42px 120px rgba(255, 77, 77, 0.18);
     }
 
     .premium-alumni-card::before {
@@ -551,6 +593,10 @@ $eventsCount = $stats['events_count'] ?? 0;
         <div class="label-line"></div>
         <h2 class="section-title">Hall Of <span>Fame</span></h2>
     </div>
+    <div class="slider-controls reveal">
+        <button class="slide-arrow prev" aria-label="Previous alumni"><i class="fas fa-chevron-left"></i></button>
+        <button class="slide-arrow next" aria-label="Next alumni"><i class="fas fa-chevron-right"></i></button>
+    </div>
 
     <div class="stats-grid reveal">
         <div class="stat-card">
@@ -752,66 +798,131 @@ $eventsCount = $stats['events_count'] ?? 0;
         });
     });
 
-    // Final Touch: Smooth Auto-Pilot Scroll for Hall of Fame
+    // Final Touch: Smooth auto-slide for Hall of Fame
     const track = document.getElementById('alumniTrack');
-    const cards = Array.from(track.querySelectorAll('.premium-alumni-card'));
-    let scrollSpeed = 0.45;
-    let isHovering = false;
-    let scrollDirection = 1;
+    const cards = track ? Array.from(track.querySelectorAll('.premium-alumni-card')) : [];
+    const prevArrow = document.querySelector('.slide-arrow.prev');
+    const nextArrow = document.querySelector('.slide-arrow.next');
     let isDown = false;
     let startX;
     let scrollLeft;
+    let currentIndex = 0;
+    let autoSlideTimer;
 
-    function updateActiveCard() {
-        const center = track.scrollLeft + track.clientWidth / 2;
-        cards.forEach(card => {
-            const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-            const distance = Math.abs(center - cardCenter);
-            const normalized = Math.min(distance / (track.clientWidth * 0.6), 1);
-            const scale = 1.02 - normalized * 0.12;
-            card.style.setProperty('--card-scale', scale.toFixed(3));
-            card.style.opacity = normalized < 0.85 ? '1' : '0.75';
-            card.style.filter = normalized < 0.5 ? 'drop-shadow(0 40px 90px rgba(15, 23, 42, 0.16))' : 'none';
-        });
+    function getCardGap() {
+        const card = cards[0];
+        return card ? parseInt(getComputedStyle(card).marginRight || 24) : 24;
     }
 
+    function getCardWidth() {
+        const card = cards[0];
+        return card ? card.offsetWidth : 320;
+    }
+
+    function scrollToCard(index) {
+        if (!track || !cards[index]) return;
+        const card = cards[index];
+        const offset = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2;
+        track.scrollTo({ left: offset, behavior: 'smooth' });
+        currentIndex = index;
+    }
+
+    function nextCard() {
+        if (!cards.length) return;
+        currentIndex = (currentIndex + 1) % cards.length;
+        scrollToCard(currentIndex);
+    }
+
+    function prevCard() {
+        if (!cards.length) return;
+        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+        scrollToCard(currentIndex);
+    }
+
+    prevArrow?.addEventListener('click', () => {
+        prevCard();
+        resetAutoSlide();
+    });
+
+    nextArrow?.addEventListener('click', () => {
+        nextCard();
+        resetAutoSlide();
+    });
+
+    function updateActiveCard() {
+        if (!track) return;
+        const center = track.scrollLeft + track.clientWidth / 2;
+        let nearestIndex = 0;
+        let nearestDistance = Infinity;
+
+        cards.forEach((card, index) => {
+            const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+            const distance = Math.abs(center - cardCenter);
+            const normalized = Math.min(distance / (track.clientWidth * 0.7), 1);
+            const scale = 1.02 - normalized * 0.12;
+            card.style.setProperty('--card-scale', scale.toFixed(3));
+            card.style.opacity = normalized < 0.85 ? '1' : '0.72';
+            card.style.filter = normalized < 0.45 ? 'drop-shadow(0 40px 90px rgba(15, 23, 42, 0.18))' : 'none';
+
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestIndex = index;
+            }
+        });
+
+        currentIndex = nearestIndex;
+    }
+
+    let autoScrollFrame;
+    let autoScrollSpeed = 0.28;
+
     function autoScroll() {
-        if (!isHovering && !isDown) {
-            track.scrollLeft += scrollSpeed * scrollDirection;
-            if (track.scrollLeft <= 0 || track.scrollLeft >= track.scrollWidth - track.clientWidth) {
-                scrollDirection *= -1;
+        if (!track || !cards.length) return;
+        if (!isDown) {
+            track.scrollLeft += autoScrollSpeed;
+            if (track.scrollLeft >= track.scrollWidth - track.clientWidth) {
+                track.scrollLeft = 0;
             }
         }
         updateActiveCard();
-        requestAnimationFrame(autoScroll);
+        autoScrollFrame = requestAnimationFrame(autoScroll);
     }
-    
-    track.addEventListener('mouseenter', () => isHovering = true);
-    track.addEventListener('mouseleave', () => isHovering = false);
 
-    track.addEventListener('scroll', updateActiveCard);
+    function resetAutoSlide() {
+        updateActiveCard();
+        if (autoScrollFrame) cancelAnimationFrame(autoScrollFrame);
+        autoScroll();
+    }
+
+    if (track) {
+        track.addEventListener('scroll', updateActiveCard);
+
+        // Horizontal drag logic
+        track.addEventListener('mousedown', (e) => {
+            isDown = true;
+            startX = e.pageX - track.offsetLeft;
+            scrollLeft = track.scrollLeft;
+        });
+        track.addEventListener('mouseleave', () => { isDown = false; });
+        track.addEventListener('mouseup', () => { isDown = false; });
+        track.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - track.offsetLeft;
+            const walk = (x - startX) * 2;
+            track.scrollLeft = scrollLeft - walk;
+            updateActiveCard();
+        });
+
+        track.addEventListener('touchstart', () => { isDown = true; });
+        track.addEventListener('touchend', () => { isDown = false; });
+    }
+
     window.addEventListener('resize', updateActiveCard);
 
-    // Kickstart auto-scroll
+    // Kickstart slider
     updateActiveCard();
-    autoScroll();
-
-    // Horizontal Drag logic
-    track.addEventListener('mousedown', (e) => {
-        isDown = true;
-        startX = e.pageX - track.offsetLeft;
-        scrollLeft = track.scrollLeft;
-    });
-    track.addEventListener('mouseleave', () => { isDown = false; });
-    track.addEventListener('mouseup', () => { isDown = false; });
-    track.addEventListener('mousemove', (e) => {
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - track.offsetLeft;
-        const walk = (x - startX) * 2;
-        track.scrollLeft = scrollLeft - walk;
-        updateActiveCard();
-    });
+    startAutoSlide();
 </script>
 
 
