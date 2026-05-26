@@ -30,18 +30,21 @@ $isHomePage = ($currentPage == 'index.php');
         nav {
             position: fixed;
             top: 0; left: 0; width: 100%;
-            z-index: 1000;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 25px 0; /* Extra space initially */
+            z-index: 1100;
+            transition: all 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+            padding: 14px 0; /* slimmer look */
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .nav-container {
-            max-width: 1300px; /* Thoda wide kiya alignment ke liye */
+            max-width: 1300px;
             margin: auto;
-            padding: 0 40px;
+            padding: 0 28px;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 18px;
         }
 
         /* --- TRANSPARENT STATE (Home Start) --- */
@@ -66,16 +69,14 @@ $isHomePage = ($currentPage == 'index.php');
         nav.scrolled .menu-btn { color: #fff; }
 
         /* --- LOGO --- */
-        .logo a {
-            display: flex; align-items: center;
-            gap: 12px; text-decoration: none;
-        }
-        .logo img { height: 38px; width: auto; transition: 0.3s; }
-        .logo-text { font-size: 24px; font-weight: 800; letter-spacing: -1px; transition: 0.3s; }
+        .logo a { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .logo img { height: 38px; width: auto; transition: transform 0.28s ease; border-radius:6px; }
+        .logo img:hover { transform: translateY(-3px) scale(1.02); }
+        .logo-text { font-size: 22px; font-weight: 900; letter-spacing: -1px; transition: 0.28s; color:#fff; }
         .logo-text span { color: var(--primary); }
 
         /* --- NAV LINKS & HOVER EFFECT --- */
-        .nav-links { display: flex; gap: 40px; align-items: center; }
+        .nav-links { display: flex; gap: 30px; align-items: center; }
         .nav-links a {
             text-decoration: none; font-size: 14px; font-weight: 600;
             transition: 0.3s; position: relative; opacity: 0.7;
@@ -103,18 +104,14 @@ $isHomePage = ($currentPage == 'index.php');
         .nav-login:hover { opacity: 1; color: var(--primary) !important; }
 
         .nav-btn {
-            text-decoration: none; padding: 12px 28px; border-radius: 15px;
-            background: var(--primary); color: #fff !important;
-            font-size: 14px; font-weight: 800;
-            box-shadow: 0 8px 20px rgba(255, 59, 59, 0.2); 
-            transition: all 0.4s;
-            text-transform: uppercase; letter-spacing: 0.5px;
+            text-decoration: none; padding: 10px 26px; border-radius: 14px;
+            background: linear-gradient(135deg,#ff6a6a,#ff3b3b); color: #fff !important;
+            font-size: 13px; font-weight: 900; letter-spacing:0.6px;
+            box-shadow: 0 10px 30px rgba(255, 59, 59, 0.16);
+            transition: transform 0.28s ease, box-shadow 0.28s ease;
+            text-transform: uppercase;
         }
-        .nav-btn:hover { 
-            transform: translateY(-3px); 
-            box-shadow: 0 12px 25px rgba(255, 59, 59, 0.4);
-            filter: brightness(1.1);
-        }
+        .nav-btn:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(255,59,59,0.22); }
 
         .menu-btn { display: none; font-size: 24px; cursor: pointer; }
 
@@ -169,4 +166,20 @@ $isHomePage = ($currentPage == 'index.php');
                 }
             });
         }
+        // Expose nav height as a CSS variable and (only when no hero present) add body padding
+        function setNavHeight(){
+            if(!nav) return;
+            const h = nav.offsetHeight;
+            document.documentElement.style.setProperty('--nav-height', h + 'px');
+            // If page doesn't contain a hero section, keep body padding so content isn't under the fixed nav
+            if(!document.querySelector('.hero-section')){
+                document.body.style.paddingTop = h + 'px';
+            } else {
+                // let hero account for nav via the CSS variable; avoid double-padding
+                document.body.style.paddingTop = '';
+            }
+        }
+        window.addEventListener('resize', setNavHeight);
+        window.addEventListener('load', setNavHeight);
+        setNavHeight();
     </script>
