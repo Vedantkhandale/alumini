@@ -321,6 +321,11 @@ include("includes/db.php");
         box-shadow: 0 42px 120px rgba(255, 77, 77, 0.18);
     }
 
+    .premium-alumni-card.active-slide {
+        transform: scale(1.08);
+        box-shadow: 0 54px 150px rgba(255, 77, 77, 0.22);
+    }
+
     .premium-alumni-card::before {
         content: '';
         position: absolute;
@@ -360,49 +365,158 @@ include("includes/db.php");
     .alumni-company { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255, 240, 240, 0.95); color: var(--primary); border-radius: 999px; padding: 8px 18px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 18px; z-index: 1; position: relative; }
     .alumni-copy { color: var(--text-gray); font-size: 14px; line-height: 1.75; font-weight: 500; margin: 0; z-index: 1; position: relative; }
 
-    .bento-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; margin-bottom: 0; }
+    .bento-grid {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        grid-template-rows: repeat(2, minmax(260px, auto));
+        gap: 28px;
+        margin-bottom: 0;
+    }
+    .bento-grid .sexy-event-card:first-child {
+        grid-row: span 2;
+        min-height: 520px;
+    }
 
     .sexy-event-card {
         position: relative;
-        border-radius: 28px;
+        border-radius: 32px;
         overflow: hidden;
-        min-height: 300px;
-        box-shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
-        transition: transform 0.36s ease, box-shadow 0.36s ease;
+        min-height: 340px;
+        box-shadow: 0 30px 90px rgba(15, 23, 42, 0.12);
+        transition: transform 0.45s ease, box-shadow 0.45s ease, filter 0.45s ease;
         background-size: cover;
         background-position: center center;
         display: flex;
         align-items: flex-end;
+        will-change: transform;
     }
 
     .sexy-event-card::before {
         content: '';
         position: absolute;
         inset: 0;
-        background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.78));
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.9));
         z-index: 1;
         pointer-events: none;
+        mix-blend-mode: multiply;
     }
 
-    .sexy-event-card:hover { transform: translateY(-12px); box-shadow: 0 42px 120px rgba(15, 23, 42, 0.2); }
-    .event-meta { position: absolute; top: 20px; left: 20px; z-index: 2; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.18); backdrop-filter: blur(14px); border-radius: 24px; padding: 16px 18px; display: inline-flex; align-items: center; gap: 10px; }
-    .event-day { font-size: 28px; font-weight: 900; color: #fff; line-height: 1; }
-    .event-month { font-size: 12px; color: #ffb3b3; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
-    .event-copy { position: relative; z-index: 2; padding: 24px 26px 30px; color: #fff; }
-    .event-copy h3 { font-size: clamp(24px, 2vw, 38px); margin: 0 0 14px; line-height: 1.05; }
-    .event-copy p { color: rgba(255, 255, 255, 0.9); margin: 0; max-width: 84%; }
-    .event-copy .location { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; color: rgba(255, 255, 255, 0.85); font-weight: 500; font-size: 14px; }
+    .sexy-event-card::after {
+        content: '';
+        position: absolute;
+        right: -20px;
+        top: 20px;
+        width: 130px;
+        height: 130px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 60%);
+        z-index: 1;
+    }
 
-    .timeline-container, .glass-card { background: var(--surface); border-radius: 30px; border: 1px solid rgba(148, 163, 184, 0.15); box-shadow: 0 28px 80px rgba(15, 23, 42, 0.07); padding: 30px; }
-    .sexy-post { background: #fff; border: 1px solid rgba(148, 163, 184, 0.22); border-radius: 28px; padding: 24px; margin-bottom: 22px; transition: all 0.35s ease; position: relative; overflow: hidden; }
-    .sexy-post::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 77, 77, 0.06), transparent); transition: left 0.6s ease; }
-    .sexy-post:hover::before { left: 100%; }
-    .sexy-post:hover { transform: translateX(10px); border-color: #ff4d4d; box-shadow: 0 20px 55px rgba(255, 77, 77, 0.12); }
-    .post-top { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
-    .post-avatar { width: 56px; height: 56px; border-radius: 18px; object-fit: cover; border: 2px solid rgba(248, 248, 255, 0.95); box-shadow: 0 15px 40px rgba(15, 23, 42, 0.08); }
-    .post-meta h4 { margin: 0; font-size: 17px; font-weight: 800; color: var(--text-rich); }
-    .post-meta small { color: var(--text-gray); font-size: 12px; }
-    .post-copy { color: #334155; font-size: 15px; line-height: 1.75; margin: 0; }
+    .sexy-event-card:hover {
+        transform: translateY(-14px);
+        box-shadow: 0 54px 140px rgba(15, 23, 42, 0.22);
+        filter: saturate(1.08);
+    }
+
+    .event-meta {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        z-index: 2;
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(16px);
+        border-radius: 26px;
+        padding: 18px 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .event-day { font-size: 34px; font-weight: 900; color: #fff; line-height: 1; }
+    .event-month { font-size: 12px; color: #ffdad1; letter-spacing: 2px; text-transform: uppercase; font-weight: 800; }
+    .event-copy { position: relative; z-index: 2; padding: 30px 32px 36px; color: #fff; }
+    .event-copy h3 { font-size: clamp(28px, 3vw, 44px); margin: 0 0 16px; line-height: 1.05; letter-spacing: -0.02em; }
+    .event-copy p { color: rgba(255, 255, 255, 0.9); margin: 0; max-width: 88%; font-size: 15px; line-height: 1.8; }
+    .event-copy .location { display: inline-flex; align-items: center; gap: 10px; margin-top: 20px; color: rgba(255, 255, 255, 0.88); font-weight: 600; font-size: 14px; }
+
+    .timeline-container, .glass-card {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 251, 255, 0.92));
+        border-radius: 34px;
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        box-shadow: 0 38px 110px rgba(15, 23, 42, 0.12);
+        padding: 32px;
+        position: relative;
+        overflow: hidden;
+    }
+    .timeline-container::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(255, 108, 108, 0.14), transparent 22%),
+                    radial-gradient(circle at bottom right, rgba(255, 99, 99, 0.08), transparent 16%);
+        pointer-events: none;
+    }
+    .sexy-post {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid rgba(255, 137, 137, 0.18);
+        border-radius: 30px;
+        padding: 28px;
+        margin-bottom: 22px;
+        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .sexy-post::before {
+        content: '';
+        position: absolute;
+        top: -40px;
+        right: -40px;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background: rgba(255, 108, 108, 0.12);
+        filter: blur(18px);
+    }
+    .sexy-post:hover {
+        transform: translateY(-8px);
+        border-color: rgba(255, 77, 77, 0.3);
+        box-shadow: 0 32px 88px rgba(255, 100, 100, 0.16);
+    }
+    .post-top {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 18px;
+    }
+    .post-avatar {
+        width: 62px;
+        height: 62px;
+        border-radius: 22px;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, 0.95);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+    }
+    .post-meta h4 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text-rich);
+        letter-spacing: -0.02em;
+    }
+    .post-meta small {
+        color: var(--text-gray);
+        font-size: 13px;
+    }
+    .post-copy {
+        color: #334155;
+        font-size: 15px;
+        line-height: 1.8;
+        margin: 0;
+    }
+    .glass-card .pill {
+        background: rgba(255, 225, 225, 0.8);
+        color: #bf1f1f;
+    }
 
     .dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
     .glass-card { display: flex; flex-direction: column; gap: 18px; }
@@ -782,11 +896,29 @@ $eventsCount = $stats['events_count'] ?? 0;
         return card ? card.offsetWidth : 320;
     }
 
+    let scrollAnimationFrame;
+
     function scrollToCard(index) {
         if (!track || !cards[index]) return;
         const card = cards[index];
-        const offset = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2;
-        track.scrollTo({ left: offset, behavior: 'smooth' });
+        const target = card.offsetLeft - (track.clientWidth - card.offsetWidth) / 2;
+        const start = track.scrollLeft;
+        const distance = target - start;
+        const duration = 520;
+        const startTime = performance.now();
+
+        if (scrollAnimationFrame) cancelAnimationFrame(scrollAnimationFrame);
+
+        function animate(time) {
+            const elapsed = Math.min((time - startTime) / duration, 1);
+            const ease = 1 - Math.pow(1 - elapsed, 3);
+            track.scrollLeft = start + distance * ease;
+            if (elapsed < 1) {
+                scrollAnimationFrame = requestAnimationFrame(animate);
+            }
+        }
+
+        scrollAnimationFrame = requestAnimationFrame(animate);
         currentIndex = index;
     }
 
@@ -816,6 +948,7 @@ $eventsCount = $stats['events_count'] ?? 0;
             card.style.setProperty('--card-scale', scale.toFixed(3));
             card.style.opacity = normalized < 0.85 ? '1' : '0.72';
             card.style.filter = normalized < 0.45 ? 'drop-shadow(0 40px 90px rgba(15, 23, 42, 0.18))' : 'none';
+            card.classList.toggle('active-slide', distance < card.offsetWidth * 0.3);
 
             if (distance < nearestDistance) {
                 nearestDistance = distance;
@@ -826,19 +959,21 @@ $eventsCount = $stats['events_count'] ?? 0;
         currentIndex = nearestIndex;
     }
 
-    let autoScrollFrame;
-    let autoScrollSpeed = 0.28;
+    let slideInterval;
 
-    function autoScroll() {
+    function startSlider() {
         if (!track || !cards.length) return;
-        if (!isDown) {
-            track.scrollLeft += autoScrollSpeed;
-            if (track.scrollLeft >= track.scrollWidth - track.clientWidth) {
-                track.scrollLeft = 0;
-            }
-        }
+        if (slideInterval) clearInterval(slideInterval);
+        slideInterval = setInterval(() => {
+            currentIndex = (currentIndex + 1) % cards.length;
+            scrollToCard(currentIndex);
+        }, 2200);
+    }
+
+    function resetSlider() {
         updateActiveCard();
-        autoScrollFrame = requestAnimationFrame(autoScroll);
+        if (slideInterval) clearInterval(slideInterval);
+        startSlider();
     }
 
     if (track) {
@@ -869,7 +1004,7 @@ $eventsCount = $stats['events_count'] ?? 0;
 
     // Kickstart slider
     updateActiveCard();
-    autoScroll();
+    startSlider();
 </script>
 
 
