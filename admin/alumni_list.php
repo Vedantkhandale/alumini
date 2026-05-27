@@ -4,7 +4,27 @@ adminOnly();
 
 if (isset($_GET["approve"])) {
     $id = (int) $_GET["approve"];
+    // fetch user details for notification
+    $u = $conn->query("SELECT full_name, email FROM users WHERE id='$id'")->fetch_assoc();
     $conn->query("UPDATE users SET status='approved' WHERE id='$id'");
+
+    // send approval email
+    if ($u && !empty($u['email'])) {
+        $site_base = rtrim((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
+        $login_link = $site_base . '/login.php';
+        $to = $u['email'];
+        $subject = "AlumniX Account Approved";
+        $message = "<html><body>".
+                   "<h2>Your AlumniX membership is approved, " . htmlspecialchars($u['full_name'], ENT_QUOTES) . "</h2>".
+                   "<p>Congratulations — an admin has approved your account. You can now <a href='$login_link'>login</a> to access the alumni panel.</p>".
+                   "<p>— AlumniX Team</p>".
+                   "</body></html>";
+        $headers = "MIME-Version: 1.0" . "\r\n";
+        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+        $headers .= 'From: AlumniX <noreply@' . $_SERVER['HTTP_HOST'] . '>' . "\r\n";
+        @mail($to, $subject, $message, $headers);
+    }
+
     header("Location: alumni_list.php?res=approved");
     exit();
 }

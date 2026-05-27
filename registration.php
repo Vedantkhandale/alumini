@@ -36,8 +36,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
     } else {
         $sql = "INSERT INTO users (full_name, student_id, email, password, gender, batch, graduation_year, company, image, status, role) 
                 VALUES ('$full_name', '$student_id', '$email', '$hashed_pass', '$gender', '$batch', '$grad_year', '$company', '$img_name', 'pending', 'alumni')";
-        if ($conn->query($sql)) { $reg_success = true; } 
-        else { $error_msg = "❌ Error: " . $conn->error; }
+        if ($conn->query($sql)) {
+            $reg_success = true;
+
+            // Send confirmation email to user about pending admin approval
+            $site_base = rtrim((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['SCRIPT_NAME']), '/');
+            $index_link = $site_base . '/index.php';
+
+            $to = $email;
+            $subject = "AlumniX Registration Received - Pending Approval";
+            $message = "<html><body>".
+                       "<h2>Thanks for joining AlumniX, " . htmlspecialchars($full_name, ENT_QUOTES) . "</h2>".
+                       "<p>Your registration has been received and is currently pending admin approval.</p>".
+                       "<p>We will notify you by email once an admin approves your account. Meanwhile you can visit our homepage: <a href='$index_link'>$index_link</a></p>".
+                       "<p>— AlumniX Team</p>".
+                       "</body></html>";
+
+            $headers = "MIME-Version: 1.0" . "\r\n";
+            $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
+            $headers .= 'From: AlumniX <noreply@' . $_SERVER['HTTP_HOST'] . '>' . "\r\n";
+
+            // @ to suppress mail warnings if not configured; log if desired
+            @mail($to, $subject, $message, $headers);
+
+        } else { $error_msg = "❌ Error: " . $conn->error; }
     }
 }
 ?>
@@ -254,7 +276,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['register'])) {
 
     <?php if ($reg_success): ?>
         <script>
-            Swal.fire({ title: 'Success!', text: 'Pending Approval.', icon: 'success', confirmButtonColor: '#ff4d4d' }).then(() => window.location.href = 'login.php');
+            Swal.fire({ 
+                title: 'Registration Received!',
+                html: 'Thanks — we sent a confirmation to <strong><?= htmlspecialchars($email ?? "", ENT_QUOTES) ?></strong>. Your account is pending admin approval.',
+                icon: 'success',
+                confirmButtonColor: '#ff4d4d'
+            }).then(() => window.location.href = 'index.php');
         </script>
     <?php endif; ?>
 

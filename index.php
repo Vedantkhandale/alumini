@@ -366,15 +366,18 @@ include("includes/db.php");
     .alumni-copy { color: var(--text-gray); font-size: 14px; line-height: 1.75; font-weight: 500; margin: 0; z-index: 1; position: relative; }
 
     .bento-grid {
-        display: grid;
-        grid-template-columns: 1.4fr 1fr;
-        grid-template-rows: repeat(2, minmax(260px, auto));
+        display: flex;
         gap: 28px;
         margin-bottom: 0;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
     }
-    .bento-grid .sexy-event-card:first-child {
-        grid-row: span 2;
-        min-height: 520px;
+    .bento-grid .sexy-event-card {
+        flex: 0 0 min(360px, 33.333%);
+        min-width: 320px;
+        scroll-snap-align: start;
     }
 
     .sexy-event-card {
