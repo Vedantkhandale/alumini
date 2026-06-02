@@ -486,20 +486,6 @@ include("includes/db.php");
                     radial-gradient(circle at bottom right, rgba(255, 99, 99, 0.08), transparent 16%);
         pointer-events: none;
     }
-    .sexy-post {
-        background: rgba(255, 255, 255, 0.92);
-        border: 1px solid rgba(255, 137, 137, 0.18);
-        border-radius: 30px;
-        padding: 28px;
-        margin-bottom: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        min-height: 170px;
-        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-        position: relative;
-        overflow: hidden;
-    }
     .sexy-post::before {
         content: '';
         position: absolute;
