@@ -218,9 +218,10 @@ include("includes/db.php");
     .container-fluid.section-glow { position: relative; }
 
     .row {
+        --layout-gap: 40px;
         display: flex;
         flex-wrap: wrap;
-        gap: 40px;
+        gap: var(--layout-gap);
         justify-content: space-between;
         margin: 0;
         align-items: stretch;
@@ -239,10 +240,17 @@ include("includes/db.php");
         padding: 0;
     }
 
-    .col-lg-8 { flex: 0 0 62%; max-width: 62%; }
-    .col-lg-7 { flex: 0 0 58%; max-width: 58%; }
-    .col-lg-5 { flex: 0 0 38%; max-width: 38%; }
-    .col-lg-4 { flex: 0 0 35%; max-width: 35%; }
+    .col-lg-8 { flex: 1 1 calc(62% - (var(--layout-gap) / 2)); max-width: calc(62% - (var(--layout-gap) / 2)); }
+    .col-lg-7 { flex: 1 1 calc(58% - (var(--layout-gap) / 2)); max-width: calc(58% - (var(--layout-gap) / 2)); }
+    .col-lg-5 { flex: 1 1 calc(42% - (var(--layout-gap) / 2)); max-width: calc(42% - (var(--layout-gap) / 2)); }
+    .col-lg-4 { flex: 1 1 calc(38% - (var(--layout-gap) / 2)); max-width: calc(38% - (var(--layout-gap) / 2)); }
+    .summit-community-row { align-items: stretch; }
+    .summit-community-row .col-lg-5 { align-self: stretch; }
+    .summit-community-row .timeline-container {
+        flex: 1 1 auto;
+        justify-content: space-between;
+    }
+    .summit-community-row .sexy-post { flex: 1 1 0; }
 
     .stats-grid {
         display: grid;
@@ -375,7 +383,7 @@ include("includes/db.php");
 
     .bento-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(360px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
         grid-auto-rows: 1fr;
         gap: 32px;
         margin-bottom: 0;
@@ -460,24 +468,25 @@ include("includes/db.php");
         overflow: hidden;
     }
     .timeline-container {
-        flex: 1;
+        flex: 1 1 auto;
         min-width: 0;
         display: flex;
         flex-direction: column;
-        gap: 22px;
-        min-height: 100%;
+        gap: 16px;
+        min-height: 0;
+        height: auto;
         width: 100%;
     }
     .sexy-post {
-        background: rgba(255, 255, 255, 0.92);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 247, 247, 0.94));
         border: 1px solid rgba(255, 137, 137, 0.18);
-        border-radius: 30px;
-        padding: 32px;
+        border-radius: 26px;
+        padding: 18px 20px 18px 26px;
         margin-bottom: 0;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 190px;
+        min-height: 0;
         transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
         position: relative;
         overflow: hidden;
@@ -501,41 +510,98 @@ include("includes/db.php");
         background: rgba(255, 108, 108, 0.12);
         filter: blur(18px);
     }
+    .sexy-post::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 16px;
+        bottom: 16px;
+        width: 5px;
+        border-radius: 999px;
+        background: linear-gradient(180deg, #ff4d4d, #ff9a76);
+    }
     .sexy-post:hover {
-        transform: translateY(-8px);
+        transform: translateY(-6px);
         border-color: rgba(255, 77, 77, 0.3);
-        box-shadow: 0 32px 88px rgba(255, 100, 100, 0.16);
+        box-shadow: 0 24px 64px rgba(255, 100, 100, 0.16);
     }
     .post-top {
         display: flex;
         align-items: center;
-        gap: 18px;
-        margin-bottom: 18px;
+        gap: 14px;
+        margin-bottom: 10px;
     }
     .post-avatar {
-        width: 72px;
-        height: 72px;
-        border-radius: 24px;
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+        border-radius: 18px;
         object-fit: cover;
         border: 3px solid rgba(255, 255, 255, 0.95);
         box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
     }
+    .post-meta {
+        min-width: 0;
+        flex: 1;
+    }
     .post-meta h4 {
         margin: 0;
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 900;
         color: var(--text-rich);
         letter-spacing: -0.02em;
+        line-height: 1.2;
     }
     .post-meta small {
         color: var(--text-gray);
-        font-size: 13px;
+        font-size: 12px;
+    }
+    .post-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255, 59, 59, 0.1);
+        color: var(--primary);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
     .post-copy {
         color: #334155;
-        font-size: 15px;
-        line-height: 1.8;
+        font-size: 13px;
+        line-height: 1.55;
         margin: 0;
+        overflow-wrap: anywhere;
+    }
+    .community-note {
+        background: linear-gradient(135deg, rgba(255, 239, 239, 0.96), rgba(255, 247, 247, 0.98));
+        border-color: rgba(255, 77, 77, 0.22);
+    }
+    .community-note .post-top {
+        margin-bottom: 10px;
+        align-items: center;
+    }
+    .note-badge {
+        width: 56px;
+        height: 56px;
+        flex-shrink: 0;
+        border-radius: 18px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #ff4d4d, #ff8a66);
+        color: #fff;
+        box-shadow: 0 20px 45px rgba(255, 77, 77, 0.22);
+        font-size: 22px;
+    }
+    .community-note .post-copy {
+        font-weight: 600;
+    }
+    .community-note .post-chip {
+        background: rgba(255, 77, 77, 0.14);
     }
     .glass-card .pill {
         background: rgba(255, 225, 225, 0.8);
@@ -590,7 +656,9 @@ include("includes/db.php");
         .premium-alumni-card { width: min(85vw, 320px); }
         .section-title { font-size: clamp(28px, 6vw, 48px); }
         .hero-section { min-height: 72vh; }
-        .row { gap: 22px; }
+        .row { --layout-gap: 22px; gap: var(--layout-gap); }
+        .timeline-container { padding: 24px; }
+        .sexy-post { padding: 22px; }
         .job-strip { flex-direction: column; align-items: stretch; padding: 20px; }
         .job-actions { justify-content: space-between; width: 100%; }
     }
@@ -603,6 +671,8 @@ include("includes/db.php");
         .section-title { font-size: clamp(26px, 8vw, 40px); }
         .event-meta { flex-wrap: wrap; }
         .event-copy { padding: 18px 16px 20px; }
+        .post-top { flex-wrap: wrap; }
+        .post-chip { margin-left: 70px; }
         .job-strip { padding: 18px; }
         .job-actions { gap: 12px; }
     }
@@ -738,7 +808,7 @@ $eventsCount = $stats['events_count'] ?? 0;
 </section>
 
 <section class="container-fluid">
-    <div class="row">
+    <div class="row summit-community-row">
         <div class="col-lg-7">
             <div class="section-label reveal">
                 <div class="label-line"></div>
@@ -786,8 +856,9 @@ $eventsCount = $stats['events_count'] ?? 0;
                             <h4>Rahul Sharma</h4>
                             <small>2 hours ago</small>
                         </div>
+                        <span class="post-chip">Referral</span>
                     </div>
-                    <p class="post-copy">Placed at <strong>Microsoft</strong> through a direct network referral. Alumni support made this launch seamless.</p>
+                    <p class="post-copy">Placed at <strong>Microsoft</strong> after a quick alumni referral and one warm intro.</p>
                 </div>
                 <div class="sexy-post">
                     <div class="post-top">
@@ -796,8 +867,9 @@ $eventsCount = $stats['events_count'] ?? 0;
                             <h4>Priya Verma</h4>
                             <small>Yesterday</small>
                         </div>
+                        <span class="post-chip">Mentorship</span>
                     </div>
-                    <p class="post-copy">Joined the AI Ethics roundtable and met a mentor who helped shape my product roadmap.</p>
+                    <p class="post-copy">Met a mentor at the AI Ethics roundtable who helped sharpen my roadmap.</p>
                 </div>
                 <div class="sexy-post">
                     <div class="post-top">
@@ -806,8 +878,31 @@ $eventsCount = $stats['events_count'] ?? 0;
                             <h4>Aman Deshmukh</h4>
                             <small>3 days ago</small>
                         </div>
+                        <span class="post-chip">Hiring</span>
                     </div>
-                    <p class="post-copy">Shared an urgent senior designer opening with 125 alumni. Interview shortlist closed in 24 hours.</p>
+                    <p class="post-copy">Posted a senior design role and closed the shortlist within 24 hours.</p>
+                </div>
+                <div class="sexy-post community-note">
+                    <div class="post-top">
+                        <div class="note-badge"><i class="fas fa-bullhorn"></i></div>
+                        <div class="post-meta">
+                            <h4>Community Update</h4>
+                            <small>Live now</small>
+                        </div>
+                        <span class="post-chip">Office Hours</span>
+                    </div>
+                    <p class="post-copy">Office hours open this week for product, design, and startup feedback with alumni mentors.</p>
+                </div>
+                <div class="sexy-post">
+                    <div class="post-top">
+                        <img src="https://i.pravatar.cc/100?img=31" class="post-avatar" alt="Alumni">
+                        <div class="post-meta">
+                            <h4>Sneha Kapoor</h4>
+                            <small>4 days ago</small>
+                        </div>
+                        <span class="post-chip">Workshop</span>
+                    </div>
+                    <p class="post-copy">Joined the growth workshop and left with three practical ideas for my next launch.</p>
                 </div>
             </div>
         </div>

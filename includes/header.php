@@ -22,17 +22,20 @@ $isHomePage = ($currentPage == 'index.php');
         }
 
         * {
-            margin: 0; padding: 0; box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        /* --- NAVBAR BASE --- */
         nav {
             position: fixed;
-            top: 0; left: 0; width: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
             z-index: 1100;
             transition: all 0.36s cubic-bezier(0.22, 1, 0.36, 1);
-            padding: 14px 0; /* slimmer look */
+            padding: 14px 0;
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
         }
@@ -47,14 +50,12 @@ $isHomePage = ($currentPage == 'index.php');
             gap: 18px;
         }
 
-        /* --- TRANSPARENT STATE (Home Start) --- */
         nav.transparent { background: transparent; }
-        nav.transparent .nav-links a, 
-        nav.transparent .nav-login, 
+        nav.transparent .nav-links a,
+        nav.transparent .nav-login,
         nav.transparent .menu-btn { color: #fff; }
         nav.transparent .logo-text { color: #fff; }
 
-        /* --- SCROLLED / DARK GLASS STATE --- */
         nav.scrolled {
             background: var(--glass-dark);
             backdrop-filter: var(--blur);
@@ -63,57 +64,114 @@ $isHomePage = ($currentPage == 'index.php');
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
-        nav.scrolled .logo-text, 
-        nav.scrolled .nav-links a, 
-        nav.scrolled .nav-login, 
+
+        nav.scrolled .logo-text,
+        nav.scrolled .nav-links a,
+        nav.scrolled .nav-login,
         nav.scrolled .menu-btn { color: #fff; }
 
-        /* --- LOGO --- */
-        .logo a { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-        .logo img { height: 38px; width: auto; transition: transform 0.28s ease; border-radius:6px; }
+        .logo a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 38px;
+            width: auto;
+            transition: transform 0.28s ease;
+            border-radius: 6px;
+        }
+
         .logo img:hover { transform: translateY(-3px) scale(1.02); }
-        .logo-text { font-size: 22px; font-weight: 900; letter-spacing: -1px; transition: 0.28s; color:#fff; }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: -1px;
+            transition: 0.28s;
+            color: #fff;
+        }
+
         .logo-text span { color: var(--primary); }
 
-        /* --- NAV LINKS & HOVER EFFECT --- */
-        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
         .nav-links a {
-            text-decoration: none; font-size: 14px; font-weight: 600;
-            transition: 0.3s; position: relative; opacity: 0.7;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            transition: 0.3s;
+            position: relative;
+            opacity: 0.7;
             padding: 5px 0;
         }
-        
-        /* Modern Underline Hover */
+
         .nav-links a::after {
             content: '';
-            position: absolute; bottom: 0; left: 0;
-            width: 0; height: 2px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
             background: var(--primary);
             transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .nav-links a:hover::after, .nav-links a.is-active::after { width: 100%; }
-        .nav-links a:hover, .nav-links a.is-active { opacity: 1; color: #fff !important; }
+        .nav-links a:hover::after,
+        .nav-links a.is-active::after { width: 100%; }
 
-        /* --- ACTIONS --- */
-        .nav-actions { display: flex; align-items: center; gap: 25px; }
-        .nav-login { 
-            text-decoration: none; font-size: 14px; font-weight: 700; 
-            transition: 0.3s; opacity: 0.8; 
+        .nav-links a:hover,
+        .nav-links a.is-active {
+            opacity: 1;
+            color: #fff !important;
         }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .nav-login {
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            transition: 0.3s;
+            opacity: 0.8;
+        }
+
         .nav-login:hover { opacity: 1; color: var(--primary) !important; }
 
         .nav-btn {
-            text-decoration: none; padding: 10px 26px; border-radius: 14px;
-            background: linear-gradient(135deg,#ff6a6a,#ff3b3b); color: #fff !important;
-            font-size: 13px; font-weight: 900; letter-spacing:0.6px;
+            text-decoration: none;
+            padding: 10px 26px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #ff6a6a, #ff3b3b);
+            color: #fff !important;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0.6px;
             box-shadow: 0 10px 30px rgba(255, 59, 59, 0.16);
             transition: transform 0.28s ease, box-shadow 0.28s ease;
             text-transform: uppercase;
         }
-        .nav-btn:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(255,59,59,0.22); }
 
-        .menu-btn { display: none; font-size: 24px; cursor: pointer; }
+        .nav-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 40px rgba(255, 59, 59, 0.22);
+        }
+
+        .menu-btn {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
 
         @media(max-width: 992px) {
             .nav-links, .nav-login { display: none; }
@@ -129,7 +187,7 @@ $isHomePage = ($currentPage == 'index.php');
         <div class="nav-container">
             <div class="logo">
                 <a href="index.php">
-                    <?php if(file_exists('images/logo.png')): ?>
+                    <?php if (file_exists('images/logo.png')): ?>
                         <img src="images/logo.png" alt="Logo">
                     <?php endif; ?>
                     <div class="logo-text">Alumni<span>X</span></div>
@@ -144,7 +202,6 @@ $isHomePage = ($currentPage == 'index.php');
             </div>
 
             <div class="nav-actions">
-                <a href="login.php" class="nav-login">Sign In</a>
                 <a href="registration.php" class="nav-btn">Join Now</a>
                 <div class="menu-btn"><i class="fas fa-bars-staggered"></i></div>
             </div>
@@ -166,19 +223,18 @@ $isHomePage = ($currentPage == 'index.php');
                 }
             });
         }
-        // Expose nav height as a CSS variable and (only when no hero present) add body padding
-        function setNavHeight(){
-            if(!nav) return;
+
+        function setNavHeight() {
+            if (!nav) return;
             const h = nav.offsetHeight;
             document.documentElement.style.setProperty('--nav-height', h + 'px');
-            // If page doesn't contain a hero section, keep body padding so content isn't under the fixed nav
-            if(!document.querySelector('.hero-section')){
+            if (!document.querySelector('.hero-section')) {
                 document.body.style.paddingTop = h + 'px';
             } else {
-                // let hero account for nav via the CSS variable; avoid double-padding
                 document.body.style.paddingTop = '';
             }
         }
+
         window.addEventListener('resize', setNavHeight);
         window.addEventListener('load', setNavHeight);
         setNavHeight();
