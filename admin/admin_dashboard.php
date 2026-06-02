@@ -1,216 +1,532 @@
 <?php
-session_start();
-if(!isset($_SESSION['admin'])){
-    header("Location: admin_login.php");
+require_once __DIR__ . "/helpers.php";
+adminOnly();
+
+if (isset($_GET["member_action"], $_GET["id"])) {
+    $memberId = (int) $_GET["id"];
+    $memberAction = $_GET["member_action"];
+
+    if ($memberAction === "approve") {
+        $result = alumnixApproveUser($conn, $memberId);
+        adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
+            "credential_name" => $result["name"] ?? "",
+            "credential_email" => $result["email"] ?? "",
+            "credential_password" => $result["mail_sent"] ? "" : ($result["password"] ?? ""),
+        ] : []);
+    } elseif ($memberAction === "reject") {
+        $conn->query("UPDATE users SET status='rejected' WHERE id={$memberId}");
+        adminSetFlash("warning", "Member request marked as rejected.");
+    } elseif ($memberAction === "delete") {
+        $conn->query("DELETE FROM users WHERE id={$memberId}");
+        adminSetFlash("success", "Member record deleted.");
+    }
+
+    header("Location: admin_dashboard.php");
     exit();
 }
-include("../includes/db.php"); 
 
-// --- ⚡ SHARP LOGIC ENGINE ---
-if(isset($_GET['action']) && isset($_GET['id'])){
-    $id = mysqli_real_escape_string($conn, $_GET['id']);
-    $type = $_GET['type'];
-    $act = $_GET['action'];
+$flash = adminPullFlash();
 
-    if($type == 'user' && $act == 'approve') $conn->query("UPDATE users SET status='active' WHERE id='$id'");
-    if($type == 'job' && $act == 'approve') $conn->query("UPDATE jobs SET status='approved' WHERE id='$id'");
-    if($act == 'delete'){
-        $table = ($type == 'user') ? 'users' : (($type == 'job') ? 'jobs' : 'events');
-        $conn->query("DELETE FROM $table WHERE id='$id'");
-    }
-    header("Location: admin_dashboard.php?msg=success");
-}
+$stats = [
+    "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
+    "active_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
+    "pending_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='pending'"),
+    "live_events" => adminCount($conn, "SELECT COUNT(*) FROM events"),
+    "applications" => adminCount($conn, "SELECT COUNT(*) FROM job_applications"),
+];
 
-// Stats fetch
-$pendingU = $conn->query("SELECT id FROM users WHERE status='pending'")->num_rows;
-$pendingJ = $conn->query("SELECT id FROM jobs WHERE status='pending'")->num_rows;
-$totalE = $conn->query("SELECT id FROM events")->num_rows;
+$pendingUsers = adminRows($conn, "SELECT id, full_name, email, batch, graduation_year, company FROM users WHERE role='alumni' AND status='pending' ORDER BY id DESC LIMIT 6");
+$recentJobs = adminRows($conn, "SELECT title, company, status, created_at FROM jobs ORDER BY id DESC LIMIT 5");
+$recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events ORDER BY event_date ASC LIMIT 4");
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin OS | AlumniX Pro</title>
-    
+    <title>Admin Dashboard | AlumniX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-
     <style>
         :root {
-            --primary: #ff3e3e;
-            --dark: #0f172a;
-            --white: #ffffff;
+            --accent: #ff4d4d;
+            --accent-soft: rgba(255, 77, 77, 0.12);
+            --ink: #0f172a;
+            --muted: #64748b;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-strong: #ffffff;
+            --line: rgba(148, 163, 184, 0.18);
             --bg: #f8fafc;
-            --border: #e2e8f0;
-            --sidebar-width: 260px;
+            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+            --radius: 28px;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--dark); display: flex; overflow-x: hidden; }
-
-        /* --- 🛸 PRO SIDEBAR --- */
-        .sidebar {
-            width: var(--sidebar-width); height: 100vh; background: var(--white);
-            border-right: 1px solid var(--border); position: fixed; padding: 40px 20px;
-            display: flex; flex-direction: column; z-index: 100;
-        }
-        .brand { font-size: 1.4rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 50px; }
-        .brand span { color: var(--primary); }
-
-        .nav-link {
-            padding: 14px 18px; border-radius: 12px; text-decoration: none; color: #64748b;
-            font-weight: 600; display: flex; align-items: center; gap: 15px; margin-bottom: 8px;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .nav-link:hover, .nav-link.active { background: #f1f5f9; color: var(--dark); transform: translateX(5px); }
-        .nav-link.active { border-left: 4px solid var(--primary); background: #fff1f1; color: var(--primary); }
-
-        /* --- 🏛️ MAIN VIEWPORT --- */
-        .main-content { margin-left: var(--sidebar-width); width: calc(100% - var(--sidebar-width)); padding: 40px 50px; }
-        
-        .glass-header { 
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; 
-            background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); padding: 20px; border-radius: 20px;
-            border: 1px solid var(--border);
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(255, 77, 77, 0.08), transparent 26%),
+                radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.06), transparent 24%),
+                var(--bg);
+            min-height: 100vh;
         }
 
-        /* --- 📊 BENTO GRID STATS --- */
-        .bento-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 40px; }
-        .stat-box { 
-            background: var(--white); padding: 30px; border-radius: 24px; border: 1px solid var(--border);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02); transition: 0.3s;
+        .shell {
+            width: min(1280px, calc(100% - 36px));
+            margin: 0 auto;
+            padding: 28px 0 36px;
         }
-        .stat-box:hover { border-color: var(--primary); transform: translateY(-5px); }
-        .stat-box label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
-        .stat-box h2 { font-size: 2.2rem; font-weight: 800; margin-top: 10px; }
 
-        /* --- 📋 CONTROL TABS --- */
-        .data-panel { background: var(--white); border-radius: 30px; border: 1px solid var(--border); padding: 35px; box-shadow: 0 10px 40px rgba(0,0,0,0.03); }
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
-        th { text-align: left; padding: 10px 15px; font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
-        td { padding: 20px 15px; background: #fafafa; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-        td:first-child { border-left: 1px solid var(--border); border-radius: 15px 0 0 15px; }
-        td:last-child { border-right: 1px solid var(--border); border-radius: 0 15px 15px 0; }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+            padding: 26px 28px;
+            border-radius: 32px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.86);
+            box-shadow: var(--shadow);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .topbar h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(30px, 4vw, 46px);
+            letter-spacing: -0.05em;
+            line-height: 0.96;
+        }
+
+        .topbar p {
+            margin-top: 10px;
+            color: var(--muted);
+            max-width: 650px;
+            line-height: 1.7;
+        }
+
+        .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            border-radius: 999px;
+            padding: 12px 18px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), #ff8b65);
+            color: #fff;
+            box-shadow: 0 18px 35px rgba(255, 77, 77, 0.18);
+        }
+
+        .btn-primary:hover { transform: translateY(-3px); }
+
+        .btn-soft {
+            background: var(--surface-strong);
+            color: var(--ink);
+            border-color: var(--line);
+        }
+
+        .btn-soft:hover { transform: translateY(-3px); }
+
+        .flash {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border-radius: 22px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.04);
+        }
+
+        .flash.success { border-color: rgba(16, 185, 129, 0.22); background: rgba(236, 253, 245, 0.96); }
+        .flash.warning { border-color: rgba(245, 158, 11, 0.22); background: rgba(255, 251, 235, 0.96); }
+        .flash.error { border-color: rgba(239, 68, 68, 0.22); background: rgba(254, 242, 242, 0.96); }
+
+        .flash h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+        .flash p { color: #334155; line-height: 1.7; font-size: 13px; }
+        .flash code {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.06);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .stat-card,
+        .panel {
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-card {
+            padding: 22px;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(32px, 4vw, 44px);
+            letter-spacing: -0.05em;
+        }
+
+        .stat-foot {
+            color: #334155;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 0.9fr;
+            gap: 18px;
+            margin-top: 24px;
+        }
+
+        .panel {
+            padding: 24px;
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .panel-head h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            letter-spacing: -0.04em;
+        }
+
+        .panel-head p {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .panel-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .queue {
+            display: grid;
+            gap: 14px;
+        }
+
+        .queue-item,
+        .feed-item,
+        .event-item {
+            border-radius: 24px;
+            padding: 18px;
+            background: rgba(248, 250, 252, 0.94);
+            border: 1px solid var(--line);
+        }
+
+        .queue-item {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .queue-name {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .queue-meta,
+        .feed-meta,
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--line);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+        }
 
         .action-btn {
-            width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center;
-            text-decoration: none; color: var(--dark); border: 1px solid var(--border); transition: 0.3s;
+            border: none;
+            border-radius: 14px;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            color: #fff;
+            text-decoration: none;
         }
-        .action-btn.approve:hover { background: #10b981; color: white; border-color: #10b981; }
-        .action-btn.delete:hover { background: var(--primary); color: white; border-color: var(--primary); }
 
-        @media (max-width: 1000px) { .sidebar { width: 80px; } .sidebar span { display: none; } .main-content { margin-left: 80px; } .bento-stats { grid-template-columns: 1fr 1fr; } }
+        .action-btn.approve { background: linear-gradient(135deg, #10b981, #34d399); }
+        .action-btn.reject { background: linear-gradient(135deg, #f59e0b, #f97316); }
+        .action-btn.delete { background: linear-gradient(135deg, #ef4444, #f87171); }
+
+        .mini-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .feed-item h3,
+        .event-item h3 {
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .feed-item p,
+        .event-item p {
+            color: #334155;
+            line-height: 1.7;
+            font-size: 13px;
+        }
+
+        .empty {
+            padding: 30px 20px;
+            border-radius: 24px;
+            text-align: center;
+            color: var(--muted);
+            background: rgba(248, 250, 252, 0.9);
+            border: 1px dashed var(--line);
+        }
+
+        @media (max-width: 1180px) {
+            .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .content-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 760px) {
+            .shell { width: calc(100% - 20px); }
+            .topbar { padding: 22px; }
+            .topbar, .top-actions, .panel-head, .queue-item { grid-template-columns: 1fr; }
+            .topbar, .panel-head { flex-direction: column; align-items: flex-start; }
+            .top-actions, .actions { width: 100%; justify-content: flex-start; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-
-<aside class="sidebar">
-    <div class="brand">ALUMNI<span>X</span></div>
-    <nav>
-        <a href="admin_dashboard.php" class="nav-link active"><i class="fas fa-home"></i> <span>Dashboard</span></a>
-        <a href="alumni_list.php" class="nav-link"><i class="fas fa-users"></i> <span>Manage Alumni</span></a>
-        <a href="jobs.php" class="nav-link"><i class="fas fa-briefcase"></i> <span>Job Requests</span></a>
-        <a href="event.php" class="nav-link"><i class="fas fa-calendar"></i> <span>Events Control</span></a>
-        <a href="helpers.php" class="nav-link"><i class="fas fa-magic"></i> <span>System Tools</span></a>
-    </nav>
-    <a href="logout.php" class="nav-link" style="margin-top:auto; color: var(--primary);"><i class="fas fa-power-off"></i> <span>Logout</span></a>
-</aside>
-
-<main class="main-content">
-    <header class="glass-header">
-        <div>
-            <h1 style="font-weight: 800; font-size: 1.5rem;">System Console</h1>
-            <p style="color: #64748b; font-size: 0.9rem;">Welcome back, Master Admin</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <div style="text-align: right; margin-right: 10px;">
-                <p style="font-weight: 700; font-size: 0.85rem;">Admin User</p>
-                <span style="color: #10b981; font-size: 0.7rem;"><i class="fas fa-circle"></i> Live Server</span>
+    <div class="shell">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow"><i class="fas fa-shield-heart"></i> Admin Command Center</div>
+                <h1>Run AlumniX with clarity and control.</h1>
+                <p>Approve alumni accounts, watch job moderation, and keep campus events moving without jumping across messy screens.</p>
             </div>
-            <div style="width: 45px; height: 45px; border-radius: 12px; background: var(--dark);"></div>
-        </div>
-    </header>
+            <div class="top-actions">
+                <a href="alumni_list.php" class="btn btn-soft"><i class="fas fa-users"></i> Alumni</a>
+                <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Jobs</a>
+                <a href="event.php" class="btn btn-soft"><i class="fas fa-calendar-days"></i> Events</a>
+                <a href="view_applications.php" class="btn btn-soft"><i class="fas fa-list-check"></i> Applications</a>
+                <a href="logout.php" class="btn btn-primary"><i class="fas fa-power-off"></i> Logout</a>
+            </div>
+        </header>
 
-    <div class="bento-stats">
-        <div class="stat-box">
-            <label>Pending Alumni</label>
-            <h2 style="color: var(--primary);"><?= $pendingU ?></h2>
-        </div>
-        <div class="stat-box">
-            <label>Job Approvals</label>
-            <h2><?= $pendingJ ?></h2>
-        </div>
-        <div class="stat-box">
-            <label>Total Events</label>
-            <h2><?= $totalE ?></h2>
-        </div>
-        <div class="stat-box">
-            <label>System Health</label>
-            <h2 style="color: #10b981;">98%</h2>
-        </div>
-    </div>
+        <?php if ($flash): ?>
+            <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
+                <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
+                <?php if (!empty($flash["credential_password"])): ?>
+                    <p>Email delivery failed, so share these credentials manually if needed.</p>
+                    <code>Login ID: <?php echo adminE($flash["credential_email"] ?? ""); ?></code>
+                    <code>Password: <?php echo adminE($flash["credential_password"] ?? ""); ?></code>
+                <?php elseif (!empty($flash["credential_email"])): ?>
+                    <p>Login ID was sent to <strong><?php echo adminE($flash["credential_email"]); ?></strong>.</p>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
 
-    <div class="data-panel">
-        <div class="panel-header">
-            <h3 style="font-weight: 800;">Recent Verification Requests</h3>
-            <a href="alumni_list.php" style="text-decoration: none; color: var(--primary); font-size: 0.8rem; font-weight: 700;">VIEW ALL DATABASE →</a>
-        </div>
+        <section class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-label">Pending Alumni</span>
+                <span class="stat-value" style="color: var(--accent);"><?php echo number_format($stats["pending_alumni"]); ?></span>
+                <p class="stat-foot">Fresh registrations waiting for admin approval and auto-generated credentials.</p>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Approved Members</span>
+                <span class="stat-value"><?php echo number_format($stats["active_alumni"]); ?></span>
+                <p class="stat-foot">Members currently cleared to log in with emailed credentials.</p>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Pending Jobs</span>
+                <span class="stat-value"><?php echo number_format($stats["pending_jobs"]); ?></span>
+                <p class="stat-foot">Open roles still waiting for moderation before they go live.</p>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Live Events</span>
+                <span class="stat-value"><?php echo number_format($stats["live_events"]); ?></span>
+                <p class="stat-foot">Upcoming events already published on the public portal.</p>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Applications</span>
+                <span class="stat-value"><?php echo number_format($stats["applications"]); ?></span>
+                <p class="stat-foot">Total job applications tracked inside the admin workspace.</p>
+            </article>
+        </section>
 
-        <table>
-            <thead><tr><th>Alumni Name</th><th>Batch</th><th>Email Address</th><th>Status</th><th>Control</th></tr></thead>
-            <tbody>
-                <?php
-                $requests = $conn->query("SELECT * FROM users WHERE status='pending' LIMIT 5");
-                while($row = $requests->fetch_assoc()): ?>
-                <tr>
-                    <td><b><?= $row['full_name'] ?></b></td>
-                    <td><span style="background: #f1f5f9; padding: 5px 12px; border-radius: 8px; font-weight: 700; font-size: 0.8rem;"><?= $row['batch'] ?></span></td>
-                    <td style="color: #64748b;"><?= $row['email'] ?></td>
-                    <td><span style="color: orange; font-weight: 800; font-size: 0.7rem;">● WAITING</span></td>
-                    <td>
-                        <div style="display: flex; gap: 8px;">
-                            <a href="#" onclick="confirmAct('?type=user&action=approve&id=<?= $row['id'] ?>')" class="action-btn approve"><i class="fas fa-check"></i></a>
-                            <a href="#" onclick="confirmAct('?type=user&action=delete&id=<?= $row['id'] ?>')" class="action-btn delete"><i class="fas fa-trash-alt"></i></a>
+        <section class="content-grid">
+            <article class="panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>Approval Queue</h2>
+                        <p>Approve members and instantly email their login ID plus generated password.</p>
+                    </div>
+                    <a href="alumni_list.php" class="panel-link">Open full directory</a>
+                </div>
+
+                <div class="queue">
+                    <?php if ($pendingUsers): ?>
+                        <?php foreach ($pendingUsers as $user): ?>
+                            <div class="queue-item">
+                                <div>
+                                    <div class="queue-name"><?php echo adminE($user["full_name"]); ?></div>
+                                    <div class="queue-meta">
+                                        <span class="pill"><i class="fas fa-envelope"></i> <?php echo adminE($user["email"]); ?></span>
+                                        <span class="pill"><i class="fas fa-graduation-cap"></i> <?php echo adminE($user["batch"] ?: "N/A"); ?></span>
+                                        <span class="pill"><i class="fas fa-calendar"></i> <?php echo adminE($user["graduation_year"] ?: "N/A"); ?></span>
+                                        <span class="pill"><i class="fas fa-building"></i> <?php echo adminE($user["company"] ?: "Not added"); ?></span>
+                                    </div>
+                                </div>
+                                <div class="actions">
+                                    <a href="?member_action=approve&id=<?php echo (int) $user["id"]; ?>" class="action-btn approve" onclick="return confirm('Approve this member and send login credentials by email?');">Approve</a>
+                                    <a href="?member_action=reject&id=<?php echo (int) $user["id"]; ?>" class="action-btn reject" onclick="return confirm('Reject this member request?');">Reject</a>
+                                    <a href="?member_action=delete&id=<?php echo (int) $user["id"]; ?>" class="action-btn delete" onclick="return confirm('Delete this member record permanently?');">Delete</a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty">
+                            <i class="fas fa-check-circle" style="font-size: 32px; margin-bottom: 10px;"></i>
+                            <p>No pending alumni approvals right now.</p>
                         </div>
-                    </td>
-                </tr>
-                <?php endwhile; ?>
-            </tbody>
-        </table>
+                    <?php endif; ?>
+                </div>
+            </article>
+
+            <div class="mini-grid">
+                <article class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Job Activity</h2>
+                            <p>Latest posts moving through moderation.</p>
+                        </div>
+                        <a href="jobs.php" class="panel-link">Moderate jobs</a>
+                    </div>
+                    <div class="mini-grid">
+                        <?php if ($recentJobs): ?>
+                            <?php foreach ($recentJobs as $job): ?>
+                                <div class="feed-item">
+                                    <h3><?php echo adminE($job["title"]); ?></h3>
+                                    <div class="feed-meta">
+                                        <span class="pill"><?php echo adminE($job["company"] ?: "Unknown company"); ?></span>
+                                        <span class="pill"><?php echo adminE(strtoupper((string) ($job["status"] ?: "pending"))); ?></span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty"><p>No recent job activity yet.</p></div>
+                        <?php endif; ?>
+                    </div>
+                </article>
+
+                <article class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>Event Radar</h2>
+                            <p>Closest upcoming events in the system.</p>
+                        </div>
+                        <a href="event.php" class="panel-link">Manage events</a>
+                    </div>
+                    <div class="mini-grid">
+                        <?php if ($recentEvents): ?>
+                            <?php foreach ($recentEvents as $event): ?>
+                                <div class="event-item">
+                                    <h3><?php echo adminE($event["title"]); ?></h3>
+                                    <div class="event-meta">
+                                        <span class="pill"><i class="fas fa-calendar"></i> <?php echo adminE(date('d M Y', strtotime((string) $event["event_date"]))); ?></span>
+                                        <span class="pill"><i class="fas fa-location-dot"></i> <?php echo adminE($event["location"] ?: "TBA"); ?></span>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="empty"><p>No events scheduled yet.</p></div>
+                        <?php endif; ?>
+                    </div>
+                </article>
+            </div>
+        </section>
     </div>
-</main>
-
-<script>
-    // Animations
-    gsap.from(".stat-box", { opacity: 0, y: 30, duration: 0.8, stagger: 0.1 });
-    gsap.from(".data-panel", { opacity: 0, scale: 0.95, delay: 0.5, duration: 1 });
-
-    function confirmAct(url) {
-        Swal.fire({
-            title: 'Proceed with Action?',
-            text: "This will modify the live system data.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#0f172a',
-            cancelButtonColor: '#ff3e3e',
-            confirmButtonText: 'Yes, Execute'
-        }).then((result) => {
-            if (result.isConfirmed) window.location.href = url;
-        })
-    }
-
-    // Success Toast
-    const urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.get('msg') === 'success') {
-        Swal.fire({ icon: 'success', title: 'Action Successful', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
-    }
-</script>
 </body>
 </html>

@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . "/../includes/db.php";
+require_once __DIR__ . "/../includes/account_mail.php";
 
 /**
  * 🔒 Middleware: Admin Access Only
@@ -58,6 +59,26 @@ function adminRows(mysqli $conn, string $sql): array
         $result->free();
     }
     return $rows;
+}
+
+function adminSetFlash(string $type, string $message, array $meta = []): void
+{
+    $_SESSION["admin_flash"] = array_merge([
+        "type" => $type,
+        "message" => $message,
+    ], $meta);
+}
+
+function adminPullFlash(): ?array
+{
+    if (!isset($_SESSION["admin_flash"])) {
+        return null;
+    }
+
+    $flash = $_SESSION["admin_flash"];
+    unset($_SESSION["admin_flash"]);
+
+    return is_array($flash) ? $flash : null;
 }
 
 /**

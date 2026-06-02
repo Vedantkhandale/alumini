@@ -1,214 +1,437 @@
 <?php
-// Note: Is file ko 'event.php' ke naam se save karein.
 require_once __DIR__ . "/helpers.php";
 adminOnly();
 
-// --- 🛠️ EVENT LOGIC ---
-if(isset($_POST['add'])){
-    $title = mysqli_real_escape_string($conn, $_POST['title']);
-    $desc = mysqli_real_escape_string($conn, $_POST['desc']);
-    $date = $_POST['date'];
-    $location = mysqli_real_escape_string($conn, $_POST['location'] ?? 'Campus Hall');
+if (isset($_POST["add"])) {
+    $title = mysqli_real_escape_string($conn, $_POST["title"]);
+    $desc = mysqli_real_escape_string($conn, $_POST["desc"]);
+    $date = mysqli_real_escape_string($conn, $_POST["date"]);
+    $location = mysqli_real_escape_string($conn, $_POST["location"] ?? "Campus Hall");
 
-    $conn->query("INSERT INTO events (title, description, event_date, location) 
-                  VALUES ('$title', '$desc', '$date', '$location')");
-    header("Location: event.php?msg=created");
+    $conn->query("INSERT INTO events (title, description, event_date, location) VALUES ('$title', '$desc', '$date', '$location')");
+    adminSetFlash("success", "Event published successfully.");
+    header("Location: event.php");
     exit();
 }
 
-// Delete Logic
-if(isset($_GET['delete'])){
-    $id = (int)$_GET['delete'];
-    $conn->query("DELETE FROM events WHERE id=$id");
-    header("Location: event.php?msg=deleted");
+if (isset($_GET["delete"])) {
+    $id = (int) $_GET["delete"];
+    $conn->query("DELETE FROM events WHERE id={$id}");
+    adminSetFlash("warning", "Event deleted.");
+    header("Location: event.php");
     exit();
 }
 
-$events = $conn->query("SELECT * FROM events ORDER BY event_date DESC");
+$flash = adminPullFlash();
+$stats = [
+    "total" => adminCount($conn, "SELECT COUNT(*) FROM events"),
+    "upcoming" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()"),
+    "this_month" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE YEAR(event_date) = YEAR(CURDATE()) AND MONTH(event_date) = MONTH(CURDATE())"),
+];
+
+$events = adminRows($conn, "SELECT * FROM events ORDER BY event_date ASC, id DESC");
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Events Manager | AlumniX Pro</title>
+    <title>Events Manager | AlumniX Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #ff3e3e;
-            --dark: #0f172a;
+            --accent: #ff4d4d;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --surface: rgba(255, 255, 255, 0.92);
+            --line: rgba(148, 163, 184, 0.18);
             --bg: #f8fafc;
-            --border: #e2e8f0;
+            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--dark); }
-
-        /* --- 🏛️ LAYOUT --- */
-        .wrapper { display: grid; grid-template-columns: 400px 1fr; min-height: 100vh; }
-
-        /* --- 📝 FORM SIDE --- */
-        .form-panel { 
-            background: white; padding: 40px; border-right: 1px solid var(--border);
-            position: sticky; top: 0; height: 100vh;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(255, 77, 77, 0.08), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.06), transparent 24%),
+                var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
         }
-        .form-panel h2 { font-weight: 800; margin-bottom: 30px; letter-spacing: -1px; }
 
-        .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px; color: #64748b; }
-        .input-group input, .input-group textarea {
-            width: 100%; padding: 12px 15px; border-radius: 12px; border: 1px solid var(--border);
-            font-weight: 600; outline: none; transition: 0.3s;
+        .shell {
+            width: min(1240px, calc(100% - 36px));
+            margin: 0 auto;
+            padding: 28px 0 36px;
         }
-        .input-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(255, 62, 62, 0.1); }
+
+        .topbar,
+        .stat-card,
+        .panel,
+        .event-card,
+        .flash {
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            box-shadow: var(--shadow);
+        }
+
+        .topbar {
+            border-radius: 32px;
+            padding: 24px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 77, 77, 0.12);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .topbar h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(30px, 4vw, 44px);
+            letter-spacing: -0.05em;
+            line-height: 0.96;
+        }
+
+        .topbar p {
+            margin-top: 10px;
+            color: var(--muted);
+            line-height: 1.7;
+            max-width: 620px;
+        }
+
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid transparent;
+            transition: transform 0.25s ease;
+        }
+
+        .btn-primary { color: #fff; background: linear-gradient(135deg, var(--accent), #ff8b65); }
+        .btn-soft { color: var(--ink); background: #fff; border-color: var(--line); }
+        .btn:hover { transform: translateY(-3px); }
+
+        .flash {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border-radius: 22px;
+        }
+
+        .flash.success { background: rgba(236, 253, 245, 0.96); border-color: rgba(16, 185, 129, 0.22); }
+        .flash.warning { background: rgba(255, 251, 235, 0.96); border-color: rgba(245, 158, 11, 0.22); }
+        .flash h3 { font-size: 15px; font-weight: 800; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .stat-card {
+            border-radius: 28px;
+            padding: 22px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-value {
+            display: block;
+            margin-top: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(34px, 4vw, 46px);
+            letter-spacing: -0.05em;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 400px minmax(0, 1fr);
+            gap: 18px;
+            margin-top: 22px;
+        }
+
+        .panel {
+            border-radius: 30px;
+            padding: 24px;
+        }
+
+        .panel h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 24px;
+            letter-spacing: -0.04em;
+            margin-bottom: 6px;
+        }
+
+        .panel p {
+            color: var(--muted);
+            line-height: 1.7;
+            font-size: 13px;
+        }
+
+        .form-stack {
+            display: grid;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .input,
+        textarea {
+            width: 100%;
+            border-radius: 16px;
+            border: 1px solid var(--line);
+            padding: 13px 15px;
+            font: inherit;
+            outline: none;
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        textarea { min-height: 140px; resize: vertical; }
+        .input:focus,
+        textarea:focus { border-color: rgba(255, 77, 77, 0.4); }
 
         .submit-btn {
-            width: 100%; padding: 15px; background: var(--dark); color: white; border: none;
-            border-radius: 12px; font-weight: 800; cursor: pointer; transition: 0.3s;
+            width: 100%;
+            border: none;
+            border-radius: 16px;
+            padding: 14px 16px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), #ff8b65);
+            cursor: pointer;
         }
-        .submit-btn:hover { background: var(--primary); transform: translateY(-2px); }
 
-        /* --- 📅 DISPLAY SIDE --- */
-        .display-panel { padding: 60px; overflow-y: auto; }
-        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-        
+        .event-list {
+            display: grid;
+            gap: 16px;
+            margin-top: 18px;
+        }
+
         .event-card {
-            background: white; border-radius: 24px; padding: 30px; margin-bottom: 20px;
-            border: 1px solid var(--border); display: flex; align-items: center; gap: 25px;
-            transition: 0.4s;
+            border-radius: 28px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
         }
-        .event-card:hover { transform: scale(1.02); box-shadow: 0 20px 40px rgba(0,0,0,0.05); }
 
-        .date-badge {
-            min-width: 80px; height: 80px; background: #fff1f1; border-radius: 20px;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: var(--primary); border: 1px solid #fee2e2;
+        .date-box {
+            min-width: 84px;
+            min-height: 84px;
+            border-radius: 24px;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg, rgba(255, 77, 77, 0.12), rgba(255, 139, 101, 0.18));
+            border: 1px solid rgba(255, 77, 77, 0.12);
+            color: var(--accent);
+            text-align: center;
         }
-        .date-badge .day { font-size: 1.5rem; font-weight: 800; }
-        .date-badge .month { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
 
-        .event-info { flex-grow: 1; }
-        .event-info h3 { font-size: 1.3rem; font-weight: 800; margin-bottom: 5px; }
-        .event-info p { color: #64748b; font-size: 0.9rem; line-height: 1.5; margin-bottom: 10px; }
-        .event-meta { display: flex; gap: 20px; font-size: 0.8rem; font-weight: 700; color: #94a3b8; }
+        .date-box strong {
+            display: block;
+            font-size: 28px;
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1;
+        }
 
-        .del-btn { color: #cbd5e1; transition: 0.3s; cursor: pointer; border: none; background: none; font-size: 1.1rem; }
-        .del-btn:hover { color: var(--primary); }
+        .date-box span {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
 
-        @media (max-width: 900px) { .wrapper { grid-template-columns: 1fr; } .form-panel { height: auto; position: relative; } }
+        .event-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            letter-spacing: -0.04em;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--line);
+        }
+
+        .event-card p {
+            margin-top: 12px;
+            color: #334155;
+            line-height: 1.7;
+            font-size: 13px;
+        }
+
+        .delete-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 14px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+            background: linear-gradient(135deg, #ef4444, #f87171);
+        }
+
+        .empty {
+            padding: 40px 24px;
+            text-align: center;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.84);
+            color: var(--muted);
+            border: 1px dashed var(--line);
+        }
+
+        @media (max-width: 1080px) {
+            .stats { grid-template-columns: 1fr; }
+            .layout { grid-template-columns: 1fr; }
+            .event-card { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 760px) {
+            .shell { width: calc(100% - 20px); }
+            .topbar { flex-direction: column; align-items: flex-start; }
+            .nav { width: 100%; justify-content: flex-start; }
+        }
     </style>
 </head>
 <body>
-
-<div class="wrapper">
-    <!-- Left: Add Event Form -->
-    <aside class="form-panel">
-        <a href="admin_dashboard.php" style="text-decoration: none; color: var(--text-dim); font-weight: 700; font-size: 0.8rem; margin-bottom: 20px; display: block;">
-            <i class="fas fa-arrow-left"></i> BACK TO CONSOLE
-        </a>
-        <h2>Create <span>New Event</span></h2>
-        
-        <form method="POST">
-            <div class="input-group">
-                <label>Event Title</label>
-                <input type="text" name="title" placeholder="e.g. Annual Alumni Meet 2026" required>
-            </div>
-            <div class="input-group">
-                <label>Date & Time</label>
-                <input type="date" name="date" required>
-            </div>
-            <div class="input-group">
-                <label>Location</label>
-                <input type="text" name="location" placeholder="e.g. Main Auditorium">
-            </div>
-            <div class="input-group">
-                <label>Detailed Description</label>
-                <textarea name="desc" rows="5" placeholder="What is this event about?" required></textarea>
-            </div>
-            <button name="add" class="submit-btn">Publish Event Now</button>
-        </form>
-    </aside>
-
-    <!-- Right: Event List -->
-    <main class="display-panel">
-        <div class="header-flex">
+    <div class="shell">
+        <header class="topbar">
             <div>
-                <h1 style="font-weight: 800;">Upcoming Events</h1>
-                <p style="color: #64748b;">Manage and monitor all active campus events.</p>
+                <div class="eyebrow"><i class="fas fa-calendar-days"></i> Event Operations</div>
+                <h1>Launch events with less friction and more control.</h1>
+                <p>Create fresh events from one side and manage the live schedule from the other without leaving the admin workspace.</p>
             </div>
-            <div class="date-badge" style="background: var(--dark); color: white;">
-                <span class="day"><?= date('d') ?></span>
-                <span class="month"><?= date('M') ?></span>
-            </div>
-        </div>
+            <nav class="nav">
+                <a href="admin_dashboard.php" class="btn btn-soft"><i class="fas fa-grid-2"></i> Dashboard</a>
+                <a href="alumni_list.php" class="btn btn-soft"><i class="fas fa-users"></i> Alumni</a>
+                <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Jobs</a>
+                <a href="logout.php" class="btn btn-primary"><i class="fas fa-power-off"></i> Logout</a>
+            </nav>
+        </header>
 
-        <div class="event-list">
-            <?php if($events->num_rows > 0): ?>
-                <?php while($row = $events->fetch_assoc()): 
-                    $timestamp = strtotime($row['event_date']);
-                ?>
-                <div class="event-card">
-                    <div class="date-badge">
-                        <span class="day"><?= date('d', $timestamp) ?></span>
-                        <span class="month"><?= date('M', $timestamp) ?></span>
-                    </div>
-                    <div class="event-info">
-                        <h3><?= adminE($row['title']) ?></h3>
-                        <p><?= adminE(substr($row['description'], 0, 120)) ?>...</p>
-                        <div class="event-meta">
-                            <span><i class="fas fa-clock"></i> <?= date('Y', $timestamp) ?></span>
-                            <span><i class="fas fa-map-marker-alt"></i> <?= adminE($row['location'] ?? 'Online') ?></span>
+        <?php if ($flash): ?>
+            <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
+                <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
+            </section>
+        <?php endif; ?>
+
+        <section class="stats">
+            <article class="stat-card">
+                <span class="stat-label">Total Events</span>
+                <span class="stat-value" style="color: var(--accent);"><?php echo number_format($stats["total"]); ?></span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Upcoming</span>
+                <span class="stat-value"><?php echo number_format($stats["upcoming"]); ?></span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">This Month</span>
+                <span class="stat-value"><?php echo number_format($stats["this_month"]); ?></span>
+            </article>
+        </section>
+
+        <section class="layout">
+            <aside class="panel">
+                <h2>Create Event</h2>
+                <p>Push a new event to the public site with title, date, location, and description.</p>
+                <form method="POST" class="form-stack">
+                    <input type="text" class="input" name="title" placeholder="Annual Alumni Meet 2026" required>
+                    <input type="date" class="input" name="date" required>
+                    <input type="text" class="input" name="location" placeholder="Main Auditorium">
+                    <textarea name="desc" placeholder="What is this event about?" required></textarea>
+                    <button type="submit" name="add" class="submit-btn">Publish Event</button>
+                </form>
+            </aside>
+
+            <main class="panel">
+                <h2>Live Schedule</h2>
+                <p>Review what is already published and clear out any event that should no longer be visible.</p>
+                <div class="event-list">
+                    <?php if ($events): ?>
+                        <?php foreach ($events as $event): ?>
+                            <?php $timestamp = strtotime((string) $event["event_date"]); ?>
+                            <article class="event-card">
+                                <div class="date-box">
+                                    <div>
+                                        <strong><?php echo date('d', $timestamp); ?></strong>
+                                        <span><?php echo date('M', $timestamp); ?></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3><?php echo adminE($event["title"]); ?></h3>
+                                    <div class="event-meta">
+                                        <span class="chip"><i class="fas fa-calendar"></i> <?php echo adminE(date('d M Y', $timestamp)); ?></span>
+                                        <span class="chip"><i class="fas fa-location-dot"></i> <?php echo adminE($event["location"] ?: "TBA"); ?></span>
+                                    </div>
+                                    <p><?php echo adminE($event["description"] ?: "No description available."); ?></p>
+                                </div>
+                                <a href="?delete=<?php echo (int) $event["id"]; ?>" class="delete-btn" onclick="return confirm('Delete this event permanently?');">Delete</a>
+                            </article>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="empty">
+                            <i class="far fa-calendar-times" style="font-size: 36px; margin-bottom: 12px;"></i>
+                            <p>No events scheduled yet.</p>
                         </div>
-                    </div>
-                    <button onclick="confirmDel(<?= $row['id'] ?>)" class="del-btn">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
+                    <?php endif; ?>
                 </div>
-                <?php endwhile; ?>
-            <?php else: ?>
-                <div style="text-align: center; padding: 100px 0; color: #94a3b8;">
-                    <i class="far fa-calendar-times" style="font-size: 4rem; margin-bottom: 20px;"></i>
-                    <h2>No events scheduled yet.</h2>
-                </div>
-            <?php endif; ?>
-        </div>
-    </main>
-</div>
-
-<script>
-    function confirmDel(id) {
-        Swal.fire({
-            title: 'Delete Event?',
-            text: "This cannot be undone!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ff3e3e',
-            cancelButtonColor: '#0f172a',
-            confirmButtonText: 'Yes, Delete'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = 'event.php?delete=' + id;
-            }
-        })
-    }
-
-    // Success Alerts
-    const params = new URLSearchParams(window.location.search);
-    if(params.has('msg')){
-        Swal.fire({
-            icon: 'success',
-            title: 'Action Successful',
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 3000
-        });
-    }
-</script>
-
+            </main>
+        </section>
+    </div>
 </body>
 </html>

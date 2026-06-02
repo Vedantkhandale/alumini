@@ -3,202 +3,423 @@ require_once __DIR__ . "/helpers.php";
 adminOnly();
 
 if (isset($_GET["approve"])) {
-    $id = (int) $_GET["approve"];
-    // fetch user details for notification
-    $u = $conn->query("SELECT full_name, email FROM users WHERE id='$id'")->fetch_assoc();
-    $conn->query("UPDATE users SET status='approved' WHERE id='$id'");
-
-    // send approval email
-    if ($u && !empty($u['email'])) {
-        $site_base = rtrim((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . dirname(dirname($_SERVER['SCRIPT_NAME'])), '/');
-        $login_link = $site_base . '/login.php';
-        $to = $u['email'];
-        $subject = "AlumniX Account Approved";
-        $message = "<html><body>".
-                   "<h2>Your AlumniX membership is approved, " . htmlspecialchars($u['full_name'], ENT_QUOTES) . "</h2>".
-                   "<p>Congratulations — an admin has approved your account. You can now <a href='$login_link'>login</a> to access the alumni panel.</p>".
-                   "<p>— AlumniX Team</p>".
-                   "</body></html>";
-        $headers = "MIME-Version: 1.0" . "\r\n";
-        $headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-        $headers .= 'From: AlumniX <noreply@' . $_SERVER['HTTP_HOST'] . '>' . "\r\n";
-        @mail($to, $subject, $message, $headers);
-    }
-
-    header("Location: alumni_list.php?res=approved");
+    $result = alumnixApproveUser($conn, (int) $_GET["approve"]);
+    adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
+        "credential_email" => $result["email"] ?? "",
+        "credential_password" => $result["mail_sent"] ? "" : ($result["password"] ?? ""),
+    ] : []);
+    header("Location: alumni_list.php");
     exit();
 }
 
-$alumniUsers = adminRows($conn, "SELECT id, full_name, email, student_id, batch, graduation_year, status FROM users WHERE role='alumni' ORDER BY id DESC");
+if (isset($_GET["reject"])) {
+    $id = (int) $_GET["reject"];
+    $conn->query("UPDATE users SET status='rejected' WHERE id='{$id}'");
+    adminSetFlash("warning", "Member request marked as rejected.");
+    header("Location: alumni_list.php");
+    exit();
+}
+
+if (isset($_GET["delete"])) {
+    $id = (int) $_GET["delete"];
+    $conn->query("DELETE FROM users WHERE id='{$id}'");
+    adminSetFlash("success", "Member record deleted.");
+    header("Location: alumni_list.php");
+    exit();
+}
+
+$flash = adminPullFlash();
+$stats = [
+    "pending" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
+    "approved" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
+    "rejected" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='rejected'"),
+];
+
+$alumniUsers = adminRows(
+    $conn,
+    "SELECT id, full_name, email, student_id, batch, graduation_year, company, status
+     FROM users
+     WHERE role='alumni'
+     ORDER BY
+        CASE status
+            WHEN 'pending' THEN 0
+            WHEN 'approved' THEN 1
+            WHEN 'active' THEN 1
+            WHEN 'rejected' THEN 2
+            ELSE 3
+        END,
+        id DESC"
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Directory | AlumniX Pro</title>
+    <title>Alumni Directory | AlumniX Admin</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;500;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #ff3e3e;
-            --success: #10b981;
-            --dark: #0f172a;
-            --white: #ffffff;
-            --bg: #fafafa;
-            --border: #e2e8f0;
-            --text-dim: #64748b;
+            --accent: #ff4d4d;
+            --ink: #0f172a;
+            --muted: #64748b;
+            --surface: rgba(255, 255, 255, 0.92);
+            --line: rgba(148, 163, 184, 0.18);
+            --bg: #f8fafc;
+            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; }
-        body { background: var(--bg); color: var(--dark); padding-bottom: 50px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--ink);
+            background:
+                radial-gradient(circle at top left, rgba(255, 77, 77, 0.08), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.06), transparent 26%),
+                var(--bg);
+            min-height: 100vh;
+        }
 
-        /* --- 🛸 PRO HEADER --- */
-        header {
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(15px);
-            padding: 25px 5%;
+        .shell {
+            width: min(1240px, calc(100% - 36px));
+            margin: 0 auto;
+            padding: 28px 0 36px;
+        }
+
+        .topbar,
+        .stat-card,
+        .member-card,
+        .flash {
+            background: var(--surface);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.88);
+            box-shadow: var(--shadow);
+        }
+
+        .topbar {
+            border-radius: 32px;
+            padding: 24px 28px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 1000;
+            gap: 18px;
         }
-        .title h1 { font-size: 1.6rem; font-weight: 800; letter-spacing: -1px; }
-        .title span { color: var(--primary); }
 
-        .nav-btns { display: flex; gap: 12px; }
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(255, 77, 77, 0.12);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .topbar h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(30px, 4vw, 44px);
+            letter-spacing: -0.05em;
+            line-height: 0.96;
+        }
+
+        .topbar p {
+            margin-top: 10px;
+            color: var(--muted);
+            line-height: 1.7;
+            max-width: 620px;
+        }
+
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
         .btn {
-            padding: 10px 20px; border-radius: 12px; font-weight: 700; font-size: 0.85rem;
-            text-decoration: none; transition: 0.3s; border: none; cursor: pointer;
-            display: inline-flex; align-items: center; gap: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 999px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 800;
+            border: 1px solid transparent;
+            transition: transform 0.25s ease;
         }
-        .btn-soft { background: #f1f5f9; color: var(--dark); border: 1px solid var(--border); }
-        .btn-soft:hover { background: var(--dark); color: white; }
-        .btn-primary { background: var(--dark); color: white; }
-        .btn-primary:hover { background: var(--primary); }
 
-        /* --- 📂 DIRECTORY LIST --- */
-        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        .btn-primary {
+            color: #fff;
+            background: linear-gradient(135deg, var(--accent), #ff8b65);
+        }
+
+        .btn-soft {
+            color: var(--ink);
+            background: #fff;
+            border-color: var(--line);
+        }
+
+        .btn:hover { transform: translateY(-3px); }
+
+        .flash {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border-radius: 22px;
+        }
+
+        .flash.success { background: rgba(236, 253, 245, 0.96); border-color: rgba(16, 185, 129, 0.22); }
+        .flash.warning { background: rgba(255, 251, 235, 0.96); border-color: rgba(245, 158, 11, 0.22); }
+        .flash.error { background: rgba(254, 242, 242, 0.96); border-color: rgba(239, 68, 68, 0.22); }
+        .flash h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
+        .flash p { color: #334155; line-height: 1.7; font-size: 13px; }
+        .flash code {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.06);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .stat-card {
+            border-radius: 28px;
+            padding: 22px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .stat-value {
+            display: block;
+            margin-top: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(34px, 4vw, 46px);
+            letter-spacing: -0.05em;
+        }
+
+        .directory {
+            display: grid;
+            gap: 16px;
+            margin-top: 22px;
+        }
 
         .member-card {
-            background: var(--white);
-            border-radius: 24px;
-            padding: 25px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
+            border-radius: 30px;
+            padding: 22px;
             display: grid;
-            grid-template-columns: auto 1fr auto;
+            grid-template-columns: auto minmax(0, 1fr) auto;
+            gap: 18px;
             align-items: center;
-            gap: 25px;
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
         }
-        .member-card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
 
-        /* Profile Icon/Initial */
         .avatar {
-            width: 65px; height: 65px; background: #f1f5f9; border-radius: 18px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1.5rem; font-weight: 800; color: var(--primary);
-            border: 1px solid var(--border);
+            width: 72px;
+            height: 72px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, rgba(255, 77, 77, 0.12), rgba(255, 139, 101, 0.18));
+            display: grid;
+            place-items: center;
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: 800;
+            border: 1px solid rgba(255, 77, 77, 0.12);
         }
 
-        .info h2 { font-size: 1.25rem; font-weight: 800; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
-        
-        /* Status Badges */
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-        .status-pending { background: #f59e0b; }
-        .status-approved { background: var(--success); }
-
-        .details-grid { display: flex; flex-wrap: wrap; gap: 15px; }
-        .item { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-dim); font-weight: 600; }
-        .item i { color: var(--dark); font-size: 0.9rem; }
-
-        .approve-btn {
-            background: var(--success); color: white; padding: 12px 24px; border-radius: 14px;
-            text-decoration: none; font-weight: 800; font-size: 0.85rem; transition: 0.3s;
+        .member-name {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 21px;
+            font-weight: 800;
+            margin-bottom: 10px;
         }
-        .approve-btn:hover { background: var(--dark); transform: scale(1.05); }
-        
-        .active-badge { color: var(--success); font-weight: 800; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
 
-        /* Responsive */
-        @media (max-width: 800px) {
-            .member-card { grid-template-columns: 1fr; text-align: center; justify-items: center; }
-            .details-grid { justify-content: center; }
-            header { flex-direction: column; gap: 20px; }
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-pending { color: #b45309; background: #fef3c7; }
+        .status-approved { color: #15803d; background: #dcfce7; }
+        .status-rejected { color: #b91c1c; background: #fee2e2; }
+
+        .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .action-stack {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 14px;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .approve { background: linear-gradient(135deg, #10b981, #34d399); }
+        .reject { background: linear-gradient(135deg, #f59e0b, #f97316); }
+        .delete { background: linear-gradient(135deg, #ef4444, #f87171); }
+
+        .empty {
+            padding: 40px 24px;
+            text-align: center;
+            border-radius: 28px;
+            background: rgba(255, 255, 255, 0.84);
+            color: var(--muted);
+            border: 1px dashed var(--line);
+        }
+
+        @media (max-width: 1000px) {
+            .stats { grid-template-columns: 1fr; }
+            .member-card { grid-template-columns: 1fr; }
+            .action-stack { justify-content: flex-start; }
+        }
+
+        @media (max-width: 760px) {
+            .shell { width: calc(100% - 20px); }
+            .topbar { flex-direction: column; align-items: flex-start; }
+            .nav { width: 100%; justify-content: flex-start; }
         }
     </style>
 </head>
 <body>
-
-<header>
-    <div class="title">
-        <h1>Member <span>Directory</span></h1>
-    </div>
-    <div class="nav-btns">
-        <a href="admin_dashboard.php" class="btn btn-soft"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Jobs</a>
-        <a href="event.php" class="btn btn-primary"><i class="fas fa-calendar-plus"></i> Events</a>
-    </div>
-</header>
-
-<div class="container">
-    <?php if ($alumniUsers): ?>
-        <?php foreach ($alumniUsers as $user): 
-            $status = $user["status"] ?: "pending";
-            $initial = strtoupper(substr($user["full_name"], 0, 1));
-        ?>
-            <div class="member-card">
-                <!-- Avatar -->
-                <div class="avatar"><?php echo $initial; ?></div>
-
-                <!-- Info -->
-                <div class="info">
-                    <h2>
-                        <?php echo adminE($user["full_name"]); ?>
-                        <span class="status-dot <?php echo ($status === 'approved') ? 'status-approved' : 'status-pending'; ?>" title="<?php echo ucfirst($status); ?>"></span>
-                    </h2>
-                    <div class="details-grid">
-                        <div class="item"><i class="fas fa-envelope"></i> <?php echo adminE($user["email"]); ?></div>
-                        <div class="item"><i class="fas fa-id-card"></i> <?php echo adminE($user["student_id"] ?: "N/A"); ?></div>
-                        <div class="item"><i class="fas fa-graduation-cap"></i> <?php echo adminE($user["batch"] ?: "N/A"); ?> (<?php echo adminE($user["graduation_year"] ?: "N/A"); ?>)</div>
-                    </div>
-                </div>
-
-                <!-- Action -->
-                <div class="action">
-                    <?php if ($status === "pending"): ?>
-                        <a href="?approve=<?php echo (int) $user["id"]; ?>" class="approve-btn">
-                            <i class="fas fa-user-check"></i> Approve Member
-                        </a>
-                    <?php else: ?>
-                        <span class="active-badge"><i class="fas fa-check-circle"></i> VERIFIED</span>
-                    <?php endif; ?>
-                </div>
+    <div class="shell">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow"><i class="fas fa-user-group"></i> Alumni Moderation</div>
+                <h1>Review every member with one clean workflow.</h1>
+                <p>Pending members can be approved with auto-generated credentials, rejected for review, or removed completely if needed.</p>
             </div>
-        <?php endforeach; ?>
-    <?php else: ?>
-        <div style="text-align:center; padding:100px 0;">
-            <i class="fas fa-users-slash" style="font-size:4rem; color:#e2e8f0; margin-bottom:20px;"></i>
-            <h2 style="color:#94a3b8;">No members found in the directory.</h2>
-        </div>
-    <?php endif; ?>
-</div>
+            <nav class="nav">
+                <a href="admin_dashboard.php" class="btn btn-soft"><i class="fas fa-grid-2"></i> Dashboard</a>
+                <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Jobs</a>
+                <a href="event.php" class="btn btn-soft"><i class="fas fa-calendar-days"></i> Events</a>
+                <a href="logout.php" class="btn btn-primary"><i class="fas fa-power-off"></i> Logout</a>
+            </nav>
+        </header>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-<script>
-    // Cards load animation
-    gsap.from(".member-card", {
-        opacity: 0,
-        y: 30,
-        duration: 0.6,
-        stagger: 0.1,
-        ease: "power2.out"
-    });
-</script>
+        <?php if ($flash): ?>
+            <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
+                <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
+                <?php if (!empty($flash["credential_password"])): ?>
+                    <p>Email delivery failed, so these credentials are shown once for manual sharing.</p>
+                    <code>Login ID: <?php echo adminE($flash["credential_email"] ?? ""); ?></code>
+                    <code>Password: <?php echo adminE($flash["credential_password"] ?? ""); ?></code>
+                <?php endif; ?>
+            </section>
+        <?php endif; ?>
 
+        <section class="stats">
+            <article class="stat-card">
+                <span class="stat-label">Pending</span>
+                <span class="stat-value" style="color: var(--accent);"><?php echo number_format($stats["pending"]); ?></span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Approved</span>
+                <span class="stat-value"><?php echo number_format($stats["approved"]); ?></span>
+            </article>
+            <article class="stat-card">
+                <span class="stat-label">Rejected</span>
+                <span class="stat-value"><?php echo number_format($stats["rejected"]); ?></span>
+            </article>
+        </section>
+
+        <section class="directory">
+            <?php if ($alumniUsers): ?>
+                <?php foreach ($alumniUsers as $user): ?>
+                    <?php
+                    $status = strtolower((string) ($user["status"] ?: "pending"));
+                    $statusClass = $status === "approved" || $status === "active"
+                        ? "status-approved"
+                        : ($status === "rejected" ? "status-rejected" : "status-pending");
+                    ?>
+                    <article class="member-card">
+                        <div class="avatar"><?php echo adminE(strtoupper(substr((string) $user["full_name"], 0, 1))); ?></div>
+                        <div>
+                            <div class="member-name">
+                                <span><?php echo adminE($user["full_name"]); ?></span>
+                                <span class="status-pill <?php echo $statusClass; ?>"><?php echo adminE($status); ?></span>
+                            </div>
+                            <div class="meta">
+                                <span class="chip"><i class="fas fa-envelope"></i> <?php echo adminE($user["email"]); ?></span>
+                                <span class="chip"><i class="fas fa-id-card"></i> <?php echo adminE($user["student_id"] ?: "N/A"); ?></span>
+                                <span class="chip"><i class="fas fa-graduation-cap"></i> <?php echo adminE($user["batch"] ?: "N/A"); ?></span>
+                                <span class="chip"><i class="fas fa-calendar"></i> <?php echo adminE($user["graduation_year"] ?: "N/A"); ?></span>
+                                <span class="chip"><i class="fas fa-building"></i> <?php echo adminE($user["company"] ?: "Not added"); ?></span>
+                            </div>
+                        </div>
+                        <div class="action-stack">
+                            <?php if (!in_array($status, ["approved", "active"], true)): ?>
+                                <a href="?approve=<?php echo (int) $user["id"]; ?>" class="action approve" onclick="return confirm('Approve this member and send credentials by email?');">Approve</a>
+                            <?php endif; ?>
+                            <?php if ($status !== "rejected"): ?>
+                                <a href="?reject=<?php echo (int) $user["id"]; ?>" class="action reject" onclick="return confirm('Mark this member request as rejected?');">Reject</a>
+                            <?php endif; ?>
+                            <a href="?delete=<?php echo (int) $user["id"]; ?>" class="action delete" onclick="return confirm('Delete this member permanently?');">Delete</a>
+                        </div>
+                    </article>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="empty">
+                    <i class="fas fa-users-slash" style="font-size: 36px; margin-bottom: 12px;"></i>
+                    <p>No alumni members found yet.</p>
+                </div>
+            <?php endif; ?>
+        </section>
+    </div>
 </body>
 </html>
