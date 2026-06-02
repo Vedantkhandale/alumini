@@ -230,6 +230,8 @@ include("includes/db.php");
         display: flex;
         flex-direction: column;
         gap: 28px;
+        align-items: stretch;
+        min-width: 0;
     }
 
     .col-lg-8, .col-lg-7, .col-lg-5, .col-lg-4 {
@@ -373,9 +375,9 @@ include("includes/db.php");
 
     .bento-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(320px, 1fr));
+        grid-template-columns: repeat(2, minmax(360px, 1fr));
         grid-auto-rows: 1fr;
-        gap: 28px;
+        gap: 32px;
         margin-bottom: 0;
         width: 100%;
         align-items: stretch;
@@ -389,7 +391,7 @@ include("includes/db.php");
         position: relative;
         border-radius: 32px;
         overflow: hidden;
-        min-height: 420px;
+        min-height: 480px;
         box-shadow: 0 30px 90px rgba(15, 23, 42, 0.12);
         transition: transform 0.45s ease, box-shadow 0.45s ease, filter 0.45s ease;
         background-size: cover;
@@ -459,21 +461,23 @@ include("includes/db.php");
     }
     .timeline-container {
         flex: 1;
+        min-width: 0;
         display: flex;
         flex-direction: column;
         gap: 22px;
         min-height: 100%;
+        width: 100%;
     }
     .sexy-post {
         background: rgba(255, 255, 255, 0.92);
         border: 1px solid rgba(255, 137, 137, 0.18);
         border-radius: 30px;
-        padding: 28px;
+        padding: 32px;
         margin-bottom: 0;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        min-height: 170px;
+        min-height: 190px;
         transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
         position: relative;
         overflow: hidden;
@@ -509,9 +513,9 @@ include("includes/db.php");
         margin-bottom: 18px;
     }
     .post-avatar {
-        width: 62px;
-        height: 62px;
-        border-radius: 22px;
+        width: 72px;
+        height: 72px;
+        border-radius: 24px;
         object-fit: cover;
         border: 3px solid rgba(255, 255, 255, 0.95);
         box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
@@ -742,7 +746,7 @@ $eventsCount = $stats['events_count'] ?? 0;
             </div>
             <div class="bento-grid">
                 <?php
-                $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 5");
+                $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 4");
                 $count = 0;
                 while ($row = $res->fetch_assoc()) {
                     $count++;
@@ -894,41 +898,6 @@ $eventsCount = $stats['events_count'] ?? 0;
         gsap.to(el, {
             scrollTrigger: { trigger: el, start: "top 90%" },
             opacity: 1, y: 0, duration: 1, ease: "expo.out"
-        });
-    });
-
-    // Global + Community card polish
-    const interactiveCards = gsap.utils.toArray('.sexy-event-card, .sexy-post');
-    gsap.from(interactiveCards, {
-        opacity: 0,
-        y: 40,
-        stagger: 0.08,
-        duration: 0.9,
-        ease: 'power3.out',
-        scrollTrigger: {
-            trigger: '.container-fluid',
-            start: 'top 85%',
-            once: true
-        }
-    });
-
-    interactiveCards.forEach(card => {
-        card.addEventListener('mousemove', event => {
-            const rect = card.getBoundingClientRect();
-            const x = (event.clientX - rect.left) / rect.width - 0.5;
-            const y = (event.clientY - rect.top) / rect.height - 0.5;
-            gsap.to(card, {
-                rotationY: x * 6,
-                rotationX: -y * 6,
-                scale: 1.02,
-                transformPerspective: 800,
-                transformOrigin: 'center',
-                duration: 0.35,
-                ease: 'power3.out'
-            });
-        });
-        card.addEventListener('mouseleave', () => {
-            gsap.to(card, { rotationY: 0, rotationX: 0, scale: 1, duration: 0.45, ease: 'power3.out' });
         });
     });
 
