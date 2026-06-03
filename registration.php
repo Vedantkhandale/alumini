@@ -1,4 +1,4 @@
-\<?php
+<?php
 session_start();
 include("includes/db.php");
 require_once __DIR__ . "/includes/account_mail.php";
@@ -19,37 +19,41 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
     $grad_year = mysqli_real_escape_string($conn, $_POST["grad_year"]);
     $company = mysqli_real_escape_string($conn, $_POST["company"]);
 
-    // --- STEP 1: STRICT LIVE EMAIL VALIDATION VIA API ---
-    // Abstract API (Free tier provides 500 requests/month)
-    $api_key = "YOUR_ABSTRACT_API_KEY_HERE"; 
-    $api_url = "https://emailvalidation.abstractapi.com/v1/?api_key=" . $api_key . "&email=" . urlencode($email);
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $api_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    $response = curl_exec($ch);
-    curl_close($ch);
-
+    // --- STEP 1: LIVE EMAIL VALIDATION VIA API ---
+    $api_key = "YOUR_ABSTRACT_API_KEY_HERE"; // <-- Apni actual API key yahan dalo agar live check chahiye
     $is_valid_email = false;
-    if ($response) {
-        $data = json_decode($response, true);
-        // Strict Checking parameters from API response
-        if (
-            isset($data['is_valid_format']['value']) && $data['is_valid_format']['value'] === true &&
-            isset($data['deliverability']) && $data['deliverability'] !== "UNDELIVERABLE" &&
-            isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === false
-        ) {
-            $is_valid_email = true;
-        } else {
-            $error_msg = "Ye email real nahi hai, dead hai ya disposable temporay email hai!";
+
+    // Agar key lagayi hai toh hi API chalega, nahi toh direct standard check par jayega
+    if (!empty($api_key) && $api_key !== "YOUR_ABSTRACT_API_KEY_HERE") {
+        $api_url = "https://emailvalidation.abstractapi.com/v1/?api_key=" . $api_key . "&email=" . urlencode($email);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $api_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        if ($response) {
+            $data = json_decode($response, true);
+            if (
+                isset($data['is_valid_format']['value']) && $data['is_valid_format']['value'] === true &&
+                isset($data['deliverability']) && $data['deliverability'] !== "UNDELIVERABLE" &&
+                isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === false
+            ) {
+                $is_valid_email = true;
+            } else {
+                $error_msg = "Ye email real nahi hai, dead hai ya temporary email hai!";
+            }
         }
-    } else {
-        // Fallback agar API down ho toh normal PHP filter kaam karega
+    }
+
+    // Fallback: Agar API key nahi hai ya API down ho gayi toh normal format validation backup dega
+    if (!$is_valid_email && empty($error_msg)) {
         if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $is_valid_email = true;
         } else {
-            $error_msg = "Invalid email format!";
+            $error_msg = "Invalid email format! Please enter a valid one.";
         }
     }
 
@@ -77,15 +81,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
                 }
             }
 
-            // --- STEP 4: DB INSERT (Status remains pending until Admin Approval) ---
+            // --- STEP 4: DB INSERT ---
             $sql = "INSERT INTO users (full_name, student_id, email, password, gender, batch, graduation_year, company, image, status, role)
                     VALUES ('$full_name', '$student_id', '$email', '', '$gender', '$batch', '$grad_year', '$company', '$img_name', 'pending', 'alumni')";
 
             if ($conn->query($sql)) {
                 $reg_success = true;
-                alumnixSendPendingApprovalEmail($full_name, $email);
+                // Kuch setups me mail function slow hota h, isliye alerts pehle load ho sakte hain
+                @alumnixSendPendingApprovalEmail($full_name, $email);
             } else {
-                $error_msg = "Registration failed: " . $conn->error;
+                $error_msg = "Database Error: " . $conn->error;
             }
         }
     }
@@ -184,10 +189,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
         }
 
         .input-style:focus { border-color: var(--primary); background: #fff; }
-
         .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
         .btn-group { display: flex; gap: 10px; margin-top: 25px; }
+        
         .btn {
             flex: 1;
             padding: 14px;
@@ -235,10 +239,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             line-height: 1.7;
         }
         
-        /* Loading States for Sexy UX */
         .loading-btn {
             background: #ccc !important;
-            cursor: not-allowed;
+            color: #666 !important;
+            cursor: not-allowed !important;
         }
     </style>
 </head>
@@ -373,21 +377,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             }
         }
 
-        // Frontend validation and UX loader before submitting to backend API
         function handleFormSubmit() {
             const email = document.getElementById("userEmail").value;
             const btn = document.getElementById("finalSubmitBtn");
-            
-            // Client-side quick regex check
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
             if(!emailRegex.test(email)) {
                 Swal.fire('Error', 'Sahi email address format dalo!', 'error');
                 return false;
             }
 
             btn.classList.add("loading-btn");
-            btn.innerText = "Verifying Live Mail...";
-            btn.disabled = true;
+            btn.innerText = "Processing...";
             return true;
         }
     </script>
@@ -396,14 +397,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
         <script>
             Swal.fire({
                 title: 'Registration Received!',
-                html: 'Thanks — we sent a confirmation to <strong><?= htmlspecialchars($email ?? "", ENT_QUOTES) ?></strong>. Your login ID and generated password will be emailed after admin approval.',
+                html: 'Thanks — we sent a confirmation to <strong><?= htmlspecialchars($email ?? "", ENT_QUOTES) ?></strong>.',
                 icon: 'success',
                 confirmButtonColor: '#ff4d4d'
-            }).then(() => window.location.href = 'index.php');
+            }).then(() => {
+                window.location.href = 'index.php';
+            });
         </script>
     <?php endif; ?>
 
-    <?php if ($error_msg): ?>
+    <?php if (!empty($error_msg)): ?>
         <script>
             Swal.fire({
                 title: 'Oops!',
@@ -411,6 +414,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
                 icon: 'error',
                 confirmButtonColor: '#ff4d4d'
             });
+            // Button loading state ko reverse karne k liye
+            document.getElementById("finalSubmitBtn").classList.remove("loading-btn");
+            document.getElementById("finalSubmitBtn").innerText = "Join Now";
         </script>
     <?php endif; ?>
 </body>
