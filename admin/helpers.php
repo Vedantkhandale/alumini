@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AlumniX Pro - Global Helper Engine
  * Handle Security, Database Fetching, and UI Utilities
@@ -97,14 +98,15 @@ function getStatusBadge(string $status): string
     ];
 
     $style = $styles[$status] ?? 'background: #f1f5f9; color: #475569;';
-    
-    return "<span style='padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; $style'>".strtoupper($status)."</span>";
+
+    return "<span style='padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; $style'>" . strtoupper($status) . "</span>";
 }
 
 /**
  * ⏱️ Utility: Time Ago (e.g. 2 hours ago)
  */
-function timeAgo($timestamp) {
+function timeAgo($timestamp)
+{
     $time = time() - strtotime($timestamp);
     if ($time < 1) return 'just now';
     $tokens = [
@@ -119,70 +121,57 @@ function timeAgo($timestamp) {
     foreach ($tokens as $unit => $text) {
         if ($time < $unit) continue;
         $numberOfUnits = floor($time / $unit);
-        return $numberOfUnits.' '.$text.(($numberOfUnits>1)?'s':'').' ago';
+        return $numberOfUnits . ' ' . $text . (($numberOfUnits > 1) ? 's' : '') . ' ago';
     }
 }
 
 // =========================================================================
-// 🚀 APPENDED: Dynamic Approval Engine & Direct Email Dispatcher (Renamed to prevent conflict)
+// 🚀 APPENDED: Dynamic Approval Engine & Direct Email Dispatcher (Fixed Error State)
 // =========================================================================
-function alumnixApproveUserEngine($conn, $memberId): array
-{
-    // 1. Fetch user records from database safely
-    $query = $conn->query("SELECT full_name, email, status FROM users WHERE id = $memberId");
-    if (!$query || $query->num_rows === 0) {
-        return ["ok" => false, "message" => "User database mein nahi mila!"];
+// helpers.php file ke andar ye change karo:
+function alumnixApproveUserEngine($conn, $memberId) {
+    // 1. Verify Member (Ensure $memberId is being received)
+    $stmt = $conn->prepare("SELECT id, full_name, email, status FROM users WHERE id = ? LIMIT 1");
+    if (!$stmt) return ['ok' => false, 'message' => 'Query error.'];
+
+    $stmt->bind_param('i', $memberId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $user = $result ? $result->fetch_assoc() : null;
+    $stmt->close();
+
+    if (!$user) return ['ok' => false, 'message' => 'Member not found.'];
+
+    // 2. Status Check
+    $status = strtolower(trim((string) $user['status']));
+    if (in_array($status, array('approved', 'active'))) {
+        return ['ok' => false, 'message' => 'Already approved.'];
     }
 
-    $user = $query->fetch_assoc();
-    if ($user['status'] === 'approved' || $user['status'] === 'active') {
-        return ["ok" => false, "message" => "Yeh alumni pehle se hi approved hai."];
+    // 3. Generate Password (PHP 5.3 friendly)
+    $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+
+    // 4. Update
+    $update = $conn->prepare("UPDATE users SET status = 'approved', password = ? WHERE id = ?");
+    $update->bind_param('si', $hashedPassword, $memberId);
+    $saved = $update->execute();
+    $update->close();
+
+    if (!$saved) return ['ok' => false, 'message' => 'Database update failed.'];
+
+    // 5. Send Mail
+    $mailSent = false;
+    if (!empty($user['email'])) {
+        $mailSent = alumnixSendApprovalCredentials($user['full_name'], $user['email'], $plainPassword);
     }
 
-    // 2. Generate a clean random temporary password
-    $plain_password = bin2hex(random_bytes(4)); 
-    $hashed_password = password_hash($plain_password, PASSWORD_BCRYPT);
-
-    // 3. Update database credentials and login flag
-    $update = $conn->query("UPDATE users SET password = '$hashed_password', status = 'approved' WHERE id = $memberId");
-    
-    if (!$update) {
-        return ["ok" => false, "message" => "Database table update crash ho gayi."];
-    }
-
-    // 4. Execution wrapper for mailing logic
-    try {
-        if (function_exists('sendCredentialsEmail')) {
-            $mail_sent = sendCredentialsEmail($user['email'], $user['full_name'], $plain_password);
-        } else {
-            $to = $user['email'];
-            $subject = "Your AlumniX Account Approved Credentials";
-            $message = "Hello " . $user['full_name'] . ",\n\nYour account is approved.\nLogin ID: " . $user['email'] . "\nPassword: " . $plain_password;
-            $headers = "From: no-reply@alumnix.com";
-            $mail_sent = mail($to, $subject, $message, $headers);
-        }
-
-        if ($mail_sent) {
-            return [
-                "ok" => true, 
-                "mail_sent" => true, 
-                "name" => $user['full_name'], 
-                "email" => $user['email'], 
-                "message" => "User approved successfully and credentials dispatched!"
-            ];
-        } else {
-            throw new Exception("SMTP routing mismatch inside the mailing engine.");
-        }
-
-    } catch (Exception $e) {
-        return [
-            "ok" => true, 
-            "mail_sent" => false, 
-            "name" => $user['full_name'], 
-            "email" => $user['email'], 
-            "password" => $plain_password, 
-            "message" => "Account updated, but direct email routing failed."
-        ];
-    }
+    return [
+        'ok' => true,
+        'mail_sent' => $mailSent,
+        'message' => $mailSent ? 'Approved and emailed.' : 'Approved, email failed.',
+        'name' => $user['full_name'],
+        'email' => $user['email'],
+        'password' => $plainPassword
+    ];
 }
-?>

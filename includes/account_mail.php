@@ -1,4 +1,8 @@
 <?php
+/**
+ * AlumniX Pro - Global Helper Engine
+ * Handle Security, Database Fetching, and UI Utilities
+ */
 
 // 🚀 PHPMailer ki dependency load karo
 use PHPMailer\PHPMailer\PHPMailer;
@@ -39,19 +43,19 @@ function alumnixSendHtmlMail(string $to, string $subject, string $html): bool
 
     try {
         // --- ⚙️ SMTP CONFIGURATION ---
-        // ⚠️ Agar error dekhna ho toh niche wali line se uncomment (// hatao) kar lena:
-        // $mail->SMTPDebug = 2; 
-
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';                     
         $mail->SMTPAuth   = true;
+        
+        // ⚠️ YAHA APNI REAL DETAILS INPUT KARO BHAI:
         $mail->Username   = 'YOUR_OFFICIAL_GMAIL@gmail.com';      // 👈 Apna Admin Gmail ID daalo
         $mail->Password   = 'YOUR_16_DIGIT_APP_PASSWORD';         // 👈 16-digit Google App Password (Bina space ke)
+        
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;       
         $mail->Port       = 587;                                  
 
         // --- 👥 SENDER & RECEIVER ---
-        $mail->setFrom('YOUR_OFFICIAL_GMAIL@gmail.com', 'AlumniX Portal');
+        $mail->setFrom($mail->Username, 'AlumniX Portal');
         $mail->addAddress($to);
 
         // --- 📝 CONTENT ---
@@ -83,7 +87,6 @@ function alumnixSendPendingApprovalEmail(string $fullName, string $email): bool
 {
     $homeLink = alumnixBaseUrl() . '/index.php';
     $safeName = alumnixEscape($fullName);
-    $safeHomeLink = alumnixEscape($homeLink);
 
     $html = "<html><body><p>Hi {$safeName}, your registration is pending.</p></body></html>";
     return alumnixSendHtmlMail($email, 'AlumniX Registration Received', $html);
@@ -95,55 +98,64 @@ function alumnixSendApprovalCredentials(string $fullName, string $email, string 
     $safeName = alumnixEscape($fullName);
     $safeEmail = alumnixEscape($email);
     $safePassword = alumnixEscape($plainPassword);
-    $safeLoginLink = alumnixEscape($loginLink);
 
-    $html = "<html><body><p>Hi {$safeName}, Approved! User: {$safeEmail}, Pass: {$safePassword}</p></body></html>";
-    return alumnixSendHtmlMail($email, 'AlumniX Login Credentials', $html);
+    $html = "
+    <div style='font-family: sans-serif; padding: 20px; color: #333;'>
+        <h2>Hi {$safeName},</h2>
+        <p>Your AlumniX account has been successfully approved by the administrator!</p>
+        <p>You can now log in using the credentials below:</p>
+        <hr style='border: none; border-top: 1px solid #eee;' />
+        <p><strong>Login Email:</strong> {$safeEmail}</p>
+        <p><strong>Temporary Password:</strong> <code style='background: #f4f4f5; padding: 4px 8px; border-radius: 4px;'>{$safePassword}</code></p>
+        <hr style='border: none; border-top: 1px solid #eee;' />
+        <p><a href='{$loginLink}' style='background: #ff4d4d; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 6px; display: inline-block;'>Login to Portal</a></p>
+    </div>";
+    
+    return alumnixSendHtmlMail($email, 'AlumniX Login Credentials Available', $html);
 }
 
-function alumnixApproveUser(mysqli $conn, int $userId): array
-{
-    $stmt = $conn->prepare("SELECT id, full_name, email, role, status FROM users WHERE id = ? LIMIT 1");
-    if (!$stmt) return ['ok' => false, 'message' => 'Unable to prepare approval query.'];
+// =========================================================================
+// 🚀 NAMING SYNCHRONIZATION: Linked directly with Dashboard Core Router
+// =========================================================================
+// function alumnixApproveUserEngine($conn, $memberId)
+// {
+//     // 1. Fetch user (PHP 5.3 compatible)
+//     $sql = "SELECT id, full_name, email, role, status FROM users WHERE id = '" . (int)$memberId . "' LIMIT 1";
+//     $result = $conn->query($sql);
+//     $user = $result ? $result->fetch_assoc() : null;
 
-    $stmt->bind_param('i', $userId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $user = $result ? $result->fetch_assoc() : null;
-    $stmt->close();
+//     if (!$user) return ['ok' => false, 'message' => 'Member not found.'];
 
-    if (!$user) return ['ok' => false, 'message' => 'Member not found.'];
+//     $status = strtolower(trim((string) ($user['status'] ?? 'pending')));
+//     if ($status == 'approved' || $status == 'active') {
+//         return ['ok' => false, 'message' => 'Member is already approved.'];
+//     }
 
-    $status = strtolower(trim((string) ($user['status'] ?? 'pending')));
-    if (in_array($status, ['approved', 'active'], true)) {
-        return ['ok' => false, 'message' => 'Member is already approved.'];
-    }
+//     // 2. Password Generate (PHP 5.3 compatible)
+//     $plainPassword = substr(str_shuffle("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, 10);
+//     // PHP 5.3 mein PASSWORD_BCRYPT hota hai, lekin password_hash() shayad na ho. 
+//     // Agar error aaye toh 'md5($plainPassword)' use karna, par filhal ye try karo:
+//     $hashedPassword = crypt($plainPassword, '$2a$07$usesomadasillystringforsalt$');
 
-    $plainPassword = alumnixGeneratePassword();
-    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+//     // 3. Update Status
+//     $updateSql = "UPDATE users SET status = 'approved', password = '" . $conn->real_escape_string($hashedPassword) . "' WHERE id = '" . (int)$memberId . "'";
+//     $saved = $conn->query($updateSql);
 
-    $update = $conn->prepare("UPDATE users SET status = 'approved', password = ? WHERE id = ?");
-    if (!$update) return ['ok' => false, 'message' => 'Unable to update member status.'];
+//     if (!$saved) return ['ok' => false, 'message' => 'Member approval could not be saved.'];
 
-    $update->bind_param('si', $hashedPassword, $userId);
-    $saved = $update->execute();
-    $update->close();
+//     $mailSent = false;
+//     if (!empty($user['email'])) {
+//         // Yeh function tumhari account_mail.php mein hona chahiye
+//         $mailSent = alumnixSendApprovalCredentials((string) $user['full_name'], (string) $user['email'], $plainPassword);
+//     }
 
-    if (!$saved) return ['ok' => false, 'message' => 'Member approval could not be saved.'];
-
-    $mailSent = false;
-    if (!empty($user['email'])) {
-        $mailSent = alumnixSendApprovalCredentials((string) $user['full_name'], (string) $user['email'], $plainPassword);
-    }
-
-    return [
-        'ok' => true,
-        'mail_sent' => $mailSent,
-        'message' => $mailSent
-            ? 'Member approved and login credentials emailed.'
-            : 'Member approved, but email delivery failed. Share the generated password manually.',
-        'name' => (string) ($user['full_name'] ?? ''),
-        'email' => (string) ($user['email'] ?? ''),
-        'password' => $plainPassword,
-    ];
-}
+//     return [
+//         'ok' => true,
+//         'mail_sent' => $mailSent,
+//         'message' => $mailSent ? 'Approved and emailed.' : 'Approved, but email failed. Password: ' . $plainPassword,
+//         'name' => (string) ($user['full_name'] ?? ''),
+//         'email' => (string) ($user['email'] ?? ''),
+//         'password' => $plainPassword,
+//     ];
+// }
+?>

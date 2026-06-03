@@ -1,13 +1,16 @@
 <?php
-require_once __DIR__ . "/helpers.php";
+
+require_once __DIR__ . '/helpers.php'; // Path check karo ki helpers.php isi folder mein hai ya nahi
+adminOnly(); // Ye confirm karta hai ki helpers load hua hai
+
+
+require_once __DIR__ . '/helpers.php';
 adminOnly();
 
 if (isset($_GET["approve"])) {
-    $result = alumnixApproveUser($conn, (int) $_GET["approve"]);
-    adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
-        "credential_email" => $result["email"] ?? "",
-        "credential_password" => $result["mail_sent"] ? "" : ($result["password"] ?? ""),
-    ] : []);
+    $id = (int)$_GET["approve"];
+    $result = alumnixApproveUserEngine($conn, $id);
+    adminSetFlash($result["ok"] ? "success" : "error", $result["message"]);
     header("Location: alumni_list.php");
     exit();
 }

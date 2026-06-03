@@ -1,5 +1,5 @@
 <?php
-// (Aapki existing PHP Processing start aur logic intact rahegi jab tak aap pure API endpoints na banao)
+// (Aapki existing PHP Processing start aur logic intact rahegi jab tak aap pure API endpoints na binao)
 session_start();
 
 // Ek folder peeche (root me) jaane ke liye ../ lagao
@@ -15,13 +15,21 @@ if (isset($_GET["member_action"], $_GET["id"])) {
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
     if ($memberAction === "approve") {
-       $result = alumnixApproveUserEngine($conn, $memberId);
+        // --- FIX START: Buffer aur error suppress lagaya taaki mail function JSON ko break na kare ---
+        ob_start();
+        error_reporting(0);
+        ini_set('display_errors', 0);
+
+        $result = alumnixApproveUserEngine($conn, $memberId);
         
         if ($isAjax) {
+            ob_end_clean(); // Buffer saaf kiya taaki sirf JSON output ho
             header('Content-Type: application/json');
             echo json_encode($result);
             exit();
         }
+        ob_end_clean();
+        // --- FIX END ---
 
         adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
             "credential_name" => $result["name"] ?? "",
@@ -74,6 +82,7 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* AAPKA ORIGINAL CODE DESIGN BILKUL UNTOUCHED HAI */
         :root {
             --accent: #ff4d4d;
             --accent-soft: rgba(255, 77, 77, 0.12);
