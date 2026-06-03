@@ -15,7 +15,7 @@ if (isset($_GET["member_action"], $_GET["id"])) {
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
     if ($memberAction === "approve") {
-        $result = alumnixApproveUser($conn, $memberId);
+       $result = alumnixApproveUserEngine($conn, $memberId);
         
         if ($isAjax) {
             header('Content-Type: application/json');

@@ -1,5 +1,12 @@
 <?php
 
+// 🚀 PHPMailer ki dependency load karo
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+// ✅ FIXED PATH: Aapke screenshot ke database/folder structure ke mutabik exact sahi path
+require_once __DIR__ . '/../vendor/PHPMailer/PHPMailer/autoload.php'; 
+
 function alumnixEscape(string $value): string
 {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
@@ -21,31 +28,46 @@ function alumnixBaseUrl(): string
     return rtrim($scheme . '://' . $host . ($path ? '/' . $path : ''), '/');
 }
 
-function alumnixMailFromAddress(): string
-{
-    $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'alumnix.local';
-    $host = preg_replace('/:\d+$/', '', $host);
-
-    if (!preg_match('/^[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/', $host)) {
-        $host = 'alumnix.local';
-    }
-
-    return 'noreply@' . $host;
-}
-
+/**
+ * 📨 Native PHP mail() ko hatakar fully functional PHPMailer Integration kiya hai
+ */
 function alumnixSendHtmlMail(string $to, string $subject, string $html): bool
 {
-    $headers = [];
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type:text/html;charset=UTF-8';
-    $headers[] = 'From: AlumniX <' . alumnixMailFromAddress() . '>';
+    $mail = new PHPMailer(true);
 
-    return @mail($to, $subject, $html, implode("\r\n", $headers));
+    try {
+        // --- ⚙️ SMTP CONFIGURATION ---
+        // ⚠️ Debugger: Agar check karna ho ki mail kyun nahi ja raha, to niche wali line ka comment (//) hata dena:
+        // $mail->SMTPDebug = 2; 
+
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com';                     // Gmail SMTP Server
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'YOUR_OFFICIAL_GMAIL@gmail.com';      // 👈 Yahan APNA admin Gmail ID daalo
+        $mail->Password   = 'YOUR_16_DIGIT_APP_PASSWORD';         // 👈 Yahan apna 16-digit Google App Password daalo
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;       // Secure TLS Encryption
+        $mail->Port       = 587;                                  // Port for TLS
+
+        // --- 👥 SENDER & RECEIVER ---
+        $mail->setFrom('YOUR_OFFICIAL_GMAIL@gmail.com', 'AlumniX Portal');
+        $mail->addAddress($to);
+
+        // --- 📝 CONTENT ---
+        $mail->isHTML(true);
+        $mail->Subject = $subject;
+        $mail->Body    = $html;
+
+        $mail->send();
+        return true; // Mail successfully chala gaya 🚀
+    } catch (Exception $e) {
+        // Debugging logs ke liye: error_log($mail->ErrorInfo);
+        return false; // Agar fail hua toh false return karega, jisse backup password dikhega ❌
+    }
 }
 
 function alumnixGeneratePassword(int $length = 10): string
 {
-    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%';
+    $alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#%';
     $maxIndex = strlen($alphabet) - 1;
     $password = '';
 

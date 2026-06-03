@@ -122,4 +122,67 @@ function timeAgo($timestamp) {
         return $numberOfUnits.' '.$text.(($numberOfUnits>1)?'s':'').' ago';
     }
 }
+
+// =========================================================================
+// 🚀 APPENDED: Dynamic Approval Engine & Direct Email Dispatcher (Renamed to prevent conflict)
+// =========================================================================
+function alumnixApproveUserEngine($conn, $memberId): array
+{
+    // 1. Fetch user records from database safely
+    $query = $conn->query("SELECT full_name, email, status FROM users WHERE id = $memberId");
+    if (!$query || $query->num_rows === 0) {
+        return ["ok" => false, "message" => "User database mein nahi mila!"];
+    }
+
+    $user = $query->fetch_assoc();
+    if ($user['status'] === 'approved' || $user['status'] === 'active') {
+        return ["ok" => false, "message" => "Yeh alumni pehle se hi approved hai."];
+    }
+
+    // 2. Generate a clean random temporary password
+    $plain_password = bin2hex(random_bytes(4)); 
+    $hashed_password = password_hash($plain_password, PASSWORD_BCRYPT);
+
+    // 3. Update database credentials and login flag
+    $update = $conn->query("UPDATE users SET password = '$hashed_password', status = 'approved' WHERE id = $memberId");
+    
+    if (!$update) {
+        return ["ok" => false, "message" => "Database table update crash ho gayi."];
+    }
+
+    // 4. Execution wrapper for mailing logic
+    try {
+        if (function_exists('sendCredentialsEmail')) {
+            $mail_sent = sendCredentialsEmail($user['email'], $user['full_name'], $plain_password);
+        } else {
+            $to = $user['email'];
+            $subject = "Your AlumniX Account Approved Credentials";
+            $message = "Hello " . $user['full_name'] . ",\n\nYour account is approved.\nLogin ID: " . $user['email'] . "\nPassword: " . $plain_password;
+            $headers = "From: no-reply@alumnix.com";
+            $mail_sent = mail($to, $subject, $message, $headers);
+        }
+
+        if ($mail_sent) {
+            return [
+                "ok" => true, 
+                "mail_sent" => true, 
+                "name" => $user['full_name'], 
+                "email" => $user['email'], 
+                "message" => "User approved successfully and credentials dispatched!"
+            ];
+        } else {
+            throw new Exception("SMTP routing mismatch inside the mailing engine.");
+        }
+
+    } catch (Exception $e) {
+        return [
+            "ok" => true, 
+            "mail_sent" => false, 
+            "name" => $user['full_name'], 
+            "email" => $user['email'], 
+            "password" => $plain_password, 
+            "message" => "Account updated, but direct email routing failed."
+        ];
+    }
+}
 ?>
