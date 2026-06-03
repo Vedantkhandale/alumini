@@ -1,4 +1,9 @@
 <?php
+// (Aapki existing PHP Processing start aur logic intact rahegi jab tak aap pure API endpoints na banao)
+session_start();
+
+// Ek folder peeche (root me) jaane ke liye ../ lagao
+include("../includes/db.php"); 
 require_once __DIR__ . "/helpers.php";
 adminOnly();
 
@@ -6,18 +11,38 @@ if (isset($_GET["member_action"], $_GET["id"])) {
     $memberId = (int) $_GET["id"];
     $memberAction = $_GET["member_action"];
 
+    // Check if it's an AJAX request
+    $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
+
     if ($memberAction === "approve") {
         $result = alumnixApproveUser($conn, $memberId);
+        
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode($result);
+            exit();
+        }
+
         adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
             "credential_name" => $result["name"] ?? "",
             "credential_email" => $result["email"] ?? "",
             "credential_password" => $result["mail_sent"] ? "" : ($result["password"] ?? ""),
         ] : []);
     } elseif ($memberAction === "reject") {
-        $conn->query("UPDATE users SET status='rejected' WHERE id={$memberId}");
+        $status = $conn->query("UPDATE users SET status='rejected' WHERE id={$memberId}");
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(["ok" => $status, "message" => "Member request marked as rejected."]);
+            exit();
+        }
         adminSetFlash("warning", "Member request marked as rejected.");
     } elseif ($memberAction === "delete") {
-        $conn->query("DELETE FROM users WHERE id={$memberId}");
+        $status = $conn->query("DELETE FROM users WHERE id={$memberId}");
+        if ($isAjax) {
+            header('Content-Type: application/json');
+            echo json_encode(["ok" => $status, "message" => "Member record deleted."]);
+            exit();
+        }
         adminSetFlash("success", "Member record deleted.");
     }
 
@@ -277,6 +302,7 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
             padding: 18px;
             background: rgba(248, 250, 252, 0.94);
             border: 1px solid var(--line);
+            transition: all 0.3s ease;
         }
 
         .queue-item {
@@ -329,6 +355,13 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
             cursor: pointer;
             color: #fff;
             text-decoration: none;
+            transition: opacity 0.2s;
+        }
+        
+        .action-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+            pointer-events: none;
         }
 
         .action-btn.approve { background: linear-gradient(135deg, #10b981, #34d399); }
@@ -449,7 +482,7 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
                 <div class="queue">
                     <?php if ($pendingUsers): ?>
                         <?php foreach ($pendingUsers as $user): ?>
-                            <div class="queue-item">
+                            <div class="queue-item" id="user-row-<?php echo (int) $user["id"]; ?>">
                                 <div>
                                     <div class="queue-name"><?php echo adminE($user["full_name"]); ?></div>
                                     <div class="queue-meta">
@@ -460,9 +493,9 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
                                     </div>
                                 </div>
                                 <div class="actions">
-                                    <a href="?member_action=approve&id=<?php echo (int) $user["id"]; ?>" class="action-btn approve" onclick="return confirm('Approve this member and send login credentials by email?');">Approve</a>
-                                    <a href="?member_action=reject&id=<?php echo (int) $user["id"]; ?>" class="action-btn reject" onclick="return confirm('Reject this member request?');">Reject</a>
-                                    <a href="?member_action=delete&id=<?php echo (int) $user["id"]; ?>" class="action-btn delete" onclick="return confirm('Delete this member record permanently?');">Delete</a>
+                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'approve', this)" class="action-btn approve">Approve</button>
+                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'reject', this)" class="action-btn reject">Reject</button>
+                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'delete', this)" class="action-btn delete">Delete</button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
@@ -528,5 +561,96 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
             </div>
         </section>
     </div>
+
+    <script>
+    async function executeAction(id, action, buttonEl) {
+        let actionConfig = {
+            approve: { title: 'Approve Alumni?', text: 'Is alumni ko approve karke automatic credential bhej dein?', icon: 'question', loadingText: '<i class="fas fa-spinner fa-spin"></i> Sending Mail...' },
+            reject: { title: 'Reject Request?', text: 'Kya aap sach me is request ko reject karna chahte hain?', icon: 'warning', loadingText: 'Rejecting...' },
+            delete: { title: 'Delete Permanently?', text: 'Ye record hamesha ke liye saaf ho jayega!', icon: 'error', loadingText: 'Deleting...' }
+        };
+
+        const config = actionConfig[action];
+
+        // SweetAlert Confirm Screen
+        const confirmation = await Swal.fire({
+            title: config.title,
+            text: config.text,
+            icon: config.icon,
+            showCancelButton: true,
+            confirmButtonColor: action === 'approve' ? '#10b981' : '#ef4444',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Haan, proceed karo!'
+        });
+
+        if (!confirmation.isConfirmed) return;
+
+        // Parent element control aur buttons disable status toggle
+        const rowItem = document.getElementById(`user-row-${id}`);
+        const actionButtons = rowItem.querySelectorAll('.action-btn');
+        
+        actionButtons.forEach(btn => btn.classList.add('disabled'));
+        const originalBtnText = buttonEl.innerHTML;
+        buttonEl.innerHTML = config.loadingText;
+
+        try {
+            // Trigger AJAX call natively
+            const response = await fetch(`?member_action=${action}&id=${id}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            
+            if (!response.ok) throw new Error('Network issue occurred');
+            const data = await response.json();
+
+            if (action === 'approve') {
+                if (data.ok) {
+                    if (data.mail_sent) {
+                        Swal.fire('Approved!', `Account active ho gaya aur credentials successfully <strong>${data.email}</strong> par bhej diye gaye hain.`, 'success');
+                    } else {
+                        Swal.fire({
+                            title: 'Approved but Mail Failed!',
+                            html: `Account active hai par network error ki wajah se mail nahi gaya.<br><br><strong>Login:</strong> ${data.email}<br><strong>Password:</strong> <code style="background:#eee;padding:2px 6px;border-radius:4px;">${data.password}</code>`,
+                            icon: 'warning'
+                        });
+                    }
+                    // Row ko ultra-smoothly fade out karo screen se
+                    fadeOutAndRemove(rowItem);
+                } else {
+                    Swal.fire('Error!', data.message || 'Kuch galat hua.', 'error');
+                    resetButtons(actionButtons, buttonEl, originalBtnText);
+                }
+            } else {
+                // Reject ya Delete successful flows
+                Swal.fire('Done!', 'Action pipeline execute ho gayi hai.', 'success');
+                fadeOutAndRemove(rowItem);
+            }
+        } catch (error) {
+            Swal.fire('Oops!', 'Server connection break ho gaya ya invalid JSON return hua.', 'error');
+            resetButtons(actionButtons, buttonEl, originalBtnText);
+        }
+    }
+
+    function resetButtons(buttons, activeBtn, text) {
+        buttons.forEach(btn => btn.classList.remove('disabled'));
+        activeBtn.innerHTML = text;
+    }
+
+    function fadeOutAndRemove(element) {
+        element.style.opacity = '0';
+        element.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            element.remove();
+            // Agar queue khali ho gayi ho toh empty card laga do
+            const queue = document.querySelector('.queue');
+            if (queue && queue.children.length === 0) {
+                queue.innerHTML = `
+                    <div class="empty">
+                        <i class="fas fa-check-circle" style="font-size: 32px; margin-bottom: 10px;"></i>
+                        <p>No pending alumni approvals right now.</p>
+                    </div>`;
+            }
+        }, 300);
+    }
+    </script>
 </body>
 </html>

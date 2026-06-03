@@ -1,4 +1,4 @@
-<?php
+\<?php
 session_start();
 include("includes/db.php");
 require_once __DIR__ . "/includes/account_mail.php";
@@ -9,7 +9,7 @@ $error_msg = "";
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
     $full_name = mysqli_real_escape_string($conn, $_POST["full_name"]);
     $student_id = mysqli_real_escape_string($conn, $_POST["student_id"]);
-    $email = mysqli_real_escape_string($conn, $_POST["email"]);
+    $email = mysqli_real_escape_string($conn, trim($_POST["email"]));
     $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
 
     $batch_start = isset($_POST["batch_start"]) ? mysqli_real_escape_string($conn, $_POST["batch_start"]) : "";
@@ -19,31 +19,74 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
     $grad_year = mysqli_real_escape_string($conn, $_POST["grad_year"]);
     $company = mysqli_real_escape_string($conn, $_POST["company"]);
 
-    $img_name = "default.png";
-    if (isset($_FILES["profile_img"]) && (int) $_FILES["profile_img"]["error"] === 0) {
-        $target_dir = "uploads/profiles/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
-        }
+    // --- STEP 1: STRICT LIVE EMAIL VALIDATION VIA API ---
+    // Abstract API (Free tier provides 500 requests/month)
+    $api_key = "YOUR_ABSTRACT_API_KEY_HERE"; 
+    $api_url = "https://emailvalidation.abstractapi.com/v1/?api_key=" . $api_key . "&email=" . urlencode($email);
 
-        $extension = pathinfo($_FILES["profile_img"]["name"], PATHINFO_EXTENSION);
-        $extension = $extension ? "." . strtolower($extension) : "";
-        $img_name = "IMG_" . time() . $extension;
-        move_uploaded_file($_FILES["profile_img"]["tmp_name"], $target_dir . $img_name);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $is_valid_email = false;
+    if ($response) {
+        $data = json_decode($response, true);
+        // Strict Checking parameters from API response
+        if (
+            isset($data['is_valid_format']['value']) && $data['is_valid_format']['value'] === true &&
+            isset($data['deliverability']) && $data['deliverability'] !== "UNDELIVERABLE" &&
+            isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === false
+        ) {
+            $is_valid_email = true;
+        } else {
+            $error_msg = "Ye email real nahi hai, dead hai ya disposable temporay email hai!";
+        }
+    } else {
+        // Fallback agar API down ho toh normal PHP filter kaam karega
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $is_valid_email = true;
+        } else {
+            $error_msg = "Invalid email format!";
+        }
     }
 
-    $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
-    if ($check && $check->num_rows > 0) {
-        $error_msg = "Student ID or email already exists.";
-    } else {
-        $sql = "INSERT INTO users (full_name, student_id, email, password, gender, batch, graduation_year, company, image, status, role)
-                VALUES ('$full_name', '$student_id', '$email', '', '$gender', '$batch', '$grad_year', '$company', '$img_name', 'pending', 'alumni')";
-
-        if ($conn->query($sql)) {
-            $reg_success = true;
-            alumnixSendPendingApprovalEmail($full_name, $email);
+    if ($is_valid_email) {
+        // --- STEP 2: DUPLICATE CHECK ---
+        $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
+        if ($check && $check->num_rows > 0) {
+            $error_msg = "Student ID or Email already exists in our system.";
         } else {
-            $error_msg = "Registration failed: " . $conn->error;
+            
+            // --- STEP 3: SECURE IMAGE UPLOAD ---
+            $img_name = "default.png";
+            if (isset($_FILES["profile_img"]) && (int) $_FILES["profile_img"]["error"] === 0) {
+                $target_dir = "uploads/profiles/";
+                if (!is_dir($target_dir)) {
+                    mkdir($target_dir, 0777, true);
+                }
+
+                $extension = pathinfo($_FILES["profile_img"]["name"], PATHINFO_EXTENSION);
+                $allowed_exts = ['jpg', 'jpeg', 'png', 'webp'];
+                
+                if (in_array(strtolower($extension), $allowed_exts)) {
+                    $img_name = "IMG_" . time() . "_" . rand(1000, 9999) . "." . strtolower($extension);
+                    move_uploaded_file($_FILES["profile_img"]["tmp_name"], $target_dir . $img_name);
+                }
+            }
+
+            // --- STEP 4: DB INSERT (Status remains pending until Admin Approval) ---
+            $sql = "INSERT INTO users (full_name, student_id, email, password, gender, batch, graduation_year, company, image, status, role)
+                    VALUES ('$full_name', '$student_id', '$email', '', '$gender', '$batch', '$grad_year', '$company', '$img_name', 'pending', 'alumni')";
+
+            if ($conn->query($sql)) {
+                $reg_success = true;
+                alumnixSendPendingApprovalEmail($full_name, $email);
+            } else {
+                $error_msg = "Registration failed: " . $conn->error;
+            }
         }
     }
 }
@@ -191,6 +234,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             font-size: 12px;
             line-height: 1.7;
         }
+        
+        /* Loading States for Sexy UX */
+        .loading-btn {
+            background: #ccc !important;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -207,7 +256,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             <div class="dot"></div>
         </div>
 
-        <form id="regForm" method="POST" enctype="multipart/form-data">
+        <form id="regForm" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit();">
             <div class="form-step active">
                 <div class="field-group">
                     <label class="label">Full Name</label>
@@ -265,7 +314,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
 
                 <div class="field-group">
                     <label class="label">Email</label>
-                    <input type="email" name="email" class="input-style" placeholder="rahul@example.com" required>
+                    <input type="email" id="userEmail" name="email" class="input-style" placeholder="rahul@example.com" required>
                 </div>
 
                 <div class="field-group credential-note">
@@ -275,7 +324,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
 
                 <div class="btn-group">
                     <button type="button" class="btn btn-prev" onclick="prevStep(1)">Back</button>
-                    <button type="submit" name="register" class="btn btn-next">Join Now</button>
+                    <button type="submit" id="finalSubmitBtn" name="register" class="btn btn-next">Join Now</button>
                 </div>
             </div>
         </form>
@@ -291,7 +340,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             let valid = true;
 
             inputs.forEach((input) => {
-                if (!input.value) {
+                if (!input.value.trim()) {
                     input.style.borderColor = "var(--primary)";
                     valid = false;
                 } else {
@@ -322,6 +371,24 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
                 };
                 reader.readAsDataURL(input.files[0]);
             }
+        }
+
+        // Frontend validation and UX loader before submitting to backend API
+        function handleFormSubmit() {
+            const email = document.getElementById("userEmail").value;
+            const btn = document.getElementById("finalSubmitBtn");
+            
+            // Client-side quick regex check
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(email)) {
+                Swal.fire('Error', 'Sahi email address format dalo!', 'error');
+                return false;
+            }
+
+            btn.classList.add("loading-btn");
+            btn.innerText = "Verifying Live Mail...";
+            btn.disabled = true;
+            return true;
         }
     </script>
 

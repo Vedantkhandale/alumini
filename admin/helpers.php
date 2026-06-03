@@ -4,6 +4,7 @@
  * Handle Security, Database Fetching, and UI Utilities
  */
 
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
