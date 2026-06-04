@@ -1,10 +1,8 @@
 <?php
-
 /**
  * AlumniX Pro - Global Helper Engine
  * Handle Security, Database Fetching, and UI Utilities
  */
-
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,7 +17,6 @@ require_once __DIR__ . "/../includes/account_mail.php";
 function adminOnly(): void
 {
     if (!isset($_SESSION["admin"])) {
-        // Agar admin session nahi hai, redirect to login with error
         header("Location: admin_login.php?error=unauthorized");
         exit();
     }
@@ -85,7 +82,6 @@ function adminPullFlash(): ?array
 
 /**
  * 🎭 UI: Status Badge Generator
- * Helps in creating consistent badges across the app
  */
 function getStatusBadge(string $status): string
 {
@@ -103,7 +99,7 @@ function getStatusBadge(string $status): string
 }
 
 /**
- * ⏱️ Utility: Time Ago (e.g. 2 hours ago)
+ * ⏱️ Utility: Time Ago
  */
 function timeAgo($timestamp)
 {
@@ -125,12 +121,7 @@ function timeAgo($timestamp)
     }
 }
 
-// =========================================================================
-// 🚀 APPENDED: Dynamic Approval Engine & Direct Email Dispatcher (Fixed Error State)
-// =========================================================================
-// helpers.php file ke andar ye change karo:
 function alumnixApproveUserEngine($conn, $memberId) {
-    // 1. Verify Member (Ensure $memberId is being received)
     $stmt = $conn->prepare("SELECT id, full_name, email, status FROM users WHERE id = ? LIMIT 1");
     if (!$stmt) return ['ok' => false, 'message' => 'Query error.'];
 
@@ -142,17 +133,14 @@ function alumnixApproveUserEngine($conn, $memberId) {
 
     if (!$user) return ['ok' => false, 'message' => 'Member not found.'];
 
-    // 2. Status Check
     $status = strtolower(trim((string) $user['status']));
     if (in_array($status, array('approved', 'active'))) {
         return ['ok' => false, 'message' => 'Already approved.'];
     }
 
-    // 3. Generate Password (PHP 5.3 friendly)
     $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
     $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 
-    // 4. Update
     $update = $conn->prepare("UPDATE users SET status = 'approved', password = ? WHERE id = ?");
     $update->bind_param('si', $hashedPassword, $memberId);
     $saved = $update->execute();
@@ -160,7 +148,6 @@ function alumnixApproveUserEngine($conn, $memberId) {
 
     if (!$saved) return ['ok' => false, 'message' => 'Database update failed.'];
 
-    // 5. Send Mail
     $mailSent = false;
     if (!empty($user['email'])) {
         $mailSent = alumnixSendApprovalCredentials($user['full_name'], $user['email'], $plainPassword);

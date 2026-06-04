@@ -1,8 +1,7 @@
 <?php
-// (Aapki existing PHP Processing start aur logic intact rahegi jab tak aap pure API endpoints na binao)
 session_start();
 
-// Ek folder peeche (root me) jaane ke liye ../ lagao
+// Database aur helpers (Untouched logic)
 include("../includes/db.php"); 
 require_once __DIR__ . "/helpers.php";
 adminOnly();
@@ -10,12 +9,9 @@ adminOnly();
 if (isset($_GET["member_action"], $_GET["id"])) {
     $memberId = (int) $_GET["id"];
     $memberAction = $_GET["member_action"];
-
-    // Check if it's an AJAX request
     $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest';
 
     if ($memberAction === "approve") {
-        // --- FIX START: Buffer aur error suppress lagaya taaki mail function JSON ko break na kare ---
         ob_start();
         error_reporting(0);
         ini_set('display_errors', 0);
@@ -23,13 +19,12 @@ if (isset($_GET["member_action"], $_GET["id"])) {
         $result = alumnixApproveUserEngine($conn, $memberId);
         
         if ($isAjax) {
-            ob_end_clean(); // Buffer saaf kiya taaki sirf JSON output ho
+            ob_end_clean();
             header('Content-Type: application/json');
             echo json_encode($result);
             exit();
         }
         ob_end_clean();
-        // --- FIX END ---
 
         adminSetFlash($result["ok"] ? ($result["mail_sent"] ? "success" : "warning") : "error", $result["message"], $result["ok"] ? [
             "credential_name" => $result["name"] ?? "",
@@ -77,82 +72,81 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | AlumniX</title>
+    <title>Premium Admin Workspace | AlumniX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* AAPKA ORIGINAL CODE DESIGN BILKUL UNTOUCHED HAI */
         :root {
-            --accent: #ff4d4d;
-            --accent-soft: rgba(255, 77, 77, 0.12);
-            --ink: #0f172a;
+            --accent: #dc2626; /* Premium Crimson Red */
+            --accent-hover: #991b1b;
+            --accent-soft: rgba(220, 38, 38, 0.06);
+            --ink: #0f172a; /* Solid Slate Black */
             --muted: #64748b;
-            --surface: rgba(255, 255, 255, 0.92);
-            --surface-strong: #ffffff;
-            --line: rgba(148, 163, 184, 0.18);
-            --bg: #f8fafc;
-            --shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-            --radius: 28px;
+            --surface: #ffffff; /* Clean White Background Preferred */
+            --line: #e2e8f0;
+            --bg: #ffffff; 
+            --bg-alt: #f8fafc;
+            --shadow: 0 12px 40px rgba(0, 0, 0, 0.03);
+            --radius: 16px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             color: var(--ink);
-            background:
-                radial-gradient(circle at top left, rgba(255, 77, 77, 0.08), transparent 26%),
-                radial-gradient(circle at bottom right, rgba(15, 23, 42, 0.06), transparent 24%),
-                var(--bg);
+            background-color: var(--bg);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
 
         .shell {
-            width: min(1280px, calc(100% - 36px));
+            width: min(1340px, calc(100% - 40px));
             margin: 0 auto;
-            padding: 28px 0 36px;
+            padding: 40px 0 60px;
         }
 
         .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 18px;
-            padding: 26px 28px;
-            border-radius: 32px;
-            background: rgba(255, 255, 255, 0.78);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.86);
+            gap: 24px;
+            padding: 32px;
+            border-radius: var(--radius);
+            background: var(--surface);
+            border: 1px solid var(--line);
             box-shadow: var(--shadow);
+            margin-bottom: 32px;
         }
 
         .eyebrow {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 14px;
+            padding: 6px 14px;
             border-radius: 999px;
             background: var(--accent-soft);
             color: var(--accent);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.08em;
             text-transform: uppercase;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
         }
 
         .topbar h1 {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(30px, 4vw, 46px);
-            letter-spacing: -0.05em;
-            line-height: 0.96;
+            font-size: clamp(26px, 3vw, 36px);
+            letter-spacing: -0.03em;
+            font-weight: 700;
+            color: var(--ink);
         }
 
         .topbar p {
-            margin-top: 10px;
+            margin-top: 6px;
             color: var(--muted);
-            max-width: 650px;
-            line-height: 1.7;
+            font-size: 14px;
         }
 
         .top-actions {
@@ -166,257 +160,228 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            border-radius: 999px;
-            padding: 12px 18px;
+            gap: 8px;
+            border-radius: 12px;
+            padding: 10px 18px;
             text-decoration: none;
-            font-weight: 800;
+            font-weight: 700;
             font-size: 13px;
-            transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+            transition: all 0.2s ease;
             border: 1px solid transparent;
+            cursor: pointer;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent), #ff8b65);
+            background: var(--ink);
             color: #fff;
-            box-shadow: 0 18px 35px rgba(255, 77, 77, 0.18);
         }
 
-        .btn-primary:hover { transform: translateY(-3px); }
+        .btn-primary:hover {
+            background: #1e293b;
+            transform: translateY(-1px);
+        }
 
         .btn-soft {
-            background: var(--surface-strong);
+            background: #fff;
             color: var(--ink);
             border-color: var(--line);
         }
 
-        .btn-soft:hover { transform: translateY(-3px); }
-
-        .flash {
-            margin-top: 18px;
-            padding: 18px 20px;
-            border-radius: 22px;
-            border: 1px solid var(--line);
-            background: var(--surface);
-            box-shadow: 0 14px 35px rgba(15, 23, 42, 0.04);
+        .btn-soft:hover {
+            background: var(--bg-alt);
+            border-color: var(--ink);
         }
 
-        .flash.success { border-color: rgba(16, 185, 129, 0.22); background: rgba(236, 253, 245, 0.96); }
-        .flash.warning { border-color: rgba(245, 158, 11, 0.22); background: rgba(255, 251, 235, 0.96); }
-        .flash.error { border-color: rgba(239, 68, 68, 0.22); background: rgba(254, 242, 242, 0.96); }
-
-        .flash h3 { font-size: 15px; font-weight: 800; margin-bottom: 8px; }
-        .flash p { color: #334155; line-height: 1.7; font-size: 13px; }
-        .flash code {
-            display: inline-block;
-            margin-top: 10px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            background: rgba(15, 23, 42, 0.06);
-            font-size: 12px;
-            font-weight: 700;
-        }
-
+        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(5, minmax(0, 1fr));
-            gap: 16px;
-            margin-top: 24px;
+            gap: 20px;
+            margin-bottom: 32px;
         }
 
-        .stat-card,
-        .panel {
+        .stat-card, .panel {
             background: var(--surface);
-            backdrop-filter: blur(18px);
             border-radius: var(--radius);
-            border: 1px solid rgba(255, 255, 255, 0.88);
+            border: 1px solid var(--line);
             box-shadow: var(--shadow);
         }
 
         .stat-card {
-            padding: 22px;
-            min-height: 160px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 12px;
+            transition: border-color 0.2s ease;
         }
+
+        .stat-card:hover { border-color: var(--ink); }
 
         .stat-label {
             color: var(--muted);
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.06em;
         }
 
         .stat-value {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(32px, 4vw, 44px);
-            letter-spacing: -0.05em;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1;
         }
 
-        .stat-foot {
-            color: #334155;
-            font-size: 13px;
-            line-height: 1.6;
-        }
+        .stat-foot { color: var(--muted); font-size: 12px; }
 
+        /* Content Grid */
         .content-grid {
             display: grid;
-            grid-template-columns: 1.25fr 0.9fr;
-            gap: 18px;
-            margin-top: 24px;
+            grid-template-columns: 1.4fr 0.85fr;
+            gap: 24px;
         }
 
-        .panel {
-            padding: 24px;
-        }
+        .panel { padding: 32px; }
 
         .panel-head {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 14px;
-            margin-bottom: 20px;
+            gap: 20px;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 20px;
         }
 
-        .panel-head h2 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
-            letter-spacing: -0.04em;
+        /* Sexy Custom Tab System */
+        .tab-container {
+            display: flex;
+            gap: 8px;
+            background: var(--bg-alt);
+            padding: 4px;
+            border-radius: 10px;
+            border: 1px solid var(--line);
         }
 
-        .panel-head p {
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 700;
             color: var(--muted);
-            font-size: 13px;
-            margin-top: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn.active {
+            background: var(--surface);
+            color: var(--ink);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .tab-badge {
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: var(--ink);
+            color: #fff;
+        }
+        .tab-badge.red-alert { background: var(--accent); }
+
+        .search-wrapper {
+            position: relative;
+            width: 220px;
+        }
+
+        .search-wrapper i {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            color: var(--muted); font-size: 13px;
+        }
+
+        .search-input {
+            width: 100%; padding: 10px 14px 10px 36px;
+            border-radius: 10px; border: 1px solid var(--line);
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            background: var(--bg-alt); transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none; border-color: var(--ink); background: #fff;
+        }
+
+        /* Items Styles */
+        .queue-pane { display: none; }
+        .queue-pane.active { display: grid; gap: 14px; }
+
+        .card-node {
+            border-radius: 14px; padding: 18px;
+            background: var(--bg-alt); border: 1px solid var(--line);
+            display: grid; grid-template-columns: 1fr auto;
+            align-items: center; gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .card-node:hover {
+            background: #fff; border-color: var(--ink);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.02);
+        }
+
+        .node-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+        
+        .meta-flex { display: flex; flex-wrap: wrap; gap: 6px; }
+        
+        .badge-pill {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 6px; background: #fff;
+            border: 1px solid var(--line); font-size: 11px; font-weight: 600; color: var(--muted);
+        }
+
+        .actions-flex { display: flex; gap: 6px; }
+
+        /* Action Buttons */
+        .action-control {
+            border: 1px solid var(--line); background: #fff;
+            border-radius: 8px; padding: 8px 14px; font-size: 12px;
+            font-weight: 700; cursor: pointer; transition: all 0.15s ease;
+        }
+
+        .action-control.cmd-approve { background: var(--ink); color: #fff; border: none; }
+        .action-control.cmd-approve:hover { background: #1e293b; }
+
+        .action-control.cmd-reject:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+        .action-control.cmd-delete:hover { color: #000; border-color: #000; background: #f1f5f9; }
+
+        .action-control.disabled { opacity: 0.3; pointer-events: none; }
+
+        /* Verified Row Badge */
+        .verified-stamp {
+            background: #f0fdf4; color: #16a34a; border-color: #bbf7d0;
+            font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em;
         }
 
         .panel-link {
-            color: var(--accent);
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 13px;
+            color: var(--accent); text-decoration: none; font-weight: 700; font-size: 13px;
         }
 
-        .queue {
-            display: grid;
-            gap: 14px;
+        .empty-state {
+            padding: 40px 20px; text-align: center; color: var(--muted);
+            border: 1px dashed var(--line); border-radius: 14px; font-size: 13px;
         }
 
-        .queue-item,
-        .feed-item,
-        .event-item {
-            border-radius: 24px;
-            padding: 18px;
-            background: rgba(248, 250, 252, 0.94);
-            border: 1px solid var(--line);
-            transition: all 0.3s ease;
-        }
-
-        .queue-item {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto;
-            gap: 16px;
-            align-items: center;
-        }
-
-        .queue-name {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .queue-meta,
-        .feed-meta,
-        .event-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 7px 12px;
-            border-radius: 999px;
-            background: #fff;
-            border: 1px solid var(--line);
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-end;
-        }
-
-        .action-btn {
-            border: none;
-            border-radius: 14px;
-            padding: 10px 14px;
-            font-size: 12px;
-            font-weight: 800;
-            cursor: pointer;
-            color: #fff;
-            text-decoration: none;
-            transition: opacity 0.2s;
-        }
-        
-        .action-btn.disabled {
-            opacity: 0.6;
-            cursor: not-allowed !important;
-            pointer-events: none;
-        }
-
-        .action-btn.approve { background: linear-gradient(135deg, #10b981, #34d399); }
-        .action-btn.reject { background: linear-gradient(135deg, #f59e0b, #f97316); }
-        .action-btn.delete { background: linear-gradient(135deg, #ef4444, #f87171); }
-
-        .mini-grid {
-            display: grid;
-            gap: 12px;
-        }
-
-        .feed-item h3,
-        .event-item h3 {
-            font-size: 18px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .feed-item p,
-        .event-item p {
-            color: #334155;
-            line-height: 1.7;
-            font-size: 13px;
-        }
-
-        .empty {
-            padding: 30px 20px;
-            border-radius: 24px;
-            text-align: center;
-            color: var(--muted);
-            background: rgba(248, 250, 252, 0.9);
-            border: 1px dashed var(--line);
-        }
-
-        @media (max-width: 1180px) {
+        @media (max-width: 1240px) {
             .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
             .content-grid { grid-template-columns: 1fr; }
         }
-
-        @media (max-width: 760px) {
-            .shell { width: calc(100% - 20px); }
-            .topbar { padding: 22px; }
-            .topbar, .top-actions, .panel-head, .queue-item { grid-template-columns: 1fr; }
-            .topbar, .panel-head { flex-direction: column; align-items: flex-start; }
-            .top-actions, .actions { width: 100%; justify-content: flex-start; }
+        @media (max-width: 768px) {
+            .topbar, .panel-head, .card-node { flex-direction: column; align-items: flex-start; }
             .stats-grid { grid-template-columns: 1fr; }
+            .search-wrapper, .actions-flex { width: 100%; }
         }
     </style>
 </head>
@@ -424,146 +389,136 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
     <div class="shell">
         <header class="topbar">
             <div>
-                <div class="eyebrow"><i class="fas fa-shield-heart"></i> Admin Command Center</div>
-                <h1>Run AlumniX with clarity and control.</h1>
-                <p>Approve alumni accounts, watch job moderation, and keep campus events moving without jumping across messy screens.</p>
+                <div class="eyebrow"><i class="fas fa-bolt"></i> Workspace Control</div>
+                <h1>AlumniX Executive Engine</h1>
+                <p>Monitor instant applications, verify credentials, and manage live campus parameters efficiently.</p>
             </div>
             <div class="top-actions">
-                <a href="alumni_list.php" class="btn btn-soft"><i class="fas fa-users"></i> Alumni</a>
-                <a href="jobs.php" class="btn btn-soft"><i class="fas fa-briefcase"></i> Jobs</a>
-                <a href="event.php" class="btn btn-soft"><i class="fas fa-calendar-days"></i> Events</a>
-                <a href="view_applications.php" class="btn btn-soft"><i class="fas fa-list-check"></i> Applications</a>
-                <a href="logout.php" class="btn btn-primary"><i class="fas fa-power-off"></i> Logout</a>
+                <a href="alumni_list.php" class="btn btn-soft">Alumni</a>
+                <a href="jobs.php" class="btn btn-soft">Jobs</a>
+                <a href="event.php" class="btn btn-soft">Events</a>
+                <a href="logout.php" class="btn btn-primary"><i class="fas fa-power-off"></i></a>
             </div>
         </header>
 
         <?php if ($flash): ?>
-            <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
-                <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
-                <?php if (!empty($flash["credential_password"])): ?>
-                    <p>Email delivery failed, so share these credentials manually if needed.</p>
-                    <code>Login ID: <?php echo adminE($flash["credential_email"] ?? ""); ?></code>
-                    <code>Password: <?php echo adminE($flash["credential_password"] ?? ""); ?></code>
-                <?php elseif (!empty($flash["credential_email"])): ?>
-                    <p>Login ID was sent to <strong><?php echo adminE($flash["credential_email"]); ?></strong>.</p>
-                <?php endif; ?>
-            </section>
+            <div style="margin-bottom:24px; padding:16px; border-radius:12px; background:var(--bg-alt); border-left:4px solid var(--accent); font-size:13px; font-weight:600;">
+                <?php echo adminE($flash["message"]); ?>
+            </div>
         <?php endif; ?>
 
         <section class="stats-grid">
-            <article class="stat-card">
-                <span class="stat-label">Pending Alumni</span>
+            <div class="stat-card">
+                <span class="stat-label">Verification Holds</span>
                 <span class="stat-value" style="color: var(--accent);"><?php echo number_format($stats["pending_alumni"]); ?></span>
-                <p class="stat-foot">Fresh registrations waiting for admin approval and auto-generated credentials.</p>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Approved Members</span>
+                <p class="stat-foot">Profiles requiring action.</p>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Active Alumni</span>
                 <span class="stat-value"><?php echo number_format($stats["active_alumni"]); ?></span>
-                <p class="stat-foot">Members currently cleared to log in with emailed credentials.</p>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Pending Jobs</span>
+                <p class="stat-foot">Verified portal accounts.</p>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Job Queue</span>
                 <span class="stat-value"><?php echo number_format($stats["pending_jobs"]); ?></span>
-                <p class="stat-foot">Open roles still waiting for moderation before they go live.</p>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Live Events</span>
+                <p class="stat-foot">Pending moderation checks.</p>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ecosystem Events</span>
                 <span class="stat-value"><?php echo number_format($stats["live_events"]); ?></span>
-                <p class="stat-foot">Upcoming events already published on the public portal.</p>
-            </article>
-            <article class="stat-card">
-                <span class="stat-label">Applications</span>
+                <p class="stat-foot">Scheduled items active.</p>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Submissions</span>
                 <span class="stat-value"><?php echo number_format($stats["applications"]); ?></span>
-                <p class="stat-foot">Total job applications tracked inside the admin workspace.</p>
-            </article>
+                <p class="stat-foot">Aggregated job metrics.</p>
+            </div>
         </section>
 
         <section class="content-grid">
             <article class="panel">
                 <div class="panel-head">
-                    <div>
-                        <h2>Approval Queue</h2>
-                        <p>Approve members and instantly email their login ID plus generated password.</p>
+                    <div class="tab-container">
+                        <button class="tab-btn active" onclick="toggleDashboardTab('pending')">
+                            Pending Requests <span class="tab-badge red-alert" id="badge-pending-count"><?php echo count($pendingUsers); ?></span>
+                        </button>
+                        <button class="tab-btn" onclick="toggleDashboardTab('approved')">
+                            Approved Logs <span class="tab-badge" id="badge-approved-count">0</span>
+                        </button>
                     </div>
-                    <a href="alumni_list.php" class="panel-link">Open full directory</a>
+                    
+                    <div class="search-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="liveSearchNode" class="search-input" placeholder="Filter current view...">
+                    </div>
                 </div>
 
-                <div class="queue">
+                <!-- Tab 1: Pending Queue -->
+                <div id="pane-pending" class="queue-pane active">
                     <?php if ($pendingUsers): ?>
                         <?php foreach ($pendingUsers as $user): ?>
-                            <div class="queue-item" id="user-row-<?php echo (int) $user["id"]; ?>">
+                            <div class="card-node" id="user-node-<?php echo (int)$user["id"]; ?>">
                                 <div>
-                                    <div class="queue-name"><?php echo adminE($user["full_name"]); ?></div>
-                                    <div class="queue-meta">
-                                        <span class="pill"><i class="fas fa-envelope"></i> <?php echo adminE($user["email"]); ?></span>
-                                        <span class="pill"><i class="fas fa-graduation-cap"></i> <?php echo adminE($user["batch"] ?: "N/A"); ?></span>
-                                        <span class="pill"><i class="fas fa-calendar"></i> <?php echo adminE($user["graduation_year"] ?: "N/A"); ?></span>
-                                        <span class="pill"><i class="fas fa-building"></i> <?php echo adminE($user["company"] ?: "Not added"); ?></span>
+                                    <div class="node-title search-target-name"><?php echo adminE($user["full_name"]); ?></div>
+                                    <div class="meta-flex">
+                                        <span class="badge-pill"><i class="fas fa-envelope"></i> <?php echo adminE($user["email"]); ?></span>
+                                        <span class="badge-pill"><i class="fas fa-graduation-cap"></i> Yr: <?php echo adminE($user["graduation_year"] ?: 'N/A'); ?></span>
+                                        <span class="badge-pill search-target-company"><i class="fas fa-building"></i> <?php echo adminE($user["company"] ?: 'Independent'); ?></span>
                                     </div>
                                 </div>
-                                <div class="actions">
-                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'approve', this)" class="action-btn approve">Approve</button>
-                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'reject', this)" class="action-btn reject">Reject</button>
-                                    <button onclick="executeAction(<?php echo (int) $user['id']; ?>, 'delete', this)" class="action-btn delete">Delete</button>
+                                <div class="actions-flex">
+                                    <button onclick="triggerEngineAction(<?php echo (int)$user['id']; ?>, 'approve', this)" class="action-control cmd-approve">Approve</button>
+                                    <button onclick="triggerEngineAction(<?php echo (int)$user['id']; ?>, 'reject', this)" class="action-control cmd-reject">Reject</button>
+                                    <button onclick="triggerEngineAction(<?php echo (int)$user['id']; ?>, 'delete', this)" class="action-control cmd-delete">Delete</button>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     <?php else: ?>
-                        <div class="empty">
-                            <i class="fas fa-check-circle" style="font-size: 32px; margin-bottom: 10px;"></i>
-                            <p>No pending alumni approvals right now.</p>
-                        </div>
+                        <div class="empty-state">No records awaiting administrative verification.</div>
                     <?php endif; ?>
+                </div>
+
+                <!-- Tab 2: Approved Logs (Live Feedback System) -->
+                <div id="pane-approved" class="queue-pane">
+                    <div class="empty-state" id="approved-empty-notice">No profiles approved during this session loop.</div>
                 </div>
             </article>
 
-            <div class="mini-grid">
-                <article class="panel">
-                    <div class="panel-head">
+            <!-- Sidebar Items -->
+            <div style="display:grid; gap:24px; height:fit-content;">
+                <article class="panel" style="padding:24px;">
+                    <div class="panel-head" style="margin-bottom:16px; padding-bottom:12px;">
                         <div>
-                            <h2>Job Activity</h2>
-                            <p>Latest posts moving through moderation.</p>
+                            <h2 style="font-size:18px;">Job Feed</h2>
                         </div>
-                        <a href="jobs.php" class="panel-link">Moderate jobs</a>
+                        <a href="jobs.php" class="panel-link">Browse</a>
                     </div>
-                    <div class="mini-grid">
-                        <?php if ($recentJobs): ?>
-                            <?php foreach ($recentJobs as $job): ?>
-                                <div class="feed-item">
-                                    <h3><?php echo adminE($job["title"]); ?></h3>
-                                    <div class="feed-meta">
-                                        <span class="pill"><?php echo adminE($job["company"] ?: "Unknown company"); ?></span>
-                                        <span class="pill"><?php echo adminE(strtoupper((string) ($job["status"] ?: "pending"))); ?></span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="empty"><p>No recent job activity yet.</p></div>
+                    <div style="display:grid; gap:10px;">
+                        <?php if ($recentJobs): foreach ($recentJobs as $job): ?>
+                            <div style="padding:12px; background:var(--bg-alt); border-radius:10px; border:1px solid var(--line);">
+                                <div style="font-size:14px; font-weight:700;"><?php echo adminE($job["title"]); ?></div>
+                                <div style="font-size:11px; color:var(--muted); margin-top:4px;"><?php echo adminE($job["company"]); ?></div>
+                            </div>
+                        <?php endforeach; else: ?>
+                            <div class="empty-state">No job streams.</div>
                         <?php endif; ?>
                     </div>
                 </article>
 
-                <article class="panel">
-                    <div class="panel-head">
+                <article class="panel" style="padding:24px;">
+                    <div class="panel-head" style="margin-bottom:16px; padding-bottom:12px;">
                         <div>
-                            <h2>Event Radar</h2>
-                            <p>Closest upcoming events in the system.</p>
+                            <h2 style="font-size:18px;">Radar</h2>
                         </div>
-                        <a href="event.php" class="panel-link">Manage events</a>
                     </div>
-                    <div class="mini-grid">
-                        <?php if ($recentEvents): ?>
-                            <?php foreach ($recentEvents as $event): ?>
-                                <div class="event-item">
-                                    <h3><?php echo adminE($event["title"]); ?></h3>
-                                    <div class="event-meta">
-                                        <span class="pill"><i class="fas fa-calendar"></i> <?php echo adminE(date('d M Y', strtotime((string) $event["event_date"]))); ?></span>
-                                        <span class="pill"><i class="fas fa-location-dot"></i> <?php echo adminE($event["location"] ?: "TBA"); ?></span>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="empty"><p>No events scheduled yet.</p></div>
+                    <div style="display:grid; gap:10px;">
+                        <?php if ($recentEvents): foreach ($recentEvents as $ev): ?>
+                            <div style="padding:12px; background:var(--bg-alt); border-radius:10px; border:1px solid var(--line);">
+                                <div style="font-size:14px; font-weight:700;"><?php echo adminE($ev["title"]); ?></div>
+                                <div style="font-size:11px; color:var(--muted); margin-top:4px;"><i class="fa fa-map-marker-alt"></i> <?php echo adminE($ev["location"]); ?></div>
+                            </div>
+                        <?php endforeach; else: ?>
+                            <div class="empty-state">No events.</div>
                         <?php endif; ?>
                     </div>
                 </article>
@@ -572,93 +527,128 @@ $recentEvents = adminRows($conn, "SELECT title, event_date, location FROM events
     </div>
 
     <script>
-    async function executeAction(id, action, buttonEl) {
-        let actionConfig = {
-            approve: { title: 'Approve Alumni?', text: 'Is alumni ko approve karke automatic credential bhej dein?', icon: 'question', loadingText: '<i class="fas fa-spinner fa-spin"></i> Sending Mail...' },
-            reject: { title: 'Reject Request?', text: 'Kya aap sach me is request ko reject karna chahte hain?', icon: 'warning', loadingText: 'Rejecting...' },
-            delete: { title: 'Delete Permanently?', text: 'Ye record hamesha ke liye saaf ho jayega!', icon: 'error', loadingText: 'Deleting...' }
-        };
+    let sessionApprovedCount = 0;
 
-        const config = actionConfig[action];
+    function toggleDashboardTab(target) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.queue-pane').forEach(p => p.classList.remove('active'));
+        
+        const currentBtn = event.currentTarget;
+        currentBtn.classList.add('active');
+        document.getElementById(`pane-${target}`).classList.add('active');
+    }
 
-        // SweetAlert Confirm Screen
+    document.getElementById('liveSearchNode').addEventListener('input', function(e) {
+        const val = e.target.value.toLowerCase().trim();
+        const activePane = document.querySelector('.queue-pane.active');
+        const cards = activePane.querySelectorAll('.card-node');
+
+        cards.forEach(c => {
+            const name = c.querySelector('.search-target-name').textContent.toLowerCase();
+            const compNode = c.querySelector('.search-target-company');
+            const company = compNode ? compNode.textContent.toLowerCase() : '';
+            
+            if (name.includes(val) || company.includes(val)) {
+                c.style.display = 'grid';
+            } else {
+                c.style.display = 'none';
+            }
+        });
+    });
+
+    async function triggerEngineAction(id, action, btn) {
+        const row = document.getElementById(`user-node-${id}`);
+        const actionButtons = row.querySelectorAll('.action-control');
+        
         const confirmation = await Swal.fire({
-            title: config.title,
-            text: config.text,
-            icon: config.icon,
+            title: 'Confirm Operation',
+            text: `Execute ${action} procedure on target record?`,
+            icon: action === 'approve' ? 'info' : 'warning',
             showCancelButton: true,
-            confirmButtonColor: action === 'approve' ? '#10b981' : '#ef4444',
+            confirmButtonColor: '#0f172a',
             cancelButtonColor: '#64748b',
-            confirmButtonText: 'Haan, proceed karo!'
+            confirmButtonText: 'Yes, execute'
         });
 
         if (!confirmation.isConfirmed) return;
 
-        // Parent element control aur buttons disable status toggle
-        const rowItem = document.getElementById(`user-row-${id}`);
-        const actionButtons = rowItem.querySelectorAll('.action-btn');
-        
-        actionButtons.forEach(btn => btn.classList.add('disabled'));
-        const originalBtnText = buttonEl.innerHTML;
-        buttonEl.innerHTML = config.loadingText;
+        actionButtons.forEach(b => b.classList.add('disabled'));
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
 
         try {
-            // Trigger AJAX call natively
-            const response = await fetch(`?member_action=${action}&id=${id}`, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            const res = await fetch(`?member_action=${action}&id=${id}`, {
+                headers: { 'X-REQUESTED-WITH': 'XMLHttpRequest' }
             });
-            
-            if (!response.ok) throw new Error('Network issue occurred');
-            const data = await response.json();
+            const data = await res.json();
 
-            if (action === 'approve') {
-                if (data.ok) {
-                    if (data.mail_sent) {
-                        Swal.fire('Approved!', `Account active ho gaya aur credentials successfully <strong>${data.email}</strong> par bhej diye gaye hain.`, 'success');
-                    } else {
-                        Swal.fire({
-                            title: 'Approved but Mail Failed!',
-                            html: `Account active hai par network error ki wajah se mail nahi gaya.<br><br><strong>Login:</strong> ${data.email}<br><strong>Password:</strong> <code style="background:#eee;padding:2px 6px;border-radius:4px;">${data.password}</code>`,
-                            icon: 'warning'
-                        });
-                    }
-                    // Row ko ultra-smoothly fade out karo screen se
-                    fadeOutAndRemove(rowItem);
-                } else {
-                    Swal.fire('Error!', data.message || 'Kuch galat hua.', 'error');
-                    resetButtons(actionButtons, buttonEl, originalBtnText);
-                }
+            if (action === 'approve' && data.ok) {
+                Swal.fire({ title: 'Approved!', text: 'Account shifted to Active directory status.', icon: 'success', timer: 1500, showConfirmButton: false });
+                
+                // --- COOL PART: Shift Row dynamically to Approved Tab ---
+                moveRowToApprovedLogs(row, id);
+            } else if (data.ok || action !== 'approve') {
+                Swal.fire({ title: 'Success', text: 'Operation completed successfully.', icon: 'success', timer: 1200, showConfirmButton: false });
+                removeRowWithAnimation(row, 'pending');
             } else {
-                // Reject ya Delete successful flows
-                Swal.fire('Done!', 'Action pipeline execute ho gayi hai.', 'success');
-                fadeOutAndRemove(rowItem);
+                Swal.fire('Failed', data.message || 'Operation halted by engine.', 'error');
+                actionButtons.forEach(b => b.classList.remove('disabled'));
+                btn.innerHTML = originalText;
             }
-        } catch (error) {
-            Swal.fire('Oops!', 'Server connection break ho gaya ya invalid JSON return hua.', 'error');
-            resetButtons(actionButtons, buttonEl, originalBtnText);
+        } catch (e) {
+            Swal.fire('Critical Error', 'Invalid response stream.', 'error');
+            actionButtons.forEach(b => b.classList.remove('disabled'));
+            btn.innerHTML = originalText;
         }
     }
 
-    function resetButtons(buttons, activeBtn, text) {
-        buttons.forEach(btn => btn.classList.remove('disabled'));
-        activeBtn.innerHTML = text;
+    function moveRowToApprovedLogs(row, id) {
+        // Remove Action buttons and add premium "Verified Stamp"
+        const actionsContainer = row.querySelector('.actions-flex');
+        if (actionsContainer) {
+            actionsContainer.innerHTML = `<span class="badge-pill verified-stamp"><i class="fas fa-check-double"></i> Approved Live</span>`;
+        }
+
+        // Drop down structural opacity animation
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+            const approvedPane = document.getElementById('pane-approved');
+            const emptyNotice = document.getElementById('approved-empty-notice');
+            if (emptyNotice) emptyNotice.remove();
+
+            // Append to approved container & fade in back elegantly
+            approvedPane.appendChild(row);
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+
+            // Update tab badges counter metrics
+            sessionApprovedCount++;
+            document.getElementById('badge-approved-count').textContent = sessionApprovedCount;
+            
+            const pendingContainer = document.getElementById('pane-pending');
+            const totalPendingLeft = pendingContainer.querySelectorAll('.card-node').length;
+            document.getElementById('badge-pending-count').textContent = totalPendingLeft;
+
+            if (totalPendingLeft === 0) {
+                pendingContainer.innerHTML = `<div class="empty-state">No records awaiting administrative verification.</div>`;
+            }
+        }, 250);
     }
 
-    function fadeOutAndRemove(element) {
-        element.style.opacity = '0';
-        element.style.transform = 'scale(0.95)';
+    function removeRowWithAnimation(row, type) {
+        row.style.opacity = '0';
         setTimeout(() => {
-            element.remove();
-            // Agar queue khali ho gayi ho toh empty card laga do
-            const queue = document.querySelector('.queue');
-            if (queue && queue.children.length === 0) {
-                queue.innerHTML = `
-                    <div class="empty">
-                        <i class="fas fa-check-circle" style="font-size: 32px; margin-bottom: 10px;"></i>
-                        <p>No pending alumni approvals right now.</p>
-                    </div>`;
+            row.remove();
+            const container = document.getElementById(`pane-${type}`);
+            const leftCount = container.querySelectorAll('.card-node').length;
+            
+            if(type === 'pending') {
+                document.getElementById('badge-pending-count').textContent = leftCount;
+                if (leftCount === 0) container.innerHTML = `<div class="empty-state">No records awaiting administrative verification.</div>`;
             }
-        }, 300);
+        }, 250);
     }
     </script>
 </body>
