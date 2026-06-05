@@ -5,7 +5,15 @@ adminOnly();
 if (isset($_GET["approve"])) {
     $id = (int)$_GET["approve"];
     $result = alumnixApproveUserEngine($conn, $id);
-    adminSetFlash($result["ok"] ? "success" : "error", $result["message"]);
+    $meta = [];
+    if (!empty($result["password"])) {
+        $meta = [
+            "credential_email" => $result["email"] ?? "",
+            "credential_password" => $result["password"],
+            "mail_error" => $result["mail_error"] ?? "",
+        ];
+    }
+    adminSetFlash($result["ok"] ? "success" : "error", $result["message"], $meta);
     header("Location: alumni_list.php");
     exit();
 }
@@ -353,6 +361,14 @@ $alumniUsers = adminRows(
         <?php if ($flash): ?>
             <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
                 <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
+                <?php if (!empty($flash["credential_password"])): ?>
+                    <p>SMTP set nahi hai, isliye automatic email nahi gaya. Ye credentials once show ho rahe hain.</p>
+                    <code>Login ID: <?php echo adminE($flash["credential_email"] ?? ""); ?></code>
+                    <code>Password: <?php echo adminE($flash["credential_password"] ?? ""); ?></code>
+                    <?php if (!empty($flash["mail_error"])): ?>
+                        <p><?php echo adminE($flash["mail_error"]); ?></p>
+                    <?php endif; ?>
+                <?php endif; ?>
             </section>
         <?php endif; ?>
 

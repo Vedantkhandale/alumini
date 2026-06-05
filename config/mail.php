@@ -2,8 +2,8 @@
 
 return [
     "host" => "smtp.gmail.com",
-    "username" => "YOUR_OFFICIAL_GMAIL@gmail.com",
-    "password" => "YOUR_16_DIGIT_APP_PASSWORD",
+    "username" => "vedantkhandale8@gmail.com",
+    "password" => "nfhy didc bgcz eoxk",
     "port" => 587,
     "encryption" => "tls",
     "from_name" => "AlumniX Portal",

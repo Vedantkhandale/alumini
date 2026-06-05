@@ -80,6 +80,22 @@ function adminPullFlash(): ?array
     return is_array($flash) ? $flash : null;
 }
 
+function adminSaveMailOutbox(array $payload): void
+{
+    $outboxDir = __DIR__ . "/../uploads/mail_outbox";
+    if (!is_dir($outboxDir)) {
+        mkdir($outboxDir, 0775, true);
+    }
+
+    $line = json_encode(array_merge([
+        "created_at" => date("Y-m-d H:i:s"),
+    ], $payload), JSON_UNESCAPED_SLASHES);
+
+    if ($line !== false) {
+        file_put_contents($outboxDir . "/approval_credentials.log", $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
+}
+
 /**
  * 🎭 UI: Status Badge Generator
  */
@@ -159,13 +175,23 @@ function alumnixApproveUserEngine($conn, $memberId) {
     }
 
     if (!$mailSent) {
-        $conn->rollback();
+        adminSaveMailOutbox([
+            "type" => "approval_credentials",
+            "name" => $user['full_name'],
+            "email" => $user['email'],
+            "password" => $plainPassword,
+            "error" => alumnixLastMailError(),
+        ]);
+
+        $conn->commit();
         return [
-            'ok' => false,
+            'ok' => true,
             'mail_sent' => false,
-            'message' => 'Approval stopped: automatic email failed. ' . alumnixLastMailError(),
+            'message' => 'Approved. Automatic email failed, so credentials are shown once and saved in local outbox.',
             'name' => $user['full_name'],
-            'email' => $user['email']
+            'email' => $user['email'],
+            'password' => $plainPassword,
+            'mail_error' => alumnixLastMailError()
         ];
     }
 
