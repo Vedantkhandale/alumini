@@ -1,48 +1,100 @@
 <?php
-/**
- * AlumniX Core Administration Enterprise Architecture
- * Elite Production Engine - Polished Light Crimson Framework
- * Fixed Sidebar & Header with Smooth Main Content Scrolling
- */
+require_once __DIR__ . "/helpers.php";
+adminOnly();
 
-// Production Baseline Static Dataset
 $stats = [
-    "total_verified" => 1240,
-    "active_postings" => 38,
-    "upcoming_events" => 6,
-    "total_applications" => 184
+    "total_verified" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
+    "active_postings" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='approved'"),
+    "upcoming_events" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()"),
+    "total_applications" => adminCount($conn, "SELECT COUNT(*) FROM job_applications"),
+    "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
+    "pending_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='pending'"),
+    "rejected_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='rejected'"),
 ];
 
+$totalAlumni = max(1, $stats["total_verified"] + $stats["pending_alumni"] + $stats["rejected_alumni"]);
 $distribution = [
-    "employed" => 65,      
-    "higher_studies" => 20, 
-    "entrepreneur" => 15   
+    "approved" => round(($stats["total_verified"] / $totalAlumni) * 100),
+    "pending" => round(($stats["pending_alumni"] / $totalAlumni) * 100),
+    "rejected" => round(($stats["rejected_alumni"] / $totalAlumni) * 100),
 ];
 
 $monthly_signups = [
-    "Jan" => 25, "Feb" => 40, "Mar" => 55, "Apr" => 45, 
-    "May" => 70, "Jun" => 85, "Jul" => 90, "Aug" => 75, 
-    "Sep" => 95, "Oct" => 110, "Nov" => 125, "Dec" => 140
+    "Pending" => $stats["pending_alumni"],
+    "Approved" => $stats["total_verified"],
+    "Rejected" => $stats["rejected_alumni"],
+    "Jobs" => $stats["active_postings"],
+    "Apps" => $stats["total_applications"],
 ];
+$maxChartValue = max(1, max($monthly_signups));
 
-$recent_job_streams = [
-    ["id" => 1, "title" => "Senior Backend Engineer (PHP)", "company" => "InfoCepts Technologies", "location" => "Nagpur IT Park", "apps" => 42, "status" => "Active", "trend" => [20, 40, 30, 80]],
-    ["id" => 2, "title" => "Full Stack Developer", "company" => "Persistent Systems", "location" => "Mihan SEZ", "apps" => 56, "status" => "Active", "trend" => [40, 20, 70, 90]],
-    ["id" => 3, "title" => "Data Solutions Analyst", "company" => "TCS Innovation Hub", "location" => "Nagpur Campus", "apps" => 18, "status" => "Reviewing", "trend" => [10, 50, 30, 40]],
-    ["id" => 4, "title" => "UI/UX Product Designer", "company" => "AlumniX Venture Labs", "location" => "Remote / India", "apps" => 29, "status" => "Active", "trend" => [30, 60, 40, 70]]
-];
+$recent_job_streams = adminRows(
+    $conn,
+    "SELECT
+        j.id,
+        j.title,
+        j.company,
+        j.location,
+        j.status,
+        COUNT(ja.id) AS apps
+     FROM jobs j
+     LEFT JOIN job_applications ja ON ja.job_id = j.id
+     GROUP BY j.id, j.title, j.company, j.location, j.status
+     ORDER BY j.id DESC
+     LIMIT 5"
+);
 
-$recent_activities = [
-    ["time" => "10 mins ago", "type" => "verification", "title" => "New Alumni Verified", "desc" => "Amit Sharma (Batch of 2022, G H Raisoni) approved."],
-    ["time" => "1 hour ago", "type" => "job", "title" => "Placement Posted", "desc" => "Persistent Systems opened a slot for Full Stack Dev."],
-    ["time" => "3 hours ago", "type" => "event", "title" => "Corporate Meet Scheduled", "desc" => "Annual Alumni Conclave 2026 page generated."]
-];
+foreach ($recent_job_streams as &$jobStream) {
+    $apps = (int) ($jobStream["apps"] ?? 0);
+    $jobStream["trend"] = [
+        max(12, min(100, 22 + ($apps * 5))),
+        max(16, min(100, 36 + ($apps * 4))),
+        max(20, min(100, 48 + ($apps * 3))),
+        max(24, min(100, 62 + ($apps * 2))),
+    ];
+}
+unset($jobStream);
 
-// SVG Donut Calculations
+$recentUsers = adminRows($conn, "SELECT full_name, status FROM users WHERE role='alumni' ORDER BY id DESC LIMIT 2");
+$recentJobs = adminRows($conn, "SELECT title, company, status FROM jobs ORDER BY id DESC LIMIT 2");
+$recentEvents = adminRows($conn, "SELECT title, event_date FROM events ORDER BY event_date DESC LIMIT 1");
+$recent_activities = [];
+
+foreach ($recentUsers as $user) {
+    $recent_activities[] = [
+        "time" => "Latest",
+        "type" => "verification",
+        "title" => ucfirst((string) ($user["status"] ?: "pending")) . " Alumni",
+        "desc" => ($user["full_name"] ?: "New alumni") . " is in the member workflow.",
+    ];
+}
+
+foreach ($recentJobs as $job) {
+    $recent_activities[] = [
+        "time" => "Latest",
+        "type" => "job",
+        "title" => ucfirst((string) ($job["status"] ?: "pending")) . " Job",
+        "desc" => ($job["title"] ?: "New role") . " at " . ($job["company"] ?: "Unknown company") . ".",
+    ];
+}
+
+foreach ($recentEvents as $event) {
+    $recent_activities[] = [
+        "time" => !empty($event["event_date"]) ? date("d M Y", strtotime((string) $event["event_date"])) : "Scheduled",
+        "type" => "event",
+        "title" => "Event Update",
+        "desc" => $event["title"] ?: "New event added.",
+    ];
+}
+
+if (!$recent_activities) {
+    $recent_activities[] = ["time" => "Ready", "type" => "job", "title" => "Workspace Ready", "desc" => "New alumni, jobs, and events will appear here automatically."];
+}
+
 $radius = 50;
 $circumference = 2 * M_PI * $radius; 
-$employed_offset = $circumference * (1 - ($distribution["employed"] / 100));
-$entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $distribution["entrepreneur"]) / 100));
+$approved_offset = $circumference * (1 - ($distribution["approved"] / 100));
+$pending_offset = $circumference * (1 - (($distribution["approved"] + $distribution["pending"]) / 100));
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -339,6 +391,22 @@ $entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $dist
         }
         @keyframes toastIn { to { transform: translateY(0); opacity: 1; } }
         .toast-card i { color: var(--red-primary); font-size: 14px; }
+        @media (max-width: 1180px) {
+            .metrics-grid,
+            .visualization-row,
+            .split-bottom-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 820px) {
+            body { display: block; height: auto; max-height: none; overflow: auto; }
+            .sidebar { width: 100%; height: auto; }
+            .workspace { height: auto; max-height: none; }
+            .top-bar { padding: 18px; height: auto; flex-wrap: wrap; }
+            .search-wrapper { width: 100%; }
+            .main-scroller { height: auto; padding: 20px; }
+            .metrics-grid,
+            .visualization-row,
+            .split-bottom-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -426,9 +494,9 @@ $entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $dist
 
         <div class="main-scroller">
             <div class="view-title-flex">
-                <h2>Control Center Workspace</h2>
+                <h2>Live Admin Command Center</h2>
                 <div class="live-status-pill">
-                    <span class="status-pulse-dot"></span><span>Static Operational Engine</span>
+                    <span class="status-pulse-dot"></span><span>Live Database Engine</span>
                 </div>
             </div>
 
@@ -465,36 +533,38 @@ $entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $dist
 
             <section class="visualization-row">
                 <article class="panel-block">
-                    <h3 class="panel-heading">Sector Distribution <i class="fas fa-chart-pie" style="color: var(--gray-muted);"></i></h3>
+                    <h3 class="panel-heading">Alumni Approval Health <i class="fas fa-chart-pie" style="color: var(--gray-muted);"></i></h3>
                     <div class="graphics-container">
                         <svg width="130" height="130" viewBox="0 0 140 140">
                             <circle cx="70" cy="70" r="50" fill="transparent" stroke="var(--border-sharp)" stroke-width="11"/>
-                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--black-text)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $employed_offset; ?>" stroke-linecap="round"/>
-                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--red-primary)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $entrepreneur_offset; ?>" stroke-linecap="round"/>
+                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--black-text)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $approved_offset; ?>" stroke-linecap="round"/>
+                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--red-primary)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $pending_offset; ?>" stroke-linecap="round"/>
                         </svg>
                         <div style="position: absolute; text-align: center;">
-                            <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text);"><?php echo $distribution["employed"]; ?>%</div>
-                            <div style="font-size: 9.5px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; letter-spacing: 0.01em;">Corporate</div>
+                            <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text);"><?php echo $distribution["approved"]; ?>%</div>
+                            <div style="font-size: 9.5px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; letter-spacing: 0.01em;">Approved</div>
                         </div>
                     </div>
                 </article>
 
                 <article class="panel-block">
-                    <h3 class="panel-heading">Registration Velocity <i class="fas fa-chart-bar" style="color: var(--gray-muted);"></i></h3>
+                    <h3 class="panel-heading">Workflow Load <i class="fas fa-chart-bar" style="color: var(--gray-muted);"></i></h3>
                     <div class="bar-chart-wrapper">
                         <?php foreach($monthly_signups as $month => $val): ?>
                             <div class="bar-pillar-group">
-                                <div class="bar-pillar" data-count="<?php echo $val; ?>" style="height: <?php echo ($val / 140) * 100; ?>%;"></div>
+                                <div class="bar-pillar" data-count="<?php echo (int) $val; ?>" style="height: <?php echo max(8, (($val / $maxChartValue) * 100)); ?>%;"></div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                     <div class="axis-labels">
-                        <span>Jan</span><span>Mar</span><span>Jun</span><span>Sep</span><span>Dec</span>
+                        <?php foreach (array_keys($monthly_signups) as $label): ?>
+                            <span><?php echo adminE($label); ?></span>
+                        <?php endforeach; ?>
                     </div>
                 </article>
 
                 <article class="panel-block">
-                    <h3 class="panel-heading">Volatility Index <i class="fas fa-wave-square" style="color: var(--gray-muted);"></i></h3>
+                    <h3 class="panel-heading">Pulse Index <i class="fas fa-wave-square" style="color: var(--gray-muted);"></i></h3>
                     <div class="graphics-container">
                         <svg class="vector-wave-svg" width="100%" height="110" viewBox="0 0 200 100" preserveAspectRatio="none">
                             <path d="M0,75 Q35,15 75,65 T155,25 T200,5" fill="none" stroke="var(--red-primary)" stroke-width="2.5" stroke-linecap="round"/>
@@ -506,33 +576,35 @@ $entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $dist
 
             <section class="split-bottom-grid">
                 <article class="panel-block scrollable-list">
-                    <h3 class="panel-heading">Placement Infrastructure Pipelines Management</h3>
+                    <h3 class="panel-heading">Placement Pipeline</h3>
                     <div class="table-wrapper">
                         <table class="table-core">
                             <thead>
                                 <tr>
                                     <th>Ref ID</th>
-                                    <th>Role Framework Pipeline</th>
+                                    <th>Role</th>
                                     <th>Status</th>
-                                    <th>Activity Dynamics</th>
+                                    <th>Applications</th>
                                     <th style="text-align: right;">Action Control</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <?php if ($recent_job_streams): ?>
                                 <?php foreach ($recent_job_streams as $job): ?>
                                     <tr>
-                                        <td style="color: var(--gray-muted); font-family: monospace; font-size: 11px;">#ALX-0<?php echo $job["id"]; ?></td>
+                                        <td style="color: var(--gray-muted); font-family: monospace; font-size: 11px;">#ALX-<?php echo (int) $job["id"]; ?></td>
                                         <td>
-                                            <div style="font-weight: 700; color: var(--black-text); letter-spacing: -0.01em;"><?php echo htmlspecialchars($job["title"]); ?></div>
-                                            <div style="font-size: 11.5px; color: var(--gray-muted); font-weight: 600; margin-top: 1px;"><?php echo htmlspecialchars($job["company"]); ?> &middot; <span style="font-weight:500; font-size:11px;"><?php echo htmlspecialchars($job["location"]); ?></span></div>
+                                            <div style="font-weight: 700; color: var(--black-text); letter-spacing: -0.01em;"><?php echo adminE($job["title"]); ?></div>
+                                            <div style="font-size: 11.5px; color: var(--gray-muted); font-weight: 600; margin-top: 1px;"><?php echo adminE($job["company"] ?: "Unknown company"); ?> &middot; <span style="font-weight:500; font-size:11px;"><?php echo adminE($job["location"] ?: "Flexible"); ?></span></div>
                                         </td>
                                         <td>
-                                            <span class="badge-status <?php echo ($job["status"] == 'Active') ? 'active' : 'review'; ?>">
-                                                <?php echo $job["status"]; ?>
+                                            <?php $jobStatus = strtolower((string) ($job["status"] ?: "pending")); ?>
+                                            <span class="badge-status <?php echo $jobStatus === 'approved' ? 'active' : 'review'; ?>">
+                                                <?php echo adminE($jobStatus); ?>
                                             </span>
                                         </td>
                                         <td>
-                                            <div class="sparkline-flex">
+                                            <div class="sparkline-flex" title="<?php echo (int) $job["apps"]; ?> applications">
                                                 <?php foreach ($job["trend"] as $index => $t_val): ?>
                                                     <div class="sparkline-bar <?php echo ($index == 3) ? 'top-peak' : ''; ?>" style="height: <?php echo $t_val; ?>%;"></div>
                                                 <?php endforeach; ?>
@@ -540,19 +612,24 @@ $entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $dist
                                         </td>
                                         <td style="text-align: right;">
                                             <div class="action-circle-group">
-                                                <a href="page_jobs.php?id=<?php echo $job["id"]; ?>" class="circle-btn" title="Modify Configuration Mapping Node"><i class="fas fa-sliders-h"></i></a>
-                                                <a href="view_applications.php?job_id=<?php echo $job["id"]; ?>" class="circle-btn danger-action" title="Review Submission Pipeline Logs"><i class="fas fa-arrow-right"></i></a>
+                                                <a href="jobs.php" class="circle-btn" title="Manage job"><i class="fas fa-sliders-h"></i></a>
+                                                <a href="view_applications.php?job_id=<?php echo (int) $job["id"]; ?>" class="circle-btn danger-action" title="Review applications"><i class="fas fa-arrow-right"></i></a>
                                             </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="5" style="color: var(--gray-muted);">No job posts yet.</td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </article>
 
                 <article class="panel-block scrollable-list">
-                    <h3 class="panel-heading">Operational Log Registry Event Feeds</h3>
+                    <h3 class="panel-heading">Recent Admin Activity</h3>
                     <div class="timeline-stream">
                         <?php foreach($recent_activities as $act): ?>
                             <div class="timeline-item">

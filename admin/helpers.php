@@ -141,24 +141,41 @@ function alumnixApproveUserEngine($conn, $memberId) {
     $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
     $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
 
+    $conn->begin_transaction();
+
     $update = $conn->prepare("UPDATE users SET status = 'approved', password = ? WHERE id = ?");
     $update->bind_param('si', $hashedPassword, $memberId);
     $saved = $update->execute();
     $update->close();
 
-    if (!$saved) return ['ok' => false, 'message' => 'Database update failed.'];
+    if (!$saved) {
+        $conn->rollback();
+        return ['ok' => false, 'message' => 'Database update failed.'];
+    }
 
     $mailSent = false;
     if (!empty($user['email'])) {
         $mailSent = alumnixSendApprovalCredentials($user['full_name'], $user['email'], $plainPassword);
     }
 
+    if (!$mailSent) {
+        $conn->rollback();
+        return [
+            'ok' => false,
+            'mail_sent' => false,
+            'message' => 'Approval stopped: automatic email failed. ' . alumnixLastMailError(),
+            'name' => $user['full_name'],
+            'email' => $user['email']
+        ];
+    }
+
+    $conn->commit();
+
     return [
         'ok' => true,
-        'mail_sent' => $mailSent,
-        'message' => $mailSent ? 'Approved and emailed.' : 'Approved, email failed.',
+        'mail_sent' => true,
+        'message' => 'Approved and credentials emailed automatically.',
         'name' => $user['full_name'],
-        'email' => $user['email'],
-        'password' => $plainPassword
+        'email' => $user['email']
     ];
 }

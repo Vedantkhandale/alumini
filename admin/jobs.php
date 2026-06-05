@@ -4,8 +4,31 @@ adminOnly();
 
 if (isset($_GET["approve"])) {
     $id = (int) $_GET["approve"];
+    $job = null;
+    $stmt = $conn->prepare(
+        "SELECT jobs.title, jobs.company, users.full_name, users.email
+         FROM jobs
+         LEFT JOIN users ON jobs.alumni_id = users.id
+         WHERE jobs.id = ?
+         LIMIT 1"
+    );
+    if ($stmt) {
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $job = $result ? $result->fetch_assoc() : null;
+        $stmt->close();
+    }
+
     $conn->query("UPDATE jobs SET status='approved' WHERE id={$id}");
-    adminSetFlash("success", "Job approved and visible to alumni members.");
+    $message = "Job approved and visible to alumni members.";
+    if ($job && !empty($job["email"])) {
+        $mailSent = alumnixSendJobApprovalNotice($job["full_name"], $job["email"], $job["title"], $job["company"]);
+        $message = $mailSent
+            ? "Job approved and submitter notified by email."
+            : "Job approved, but notification email failed. " . alumnixLastMailError();
+    }
+    adminSetFlash(strpos($message, "failed") !== false ? "warning" : "success", $message);
     header("Location: jobs.php");
     exit();
 }

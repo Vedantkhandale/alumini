@@ -1,9 +1,3 @@
-<?php
-
-require_once __DIR__ . '/helpers.php'; // Path check karo ki helpers.php isi folder mein hai ya nahi
-adminOnly(); // Ye confirm karta hai ki helpers load hua hai
-
-
 require_once __DIR__ . '/helpers.php';
 adminOnly();
 
@@ -358,11 +352,6 @@ $alumniUsers = adminRows(
         <?php if ($flash): ?>
             <section class="flash <?php echo adminE($flash["type"] ?? "success"); ?>">
                 <h3><?php echo adminE($flash["message"] ?? "Update complete."); ?></h3>
-                <?php if (!empty($flash["credential_password"])): ?>
-                    <p>Email delivery failed, so these credentials are shown once for manual sharing.</p>
-                    <code>Login ID: <?php echo adminE($flash["credential_email"] ?? ""); ?></code>
-                    <code>Password: <?php echo adminE($flash["credential_password"] ?? ""); ?></code>
-                <?php endif; ?>
             </section>
         <?php endif; ?>
 
