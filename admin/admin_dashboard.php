@@ -2,33 +2,23 @@
 require_once __DIR__ . "/helpers.php";
 adminOnly();
 
+$adminName = (string) ($_SESSION["admin"] ?? "Admin");
+$initials = strtoupper(substr(trim($adminName), 0, 1) ?: "A");
+
 $stats = [
-    "total_verified" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
-    "active_postings" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='approved'"),
-    "upcoming_events" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()"),
-    "total_applications" => adminCount($conn, "SELECT COUNT(*) FROM job_applications"),
+    "verified_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
     "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
+    "active_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='approved'"),
     "pending_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='pending'"),
-    "rejected_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='rejected'"),
+    "upcoming_events" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()"),
+    "applications" => adminCount($conn, "SELECT COUNT(*) FROM job_applications"),
 ];
 
-$totalAlumni = max(1, $stats["total_verified"] + $stats["pending_alumni"] + $stats["rejected_alumni"]);
-$distribution = [
-    "approved" => round(($stats["total_verified"] / $totalAlumni) * 100),
-    "pending" => round(($stats["pending_alumni"] / $totalAlumni) * 100),
-    "rejected" => round(($stats["rejected_alumni"] / $totalAlumni) * 100),
-];
+$totalAlumni = max(1, $stats["verified_alumni"] + $stats["pending_alumni"]);
+$approvalPercent = round(($stats["verified_alumni"] / $totalAlumni) * 100);
+$pendingWork = $stats["pending_alumni"] + $stats["pending_jobs"];
 
-$monthly_signups = [
-    "Pending" => $stats["pending_alumni"],
-    "Approved" => $stats["total_verified"],
-    "Rejected" => $stats["rejected_alumni"],
-    "Jobs" => $stats["active_postings"],
-    "Apps" => $stats["total_applications"],
-];
-$maxChartValue = max(1, max($monthly_signups));
-
-$recent_job_streams = adminRows(
+$recentJobs = adminRows(
     $conn,
     "SELECT
         j.id,
@@ -36,700 +26,872 @@ $recent_job_streams = adminRows(
         j.company,
         j.location,
         j.status,
-        COUNT(ja.id) AS apps
+        u.full_name AS owner_name,
+        COUNT(ja.id) AS applications
      FROM jobs j
+     LEFT JOIN users u ON j.alumni_id = u.id
      LEFT JOIN job_applications ja ON ja.job_id = j.id
-     GROUP BY j.id, j.title, j.company, j.location, j.status
-     ORDER BY j.id DESC
+     GROUP BY j.id, j.title, j.company, j.location, j.status, u.full_name
+     ORDER BY
+        CASE j.status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END,
+        j.id DESC
+     LIMIT 6"
+);
+
+$pendingAlumni = adminRows(
+    $conn,
+    "SELECT id, full_name, email, student_id, batch
+     FROM users
+     WHERE role='alumni' AND status='pending'
+     ORDER BY id DESC
      LIMIT 5"
 );
 
-foreach ($recent_job_streams as &$jobStream) {
-    $apps = (int) ($jobStream["apps"] ?? 0);
-    $jobStream["trend"] = [
-        max(12, min(100, 22 + ($apps * 5))),
-        max(16, min(100, 36 + ($apps * 4))),
-        max(20, min(100, 48 + ($apps * 3))),
-        max(24, min(100, 62 + ($apps * 2))),
-    ];
+$upcomingEvents = adminRows(
+    $conn,
+    "SELECT id, title, event_date, location
+     FROM events
+     WHERE event_date >= CURDATE()
+     ORDER BY event_date ASC, id DESC
+     LIMIT 4"
+);
+
+$recentApplications = adminRows(
+    $conn,
+    "SELECT
+        ja.apply_time,
+        u.full_name AS alumni_name,
+        j.title AS job_title,
+        j.company
+     FROM job_applications ja
+     JOIN users u ON ja.alumni_id = u.id
+     JOIN jobs j ON ja.job_id = j.id
+     ORDER BY ja.apply_time DESC
+     LIMIT 5"
+);
+
+function dashboardStatusClass($status): string
+{
+    $status = strtolower((string) $status);
+    if ($status === "approved" || $status === "active") {
+        return "is-approved";
+    }
+    if ($status === "rejected") {
+        return "is-rejected";
+    }
+    return "is-pending";
 }
-unset($jobStream);
-
-$recentUsers = adminRows($conn, "SELECT full_name, status FROM users WHERE role='alumni' ORDER BY id DESC LIMIT 2");
-$recentJobs = adminRows($conn, "SELECT title, company, status FROM jobs ORDER BY id DESC LIMIT 2");
-$recentEvents = adminRows($conn, "SELECT title, event_date FROM events ORDER BY event_date DESC LIMIT 1");
-$recent_activities = [];
-
-foreach ($recentUsers as $user) {
-    $recent_activities[] = [
-        "time" => "Latest",
-        "type" => "verification",
-        "title" => ucfirst((string) ($user["status"] ?: "pending")) . " Alumni",
-        "desc" => ($user["full_name"] ?: "New alumni") . " is in the member workflow.",
-    ];
-}
-
-foreach ($recentJobs as $job) {
-    $recent_activities[] = [
-        "time" => "Latest",
-        "type" => "job",
-        "title" => ucfirst((string) ($job["status"] ?: "pending")) . " Job",
-        "desc" => ($job["title"] ?: "New role") . " at " . ($job["company"] ?: "Unknown company") . ".",
-    ];
-}
-
-foreach ($recentEvents as $event) {
-    $recent_activities[] = [
-        "time" => !empty($event["event_date"]) ? date("d M Y", strtotime((string) $event["event_date"])) : "Scheduled",
-        "type" => "event",
-        "title" => "Event Update",
-        "desc" => $event["title"] ?: "New event added.",
-    ];
-}
-
-if (!$recent_activities) {
-    $recent_activities[] = ["time" => "Ready", "type" => "job", "title" => "Workspace Ready", "desc" => "New alumni, jobs, and events will appear here automatically."];
-}
-
-$radius = 50;
-$circumference = 2 * M_PI * $radius; 
-$approved_offset = $circumference * (1 - ($distribution["approved"] / 100));
-$pending_offset = $circumference * (1 - (($distribution["approved"] + $distribution["pending"]) / 100));
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlumniX Operations Center</title>
+    <title>Admin Dashboard | AlumniX</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --red-primary: #f43f5e;     /* High-Fidelity Crimson Accent */
-            --red-dark: #e11d48;        /* Deep Dynamic Crimson */
-            --red-light: #fff1f2;       /* Selected UI Accent Tint */
-            --black-text: #0f172a;      /* Slate Deep High Contrast Typography */
-            --gray-muted: #64748b;      /* Sharp Clean Subtitles */
-            --bg-pure-white: #ffffff;   /* Primary Surface */
-            --bg-body: #fafafa;         /* Outer Workspace Matte Background */
-            --border-sharp: #f1f5f9;    /* Clean Structural Dividers */
-            --border-darker: #e2e8f0;   /* Component Grid Limits */
-            --radius-box: 16px;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
-            --transition-bounce: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            --transition-smooth: all 0.2s ease;
+            --accent: #ef4444;
+            --accent-dark: #dc2626;
+            --accent-soft: #fee2e2;
+            --ink: #111827;
+            --muted: #64748b;
+            --line: #e5e7eb;
+            --panel: #ffffff;
+            --page: #f8fafc;
+            --good: #16a34a;
+            --warn: #d97706;
+            --bad: #dc2626;
+            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+            --radius: 18px;
         }
 
-        /* Layout Framework Setup */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--black-text);
-            background-color: var(--bg-body);
-            display: flex;
-            height: 100vh;
-            max-height: 100vh;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            background: var(--page);
+            color: var(--ink);
+            font-family: "Plus Jakarta Sans", sans-serif;
         }
 
-        /* Sidebar Viewport Pinning */
+        .layout {
+            display: grid;
+            grid-template-columns: 270px minmax(0, 1fr);
+            min-height: 100vh;
+        }
+
         .sidebar {
-            width: 280px;
-            background: var(--bg-pure-white);
-            border-right: 1px solid var(--border-darker);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            background: #0f172a;
+            color: #fff;
+            padding: 24px 18px;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            flex-shrink: 0;
-            z-index: 100;
+            gap: 22px;
         }
-        .sidebar-brand {
-            padding: 24px 28px;
+
+        .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            border-bottom: 1px solid var(--border-sharp);
+            padding: 0 8px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
-        .brand-logo {
-            width: 36px; height: 36px; background: var(--black-text); color: var(--bg-pure-white);
-            display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 800;
-            box-shadow: var(--shadow-sm); transition: var(--transition-bounce);
-        }
-        .sidebar-brand:hover .brand-logo { transform: rotate(-10deg) scale(1.05); background: var(--red-primary); }
-        .brand-text { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
-        .brand-text span { color: var(--red-primary); }
 
-        .profile-card {
-            padding: 18px 28px; display: flex; align-items: center; gap: 14px;
-            background: rgba(241, 245, 249, 0.4); border-bottom: 1px solid var(--border-sharp);
+        .brand-mark,
+        .avatar {
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            font-weight: 800;
         }
-        .profile-avatar {
-            width: 42px; height: 42px; border-radius: 50%; background: var(--black-text);
-            color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
-            border: 2px solid white; box-shadow: 0 0 0 1px var(--border-darker);
-        }
-        .profile-name { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
-        .profile-role { font-size: 11px; color: var(--gray-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
 
-        /* Navigation Interactive Controllers */
-        .nav-container { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
-        .menu-dropdown-wrapper { display: flex; flex-direction: column; width: 100%; }
-        
-        .nav-link {
-            display: flex; align-items: center; justify-content: space-between; padding: 13px 16px;
-            font-size: 13.5px; font-weight: 700; text-decoration: none; color: var(--gray-muted); border-radius: 12px;
-            cursor: pointer; background: transparent; border: none; width: 100%; outline: none;
-            transition: var(--transition-smooth);
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--accent);
         }
-        .nav-link:hover { color: var(--black-text); background: var(--border-sharp); }
-        .nav-link.active { background: var(--red-light); color: var(--red-primary); }
-        .nav-link div { display: flex; align-items: center; gap: 12px; }
-        .nav-link i.fa-chevron-right { font-size: 10px; transition: transform 0.2s ease; }
-        .menu-dropdown-wrapper.open .nav-link i.fa-chevron-right { transform: rotate(90deg); color: var(--black-text); }
-        
-        /* Smooth Interactive Menu Accordion Node */
-        .sub-menu { 
-            padding-left: 24px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 4px; 
-            max-height: 0; 
-            overflow: hidden; 
-            transition: max-height 0.25s cubic-bezier(0, 1, 0, 1); 
+
+        .brand-text {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
         }
-        .menu-dropdown-wrapper.open .sub-menu { max-height: 200px; margin-top: 4px; margin-bottom: 8px; transition: max-height 0.25s cubic-bezier(1, 0, 1, 0); }
-        
-        .sub-link { 
-            padding: 10px 16px; 
-            font-size: 13px; 
-            font-weight: 600; 
-            color: var(--gray-muted); 
-            text-decoration: none; 
-            border-radius: 10px; 
-            transition: var(--transition-bounce); 
-            display: flex; 
-            align-items: center; 
+
+        .brand-text span { color: #fca5a5; }
+
+        .admin-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #fff;
+            color: #0f172a;
+        }
+
+        .admin-name {
+            font-size: 14px;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .admin-role {
+            margin-top: 3px;
+            font-size: 11px;
+            color: #cbd5e1;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .nav {
+            display: grid;
+            gap: 8px;
+        }
+
+        .nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 700;
+            transition: 0.2s ease;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            background: rgba(239, 68, 68, 0.18);
+            color: #fff;
+        }
+
+        .nav a.logout {
+            margin-top: 12px;
+            color: #fecaca;
+        }
+
+        .main {
+            min-width: 0;
+            padding: 28px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        h1 {
+            margin-top: 8px;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: clamp(30px, 4vw, 48px);
+            line-height: 0.98;
+            letter-spacing: -0.05em;
+        }
+
+        .topbar p {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+            max-width: 680px;
+        }
+
+        .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
             gap: 10px;
         }
-        .sub-link::before { content: ''; width: 5px; height: 5px; background: var(--border-darker); border-radius: 50%; transition: var(--transition-smooth); }
-        .sub-link:hover { color: var(--black-text); background: var(--border-sharp); transform: translateX(4px); }
-        .sub-link:hover::before { background: var(--black-text); transform: scale(1.3); }
-        .sub-link.active { color: var(--red-primary) !important; font-weight: 700; background: rgba(244, 63, 94, 0.03); }
-        .sub-link.active::before { background: var(--red-primary); }
 
-        /* Workspace Main Layout Shell Frame */
-        .workspace { flex: 1; display: flex; flex-direction: column; height: 100vh; max-height: 100vh; overflow: hidden; }
-        .top-bar {
-            height: 75px; background: var(--bg-pure-white); border-bottom: 1px solid var(--border-darker);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 40px; flex-shrink: 0;
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            min-height: 42px;
+            padding: 11px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--line);
+            background: #fff;
+            color: var(--ink);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 800;
+            white-space: nowrap;
         }
-        .search-wrapper { position: relative; width: 320px; }
-        .search-wrapper input {
-            width: 100%; padding: 10px 16px 10px 42px; border-radius: 12px;
-            border: 1px solid var(--border-darker); font-size: 13px; background: var(--bg-body); outline: none;
-            transition: var(--transition-smooth); font-weight: 500;
+
+        .btn.primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
         }
-        .search-wrapper input:focus { border-color: var(--black-text); background: white; box-shadow: var(--shadow-sm); }
-        .search-wrapper i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-muted); font-size: 14px; }
 
-        .top-actions-cluster { display: flex; align-items: center; gap: 16px; }
-        .btn-action-trigger {
-            background: var(--black-text); color: white; border: none; padding: 11px 20px; border-radius: 12px;
-            font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
-            box-shadow: var(--shadow-sm); transition: var(--transition-bounce);
+        .alert-strip {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 16px 18px;
+            margin-bottom: 18px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            background: #fff;
+            box-shadow: var(--shadow);
         }
-        .btn-action-trigger:hover { background: var(--red-primary); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(244, 63, 94, 0.15); }
-        .btn-action-trigger:active { transform: translateY(0); }
 
-        /* FIXED SCROLLER BUG HERE: Forced Precise Viewport Constraints */
-        .main-scroller { 
-            height: calc(100vh - 75px);
-            overflow-y: auto; 
-            padding: 32px 40px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 28px; 
+        .alert-strip strong {
+            display: block;
+            font-size: 14px;
         }
-        
-        .view-title-flex { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-        .view-title-flex h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text); }
-        
-        .live-status-pill { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: white; padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border-darker); box-shadow: var(--shadow-sm); }
-        .status-pulse-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; position: relative; }
-        .status-pulse-dot::after { content: ''; position: absolute; width: 100%; height: 100%; background: inherit; border-radius: inherit; animation: pulseWave 1.8s infinite ease-in-out; }
 
-        @keyframes pulseWave { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
-
-        /* Dashboard Structural Grids Elements */
-        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; flex-shrink: 0; }
-        .card-metric {
-            background: var(--bg-pure-white); border: 1px solid var(--border-darker); border-radius: var(--radius-box);
-            padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
-            transition: var(--transition-bounce); box-shadow: var(--shadow-md); position: relative; overflow: hidden;
+        .alert-strip span {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 13px;
         }
-        .card-metric:hover { transform: translateY(-4px); border-color: var(--black-text); box-shadow: 0 12px 24px -10px rgba(15,23,42,0.08); }
-        .card-metric::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: transparent; transition: var(--transition-smooth); }
-        .card-metric:hover::before { background: var(--red-primary); }
-        
-        .num-val { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--black-text); }
-        .lbl-val { font-size: 11px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.03em; }
-        .icon-box { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-body); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--black-text); border: 1px solid var(--border-sharp); transition: var(--transition-smooth); }
-        .card-metric:hover .icon-box { background: var(--black-text); color: white; border-color: var(--black-text); }
 
-        /* Charts Configurations Panels View */
-        .visualization-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 20px; flex-shrink: 0; }
-        .panel-block { background: var(--bg-pure-white); border: 1px solid var(--border-darker); border-radius: var(--radius-box); padding: 22px; display: flex; flex-direction: column; box-shadow: var(--shadow-md); position: relative; }
-        .panel-heading { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--black-text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-sharp); letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between; }
-        
-        .graphics-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 150px; }
-        .donut-turn { transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.8s ease-in-out; }
-
-        /* Dynamic Graphics Chart Pillars Base Vector Setup */
-        .bar-chart-wrapper { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 140px; padding: 0 4px; }
-        .bar-pillar-group { display: flex; flex-direction: column; align-items: center; flex: 1; }
-        .bar-pillar { width: 14px; background: var(--black-text); border-radius: 4px 4px 0 0; position: relative; transition: var(--transition-bounce); cursor: pointer; }
-        .bar-pillar:hover { background: var(--red-primary); transform: scaleY(1.05); }
-        
-        .bar-pillar::after {
-            content: attr(data-count); position: absolute; top: -28px; left: 50%; transform: translateX(-50%) scale(0.8);
-            font-size: 10px; font-weight: 700; background: var(--black-text); color: white; padding: 3px 6px; border-radius: 6px; opacity: 0; transition: var(--transition-bounce); pointer-events: none;
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+            margin-bottom: 18px;
         }
-        .bar-pillar:hover::after { opacity: 1; transform: translateX(-50%) scale(1); top: -32px; }
-        .axis-labels { display: flex; justify-content: space-between; margin-top: 12px; font-size: 10.5px; color: var(--gray-muted); font-weight: 700; width: 100%; padding: 0 2px; border-top: 1px dashed var(--border-sharp); padding-top: 6px; }
 
-        /* Split Frame Architecture Grid Bottom Block Rows */
-        .split-bottom-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; flex-shrink: 0; margin-bottom: 20px; }
-        .panel-block.scrollable-list { display: flex; flex-direction: column; min-height: 380px; }
-        .table-wrapper { flex: 1; margin-top: 4px; padding-right: 2px; }
-
-        /* Tables Presentations Design Base Styles */
-        .table-core { width: 100%; border-collapse: collapse; text-align: left; }
-        .table-core th { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--gray-muted); padding: 10px 12px; border-bottom: 1px solid var(--border-darker); letter-spacing: 0.03em; background: white; }
-        .table-core td { padding: 14px 12px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--border-sharp); vertical-align: middle; }
-        .table-core tr:last-child td { border-bottom: none; }
-        .table-core tr:hover td { background: rgba(248,250,252,0.9); }
-
-        /* Sparkline Vector Graphical Representation Nodes Elements */
-        .sparkline-flex { display: flex; align-items: flex-end; gap: 3px; height: 16px; width: 55px; }
-        .sparkline-bar { flex: 1; background: var(--border-darker); height: 40%; border-radius: 2px; transition: var(--transition-smooth); }
-        .table-core tr:hover .sparkline-bar { background: #cbd5e1; }
-        .table-core tr:hover .sparkline-bar.top-peak { background: var(--red-primary); }
-
-        .badge-status { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; display: inline-block; letter-spacing: 0.02em; }
-        .badge-status.active { background: #dcfce7; color: #15803d; }
-        .badge-status.review { background: #fef9c3; color: #a16207; }
-
-        /* Functional Circle Links Configurations Action Triggers */
-        .action-circle-group { display: flex; gap: 6px; justify-content: flex-end; }
-        .circle-btn {
-            border: 1px solid var(--border-darker); background: var(--bg-pure-white); color: var(--black-text);
-            width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
-            font-size: 11.5px; text-decoration: none; border-radius: 8px; transition: var(--transition-bounce);
+        .metric,
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
         }
-        .circle-btn:hover { background: var(--black-text); color: var(--bg-pure-white); border-color: var(--black-text); transform: scale(1.08); }
-        .circle-btn.danger-action:hover { background: var(--red-primary); color: white; border-color: var(--red-primary); }
 
-        /* Operational System Feeds Registry Elements Map View */
-        .timeline-stream { display: flex; flex-direction: column; gap: 14px; flex: 1; padding-right: 4px; }
-        .timeline-item { display: flex; gap: 14px; position: relative; padding-bottom: 2px; }
-        .timeline-item::before { content: ''; position: absolute; left: 15px; top: 32px; bottom: -18px; width: 2px; background: var(--border-sharp); }
-        .timeline-item:last-child::before { display: none; }
-        
-        .timeline-icon-frame {
-            width: 32px; height: 32px; border-radius: 50%; background: var(--bg-body); border: 1px solid var(--border-darker);
-            display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--black-text); flex-shrink: 0; z-index: 2;
+        .metric {
+            padding: 20px;
+            min-height: 132px;
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            overflow: hidden;
+            position: relative;
         }
-        .timeline-item:hover .timeline-icon-frame { background: var(--red-light); color: var(--red-primary); border-color: var(--red-primary); }
-        .timeline-body { flex: 1; background: var(--bg-body); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-sharp); transition: var(--transition-smooth); }
-        .timeline-body:hover { background: white; border-color: var(--border-darker); box-shadow: var(--shadow-sm); }
-        .timeline-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-        .timeline-item-title { font-size: 12.5px; font-weight: 700; color: var(--black-text); }
-        .timeline-time { font-size: 10.5px; color: var(--gray-muted); font-weight: 600; }
-        .timeline-desc { font-size: 12px; color: var(--gray-muted); line-height: 1.4; font-weight: 500; }
 
-        /* Popups Layout Interface Modules Panels Elements Layout */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        .metric::before {
+            content: "";
+            position: absolute;
+            inset: 0 0 auto 0;
+            height: 4px;
+            background: var(--accent);
         }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-        .modal-box {
-            background: white; border-radius: var(--radius-box); width: 460px; max-width: 90%;
-            padding: 28px; border: 1px solid var(--border-darker); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-            transform: scale(0.9) translateY(10px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
-        
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h3 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
-        .modal-close { border: none; background: transparent; font-size: 16px; cursor: pointer; color: var(--gray-muted); width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; transition: var(--transition-smooth); }
-        .modal-close:hover { background: var(--border-sharp); color: var(--black-text); }
-        
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--gray-muted); margin-bottom: 6px; letter-spacing: 0.02em; }
-        .form-group input, .form-group textarea {
-            width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-darker);
-            font-family: inherit; font-size: 13px; font-weight: 600; outline: none; background: var(--bg-body); transition: var(--transition-smooth);
-        }
-        .form-group input:focus, .form-group textarea:focus { border-color: var(--black-text); background: white; }
-        
-        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-sharp); }
-        .btn-secondary { background: var(--bg-body); color: var(--black-text); border: 1px solid var(--border-darker); padding: 10px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: var(--transition-smooth); }
-        .btn-secondary:hover { background: var(--border-sharp); }
 
-        /* Toast Layout Structures Panel CSS Styles */
-        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
-        .toast-card {
-            background: var(--black-text); color: white; padding: 14px 20px; border-radius: 12px;
-            font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateY(40px); opacity: 0;
-            animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        .metric-label {
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
         }
-        @keyframes toastIn { to { transform: translateY(0); opacity: 1; } }
-        .toast-card i { color: var(--red-primary); font-size: 14px; }
-        @media (max-width: 1180px) {
-            .metrics-grid,
-            .visualization-row,
-            .split-bottom-grid { grid-template-columns: 1fr 1fr; }
+
+        .metric-value {
+            margin-top: 11px;
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 38px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.05em;
         }
-        @media (max-width: 820px) {
-            body { display: block; height: auto; max-height: none; overflow: auto; }
-            .sidebar { width: 100%; height: auto; }
-            .workspace { height: auto; max-height: none; }
-            .top-bar { padding: 18px; height: auto; flex-wrap: wrap; }
-            .search-wrapper { width: 100%; }
-            .main-scroller { height: auto; padding: 20px; }
-            .metrics-grid,
-            .visualization-row,
-            .split-bottom-grid { grid-template-columns: 1fr; }
+
+        .metric-note {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .metric-icon {
+            width: 46px;
+            height: 46px;
+            display: grid;
+            place-items: center;
+            border-radius: 14px;
+            color: var(--accent);
+            background: var(--accent-soft);
+            flex-shrink: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .stack {
+            display: grid;
+            gap: 18px;
+        }
+
+        .panel {
+            padding: 20px;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 14px;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 800;
+        }
+
+        .panel-link {
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .health {
+            display: grid;
+            grid-template-columns: 180px minmax(0, 1fr);
+            gap: 20px;
+            align-items: center;
+        }
+
+        .ring {
+            width: 154px;
+            height: 154px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: conic-gradient(var(--accent) <?php echo $approvalPercent; ?>%, #e5e7eb 0);
+        }
+
+        .ring-inner {
+            width: 116px;
+            height: 116px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: #fff;
+            text-align: center;
+        }
+
+        .ring-inner strong {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .ring-inner span {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .health-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .health-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 13px 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #f8fafc;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .health-row span {
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 720px;
+            border-collapse: collapse;
+        }
+
+        th {
+            color: var(--muted);
+            text-align: left;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0 12px 12px;
+        }
+
+        td {
+            border-top: 1px solid var(--line);
+            padding: 15px 12px;
+            vertical-align: middle;
+            font-size: 13px;
+        }
+
+        .title-cell {
+            font-weight: 800;
+            color: var(--ink);
+        }
+
+        .subtext {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 76px;
+            padding: 7px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .is-approved { background: #dcfce7; color: var(--good); }
+        .is-pending { background: #fef3c7; color: var(--warn); }
+        .is-rejected { background: #fee2e2; color: var(--bad); }
+
+        .mini-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            width: 34px;
+            height: 34px;
+            display: inline-grid;
+            place-items: center;
+            border-radius: 10px;
+            color: var(--ink);
+            border: 1px solid var(--line);
+            background: #fff;
+            text-decoration: none;
+        }
+
+        .icon-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .person,
+        .event,
+        .activity {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            padding: 14px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: #f8fafc;
+        }
+
+        .list-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            color: var(--accent);
+            background: #fff;
+            border: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .list-body {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .list-title {
+            font-size: 13px;
+            font-weight: 800;
+            overflow-wrap: anywhere;
+        }
+
+        .list-meta {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .empty {
+            padding: 24px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 14px;
+            color: var(--muted);
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            background: #f8fafc;
+        }
+
+        @media (max-width: 1160px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar {
+                position: relative;
+                height: auto;
+            }
+            .nav {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+            .nav a.logout { margin-top: 0; }
+            .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            .main { padding: 18px; }
+            .topbar,
+            .alert-strip,
+            .health {
+                grid-template-columns: 1fr;
+                display: grid;
+            }
+            .top-actions { justify-content: flex-start; }
+            .metrics { grid-template-columns: 1fr; }
+            .nav { grid-template-columns: 1fr; }
+            .ring { margin: 0 auto; }
         }
     </style>
 </head>
 <body>
-
-    <aside class="sidebar">
-        <div class="sidebar-brand">
-            <div class="brand-logo"><i class="fas fa-layer-group"></i></div>
-            <div class="brand-text">Alumni<span>X</span></div>
-        </div>
-        
-        <div class="profile-card">
-            <div class="profile-avatar">VK</div>
-            <div>
-                <div class="profile-name">Vedant Khandale</div>
-                <div class="profile-role">Workspace Administrator</div>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-mark"><i class="fas fa-graduation-cap"></i></div>
+                <div class="brand-text">Alumni<span>X</span></div>
             </div>
-        </div>
 
-        <nav class="nav-container">
-            <div class="menu-dropdown-wrapper open">
-                <button class="nav-link active" onclick="toggleMenuDropdown(this)">
-                    <div><i class="fas fa-chart-line"></i><span>Analytics Console</span></div>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <div class="sub-menu">
-                    <a href="admin_dashboard.php" class="sub-link active">Operational Overview</a>
-                    <a href="page_dashboard.php" class="sub-link">System Framework Nodes</a>
+            <div class="admin-card">
+                <div class="avatar"><?php echo adminE($initials); ?></div>
+                <div>
+                    <div class="admin-name"><?php echo adminE($adminName); ?></div>
+                    <div class="admin-role">Administrator</div>
                 </div>
             </div>
 
-            <a href="alumni_list.php" class="nav-link">
-                <div><i class="fas fa-users"></i><span>Alumni Directory</span></div>
-                <i class="fas fa-arrow-right" style="font-size: 11px; opacity: 0.4;"></i>
-            </a>
+            <nav class="nav">
+                <a class="active" href="admin_dashboard.php"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="alumni_list.php"><i class="fas fa-users"></i> Alumni</a>
+                <a href="jobs.php"><i class="fas fa-briefcase"></i> Jobs</a>
+                <a href="view_applications.php"><i class="fas fa-file-lines"></i> Applications</a>
+                <a href="event.php"><i class="fas fa-calendar-days"></i> Events</a>
+                <a class="logout" href="logout.php"><i class="fas fa-power-off"></i> Logout</a>
+            </nav>
+        </aside>
 
-            <div class="menu-dropdown-wrapper">
-                <button class="nav-link" onclick="toggleMenuDropdown(this)">
-                    <div><i class="fas fa-briefcase"></i><span>Placement Pipeline</span></div>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <div class="sub-menu">
-                    <a href="jobs.php" class="sub-link">Job Controller</a>
-                    <a href="page_jobs.php" class="sub-link">Post New Openings</a>
-                    <a href="view_applications.php" class="sub-link">Review Submissions</a>
+        <main class="main">
+            <header class="topbar">
+                <div>
+                    <div class="eyebrow"><i class="fas fa-circle-check"></i> Live Admin Workspace</div>
+                    <h1>Dashboard</h1>
+                    <p>Approve members, moderate jobs, track applications, and keep events visible from one focused control room.</p>
                 </div>
-            </div>
-
-            <div class="menu-dropdown-wrapper">
-                <button class="nav-link" onclick="toggleMenuDropdown(this)">
-                    <div><i class="fas fa-calendar-alt"></i><span>Event Management</span></div>
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <div class="sub-menu">
-                    <a href="event.php" class="sub-link">Active Programs</a>
-                    <a href="page_event.php" class="sub-link">Schedule Engagement</a>
+                <div class="top-actions">
+                    <a class="btn" href="alumni_list.php"><i class="fas fa-user-check"></i> Review Alumni</a>
+                    <a class="btn primary" href="jobs.php"><i class="fas fa-briefcase"></i> Moderate Jobs</a>
                 </div>
-            </div>
+            </header>
 
-            <a href="helpers.php" class="nav-link" style="opacity: 0.6;">
-                <div><i class="fas fa-tools"></i><span>System Utilities</span></div>
-            </a>
-
-            <a href="admin_login.php" class="nav-link" style="margin-top: auto; border-top: 1px solid var(--border-sharp); padding-top: 16px;">
-                <div><i class="fas fa-shield-alt"></i><span>Secure Authentication</span></div>
-            </a>
-            <a href="logout.php" class="nav-link" style="color: var(--red-primary);">
-                <div><i class="fas fa-power-off"></i><span>Terminate Session</span></div>
-            </a>
-        </nav>
-    </aside>
-
-    <main class="workspace">
-        <header class="top-bar">
-            <div class="search-wrapper">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search parameters, names, records...">
-            </div>
-            
-            <div class="top-actions-cluster">
-                <button class="btn-action-trigger" onclick="openBroadcastModal()">
-                    <i class="fas fa-bullhorn"></i><span>Broadcast Alert</span>
-                </button>
-            </div>
-        </header>
-
-        <div class="main-scroller">
-            <div class="view-title-flex">
-                <h2>Live Admin Command Center</h2>
-                <div class="live-status-pill">
-                    <span class="status-pulse-dot"></span><span>Live Database Engine</span>
-                </div>
-            </div>
-
-            <section class="metrics-grid">
-                <div class="card-metric">
+            <?php if ($pendingWork > 0): ?>
+                <section class="alert-strip">
                     <div>
-                        <div class="num-val"><?php echo number_format($stats["total_verified"]); ?></div>
-                        <div class="lbl-val">Verified Alumni</div>
+                        <strong><?php echo number_format($pendingWork); ?> items need review</strong>
+                        <span><?php echo number_format($stats["pending_alumni"]); ?> alumni request(s) and <?php echo number_format($stats["pending_jobs"]); ?> job post(s) are waiting.</span>
                     </div>
-                    <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
-                </div>
-                <div class="card-metric">
+                    <a class="btn primary" href="<?php echo $stats["pending_alumni"] > 0 ? "alumni_list.php" : "jobs.php"; ?>">
+                        <i class="fas fa-arrow-right"></i> Open Queue
+                    </a>
+                </section>
+            <?php endif; ?>
+
+            <section class="metrics">
+                <article class="metric">
                     <div>
-                        <div class="num-val"><?php echo $stats["active_postings"]; ?></div>
-                        <div class="lbl-val">Active Pipelines</div>
+                        <div class="metric-label">Verified Alumni</div>
+                        <div class="metric-value"><?php echo number_format($stats["verified_alumni"]); ?></div>
+                        <div class="metric-note"><?php echo $approvalPercent; ?>% approval health</div>
                     </div>
-                    <div class="icon-box"><i class="fas fa-briefcase"></i></div>
-                </div>
-                <div class="card-metric">
+                    <div class="metric-icon"><i class="fas fa-user-graduate"></i></div>
+                </article>
+                <article class="metric">
                     <div>
-                        <div class="num-val"><?php echo $stats["upcoming_events"]; ?></div>
-                        <div class="lbl-val">Scheduled Programs</div>
+                        <div class="metric-label">Pending Review</div>
+                        <div class="metric-value"><?php echo number_format($pendingWork); ?></div>
+                        <div class="metric-note">Alumni and job approvals</div>
                     </div>
-                    <div class="icon-box"><i class="fas fa-calendar-day"></i></div>
-                </div>
-                <div class="card-metric" style="border-color: rgba(244, 63, 94, 0.2); background: var(--red-light);">
+                    <div class="metric-icon"><i class="fas fa-clock"></i></div>
+                </article>
+                <article class="metric">
                     <div>
-                        <div class="num-val" style="color: var(--red-primary);"><?php echo $stats["total_applications"]; ?></div>
-                        <div class="lbl-val" style="color: var(--red-primary);">Total Submissions</div>
+                        <div class="metric-label">Active Jobs</div>
+                        <div class="metric-value"><?php echo number_format($stats["active_jobs"]); ?></div>
+                        <div class="metric-note"><?php echo number_format($stats["applications"]); ?> total applications</div>
                     </div>
-                    <div class="icon-box" style="background: white; border-color: transparent; color: var(--red-primary);"><i class="fas fa-file-invoice"></i></div>
-                </div>
+                    <div class="metric-icon"><i class="fas fa-briefcase"></i></div>
+                </article>
+                <article class="metric">
+                    <div>
+                        <div class="metric-label">Upcoming Events</div>
+                        <div class="metric-value"><?php echo number_format($stats["upcoming_events"]); ?></div>
+                        <div class="metric-note">Public event schedule</div>
+                    </div>
+                    <div class="metric-icon"><i class="fas fa-calendar-day"></i></div>
+                </article>
             </section>
 
-            <section class="visualization-row">
-                <article class="panel-block">
-                    <h3 class="panel-heading">Alumni Approval Health <i class="fas fa-chart-pie" style="color: var(--gray-muted);"></i></h3>
-                    <div class="graphics-container">
-                        <svg width="130" height="130" viewBox="0 0 140 140">
-                            <circle cx="70" cy="70" r="50" fill="transparent" stroke="var(--border-sharp)" stroke-width="11"/>
-                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--black-text)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $approved_offset; ?>" stroke-linecap="round"/>
-                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--red-primary)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $pending_offset; ?>" stroke-linecap="round"/>
-                        </svg>
-                        <div style="position: absolute; text-align: center;">
-                            <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text);"><?php echo $distribution["approved"]; ?>%</div>
-                            <div style="font-size: 9.5px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; letter-spacing: 0.01em;">Approved</div>
+            <div class="grid">
+                <div class="stack">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Alumni Approval Health</h2>
+                            <a class="panel-link" href="alumni_list.php">Manage alumni</a>
                         </div>
-                    </div>
-                </article>
-
-                <article class="panel-block">
-                    <h3 class="panel-heading">Workflow Load <i class="fas fa-chart-bar" style="color: var(--gray-muted);"></i></h3>
-                    <div class="bar-chart-wrapper">
-                        <?php foreach($monthly_signups as $month => $val): ?>
-                            <div class="bar-pillar-group">
-                                <div class="bar-pillar" data-count="<?php echo (int) $val; ?>" style="height: <?php echo max(8, (($val / $maxChartValue) * 100)); ?>%;"></div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <div class="axis-labels">
-                        <?php foreach (array_keys($monthly_signups) as $label): ?>
-                            <span><?php echo adminE($label); ?></span>
-                        <?php endforeach; ?>
-                    </div>
-                </article>
-
-                <article class="panel-block">
-                    <h3 class="panel-heading">Pulse Index <i class="fas fa-wave-square" style="color: var(--gray-muted);"></i></h3>
-                    <div class="graphics-container">
-                        <svg class="vector-wave-svg" width="100%" height="110" viewBox="0 0 200 100" preserveAspectRatio="none">
-                            <path d="M0,75 Q35,15 75,65 T155,25 T200,5" fill="none" stroke="var(--red-primary)" stroke-width="2.5" stroke-linecap="round"/>
-                            <path d="M0,85 Q35,35 75,75 T155,45 T200,25" fill="none" stroke="var(--black-text)" stroke-width="1.2" stroke-dasharray="4,4"/>
-                        </svg>
-                    </div>
-                </article>
-            </section>
-
-            <section class="split-bottom-grid">
-                <article class="panel-block scrollable-list">
-                    <h3 class="panel-heading">Placement Pipeline</h3>
-                    <div class="table-wrapper">
-                        <table class="table-core">
-                            <thead>
-                                <tr>
-                                    <th>Ref ID</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                    <th>Applications</th>
-                                    <th style="text-align: right;">Action Control</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if ($recent_job_streams): ?>
-                                <?php foreach ($recent_job_streams as $job): ?>
-                                    <tr>
-                                        <td style="color: var(--gray-muted); font-family: monospace; font-size: 11px;">#ALX-<?php echo (int) $job["id"]; ?></td>
-                                        <td>
-                                            <div style="font-weight: 700; color: var(--black-text); letter-spacing: -0.01em;"><?php echo adminE($job["title"]); ?></div>
-                                            <div style="font-size: 11.5px; color: var(--gray-muted); font-weight: 600; margin-top: 1px;"><?php echo adminE($job["company"] ?: "Unknown company"); ?> &middot; <span style="font-weight:500; font-size:11px;"><?php echo adminE($job["location"] ?: "Flexible"); ?></span></div>
-                                        </td>
-                                        <td>
-                                            <?php $jobStatus = strtolower((string) ($job["status"] ?: "pending")); ?>
-                                            <span class="badge-status <?php echo $jobStatus === 'approved' ? 'active' : 'review'; ?>">
-                                                <?php echo adminE($jobStatus); ?>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <div class="sparkline-flex" title="<?php echo (int) $job["apps"]; ?> applications">
-                                                <?php foreach ($job["trend"] as $index => $t_val): ?>
-                                                    <div class="sparkline-bar <?php echo ($index == 3) ? 'top-peak' : ''; ?>" style="height: <?php echo $t_val; ?>%;"></div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </td>
-                                        <td style="text-align: right;">
-                                            <div class="action-circle-group">
-                                                <a href="jobs.php" class="circle-btn" title="Manage job"><i class="fas fa-sliders-h"></i></a>
-                                                <a href="view_applications.php?job_id=<?php echo (int) $job["id"]; ?>" class="circle-btn danger-action" title="Review applications"><i class="fas fa-arrow-right"></i></a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                <?php else: ?>
-                                    <tr>
-                                        <td colspan="5" style="color: var(--gray-muted);">No job posts yet.</td>
-                                    </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </article>
-
-                <article class="panel-block scrollable-list">
-                    <h3 class="panel-heading">Recent Admin Activity</h3>
-                    <div class="timeline-stream">
-                        <?php foreach($recent_activities as $act): ?>
-                            <div class="timeline-item">
-                                <div class="timeline-icon-frame">
-                                    <?php if($act["type"] == 'verification'): ?><i class="fas fa-user-check"></i>
-                                    <?php elseif($act["type"] == 'job'): ?><i class="fas fa-briefcase"></i>
-                                    <?php else: ?><i class="fas fa-calendar-alt"></i><?php endif; ?>
-                                </div>
-                                <div class="timeline-body">
-                                    <div class="timeline-meta">
-                                        <h4 class="timeline-item-title"><?php echo $act["title"]; ?></h4>
-                                        <span class="timeline-time"><?php echo $act["time"]; ?></span>
+                        <div class="health">
+                            <div class="ring">
+                                <div class="ring-inner">
+                                    <div>
+                                        <strong><?php echo $approvalPercent; ?>%</strong>
+                                        <span>Approved</span>
                                     </div>
-                                    <p class="timeline-desc"><?php echo $act["desc"]; ?></p>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
-                    </div>
-                </article>
-            </section>
-        </div>
-    </main>
+                            <div class="health-list">
+                                <div class="health-row">
+                                    <span>Approved or active members</span>
+                                    <strong><?php echo number_format($stats["verified_alumni"]); ?></strong>
+                                </div>
+                                <div class="health-row">
+                                    <span>Waiting for approval email</span>
+                                    <strong><?php echo number_format($stats["pending_alumni"]); ?></strong>
+                                </div>
+                                <div class="health-row">
+                                    <span>Pending job moderation</span>
+                                    <strong><?php echo number_format($stats["pending_jobs"]); ?></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-    <div class="modal-overlay" id="broadcastModal">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3>Broadcast Live Notification</h3>
-                <button class="modal-close" onclick="closeBroadcastModal()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Broadcast Title Target Header</label>
-                    <input type="text" id="alertTitle" placeholder="e.g., Placement Drive Urgency Alert Baseline">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Job Pipeline</h2>
+                            <a class="panel-link" href="jobs.php">View all jobs</a>
+                        </div>
+                        <?php if ($recentJobs): ?>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Role</th>
+                                            <th>Owner</th>
+                                            <th>Status</th>
+                                            <th>Apps</th>
+                                            <th style="text-align: right;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($recentJobs as $job): ?>
+                                            <?php $status = strtolower((string) ($job["status"] ?: "pending")); ?>
+                                            <tr>
+                                                <td>
+                                                    <div class="title-cell"><?php echo adminE($job["title"]); ?></div>
+                                                    <div class="subtext"><?php echo adminE($job["company"] ?: "Unknown company"); ?> &middot; <?php echo adminE($job["location"] ?: "Flexible"); ?></div>
+                                                </td>
+                                                <td><?php echo adminE($job["owner_name"] ?: "Admin"); ?></td>
+                                                <td><span class="badge <?php echo dashboardStatusClass($status); ?>"><?php echo adminE($status); ?></span></td>
+                                                <td><?php echo number_format((int) $job["applications"]); ?></td>
+                                                <td>
+                                                    <div class="mini-actions">
+                                                        <a class="icon-btn" href="jobs.php" title="Manage job"><i class="fas fa-sliders"></i></a>
+                                                        <a class="icon-btn" href="view_applications.php?job_id=<?php echo (int) $job["id"]; ?>" title="View applications"><i class="fas fa-arrow-right"></i></a>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty">No jobs have been posted yet.</div>
+                        <?php endif; ?>
+                    </section>
                 </div>
-                <div class="form-group">
-                    <label>Message Payload Contents</label>
-                    <textarea id="alertMessage" rows="4" placeholder="Enter notification message payload structure to be dispatched to the active nodes channels..."></textarea>
-                </div>
+
+                <aside class="stack">
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Pending Alumni</h2>
+                            <a class="panel-link" href="alumni_list.php">Open list</a>
+                        </div>
+                        <?php if ($pendingAlumni): ?>
+                            <div class="list">
+                                <?php foreach ($pendingAlumni as $member): ?>
+                                    <article class="person">
+                                        <div class="list-icon"><i class="fas fa-user"></i></div>
+                                        <div class="list-body">
+                                            <div class="list-title"><?php echo adminE($member["full_name"]); ?></div>
+                                            <div class="list-meta"><?php echo adminE($member["email"]); ?><br><?php echo adminE($member["student_id"] ?: "No student ID"); ?> &middot; <?php echo adminE($member["batch"] ?: "Batch N/A"); ?></div>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty">No pending alumni right now.</div>
+                        <?php endif; ?>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Upcoming Events</h2>
+                            <a class="panel-link" href="event.php">Manage events</a>
+                        </div>
+                        <?php if ($upcomingEvents): ?>
+                            <div class="list">
+                                <?php foreach ($upcomingEvents as $event): ?>
+                                    <?php $eventTime = !empty($event["event_date"]) ? strtotime((string) $event["event_date"]) : false; ?>
+                                    <article class="event">
+                                        <div class="list-icon"><i class="fas fa-calendar"></i></div>
+                                        <div class="list-body">
+                                            <div class="list-title"><?php echo adminE($event["title"]); ?></div>
+                                            <div class="list-meta"><?php echo $eventTime ? adminE(date("d M Y", $eventTime)) : "Date TBA"; ?> &middot; <?php echo adminE($event["location"] ?: "Location TBA"); ?></div>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty">No upcoming events scheduled.</div>
+                        <?php endif; ?>
+                    </section>
+
+                    <section class="panel">
+                        <div class="panel-head">
+                            <h2 class="panel-title">Recent Applications</h2>
+                            <a class="panel-link" href="view_applications.php">View tracker</a>
+                        </div>
+                        <?php if ($recentApplications): ?>
+                            <div class="list">
+                                <?php foreach ($recentApplications as $application): ?>
+                                    <?php $applyTime = !empty($application["apply_time"]) ? strtotime((string) $application["apply_time"]) : false; ?>
+                                    <article class="activity">
+                                        <div class="list-icon"><i class="fas fa-file-lines"></i></div>
+                                        <div class="list-body">
+                                            <div class="list-title"><?php echo adminE($application["alumni_name"]); ?></div>
+                                            <div class="list-meta"><?php echo adminE($application["job_title"]); ?> at <?php echo adminE($application["company"]); ?><br><?php echo $applyTime ? adminE(date("d M Y, h:i A", $applyTime)) : "Recently"; ?></div>
+                                        </div>
+                                    </article>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <div class="empty">No applications submitted yet.</div>
+                        <?php endif; ?>
+                    </section>
+                </aside>
             </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
-                <button class="btn-action-trigger" style="padding: 10px 20px;" onclick="triggerBroadcastDispatch()">Dispatch Signal Trigger</button>
-            </div>
-        </div>
+        </main>
     </div>
-
-    <div class="toast-container" id="toastContainer"></div>
-
-    <script>
-        // Dropdown Menu Fluid Shifting Collapse/Expand Handler Controller Node
-        function toggleMenuDropdown(buttonElement) {
-            const wrapper = buttonElement.parentElement;
-            const isOpen = wrapper.classList.contains('open');
-            
-            document.querySelectorAll('.menu-dropdown-wrapper').forEach(item => {
-                if(item !== wrapper) item.classList.remove('open');
-            });
-
-            if (isOpen) {
-                wrapper.classList.remove('open');
-            } else {
-                wrapper.classList.add('open');
-            }
-        }
-
-        // Live Action Popups Controllers Management Engine
-        function openBroadcastModal() {
-            document.getElementById('broadcastModal').classList.add('open');
-        }
-
-        function closeBroadcastModal() {
-            document.getElementById('broadcastModal').classList.remove('open');
-            document.getElementById('alertTitle').value = '';
-            document.getElementById('alertMessage').value = '';
-        }
-
-        function triggerBroadcastDispatch() {
-            const title = document.getElementById('alertTitle').value.trim();
-            if(!title) {
-                showNotificationAlert('Validation Failure: Missing dispatch title header packet parameters.');
-                return;
-            }
-            closeBroadcastModal();
-            showNotificationAlert('Success Flag: Broadcast payload packet signaled and pushed to active matrix channels.');
-        }
-
-        function showNotificationAlert(message) {
-            const container = document.getElementById('toastContainer');
-            const card = document.createElement('div');
-            card.className = 'toast-card';
-            card.innerHTML = `<i class="fas fa-satellite-dish"></i> <span>${message}</span>`;
-            container.appendChild(card);
-            
-            setTimeout(() => {
-                card.style.transition = 'all 0.3s ease';
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(-20px)';
-                setTimeout(() => card.remove(), 300);
-            }, 3500);
-        }
-    </script>
 </body>
 </html>
