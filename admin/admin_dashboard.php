@@ -1,405 +1,658 @@
 <?php
-// 1. DATABASE CONNECTION LAYER
-// include("../config/db_connect.php"); 
+/**
+ * AlumniX Core Administration Enterprise Architecture
+ * Elite Production Engine - Polished Light Crimson Framework
+ * Fixed Sidebar & Header with Smooth Main Content Scrolling
+ */
 
-// Fallback high-fidelity Alumni Data Layer 
-$db_active = false; 
+// Production Baseline Static Dataset
 $stats = [
-    "total_alumni" => 1420,
-    "placement_rate" => 88,
-    "active_jobs" => 42,
-    "pending_approvals" => 15
+    "total_verified" => 1240,
+    "active_postings" => 38,
+    "upcoming_events" => 6,
+    "total_applications" => 184
 ];
 
-$employment_pool = ["total" => 1420, "employed" => 1150, "entrepreneur" => 180, "higher_studies" => 90];
-$monthly_registrations = [35, 48, 65, 52, 80, 95, 110, 142]; // Alumni signups trend
-$recent_jobs = [
-    ["job_id" => 101, "title" => "SDE-1 (Backend)", "company" => "TCS / Nagpur", "trend" => [20, 45, 90, 65]],
-    ["job_id" => 102, "title" => "Frontend Engineer", "company" => "InfoCepts", "trend" => [35, 70, 55, 80]],
-    ["job_id" => 103, "title" => "Data Analyst Role", "company" => "Persistent", "trend" => [50, 30, 65, 85]]
+$distribution = [
+    "employed" => 65,      
+    "higher_studies" => 20, 
+    "entrepreneur" => 15   
 ];
 
-// --- Live Production Query Example for AlumniX ---
-/*
-try {
-    if (isset($conn)) {
-        $db_active = true;
-        $stats["total_alumni"] = (int)$conn->query("SELECT COUNT(*) FROM alumni WHERE status='verified'")->fetch_row()[0];
-        $stats["active_jobs"] = (int)$conn->query("SELECT COUNT(*) FROM job_postings WHERE expiry_date >= NOW()")->fetch_row()[0];
-        
-        // Fetch Job Posts with Application Trends
-        $job_query = $conn->query("SELECT id, job_title, company_name, metrics_string FROM job_postings ORDER BY created_at DESC LIMIT 3");
-        $recent_jobs = [];
-        while($row = $job_query->fetch_assoc()) {
-            $recent_jobs[] = [
-                "job_id" => $row['id'],
-                "title" => $row['job_title'],
-                "company" => $row['company_name'],
-                "trend" => explode(',', $row['metrics_string']) // e.g. "20,40,60,80"
-            ];
-        }
-    }
-} catch (Exception $e) {
-    // Fail-safe fallback logic execution
-}
-*/
+$monthly_signups = [
+    "Jan" => 25, "Feb" => 40, "Mar" => 55, "Apr" => 45, 
+    "May" => 70, "Jun" => 85, "Jul" => 90, "Aug" => 75, 
+    "Sep" => 95, "Oct" => 110, "Nov" => 125, "Dec" => 140
+];
 
-// Math Matrix for SVG Arc Circles
-$employed_deg = ($employment_pool["employed"] / $employment_pool["total"]) * 440;
-$entrepreneur_deg = ($employment_pool["entrepreneur"] / $employment_pool["total"]) * 440;
+$recent_job_streams = [
+    ["id" => 1, "title" => "Senior Backend Engineer (PHP)", "company" => "InfoCepts Technologies", "location" => "Nagpur IT Park", "apps" => 42, "status" => "Active", "trend" => [20, 40, 30, 80]],
+    ["id" => 2, "title" => "Full Stack Developer", "company" => "Persistent Systems", "location" => "Mihan SEZ", "apps" => 56, "status" => "Active", "trend" => [40, 20, 70, 90]],
+    ["id" => 3, "title" => "Data Solutions Analyst", "company" => "TCS Innovation Hub", "location" => "Nagpur Campus", "apps" => 18, "status" => "Reviewing", "trend" => [10, 50, 30, 40]],
+    ["id" => 4, "title" => "UI/UX Product Designer", "company" => "AlumniX Venture Labs", "location" => "Remote / India", "apps" => 29, "status" => "Active", "trend" => [30, 60, 40, 70]]
+];
+
+$recent_activities = [
+    ["time" => "10 mins ago", "type" => "verification", "title" => "New Alumni Verified", "desc" => "Amit Sharma (Batch of 2022, G H Raisoni) approved."],
+    ["time" => "1 hour ago", "type" => "job", "title" => "Placement Posted", "desc" => "Persistent Systems opened a slot for Full Stack Dev."],
+    ["time" => "3 hours ago", "type" => "event", "title" => "Corporate Meet Scheduled", "desc" => "Annual Alumni Conclave 2026 page generated."]
+];
+
+// SVG Donut Calculations
+$radius = 50;
+$circumference = 2 * M_PI * $radius; 
+$employed_offset = $circumference * (1 - ($distribution["employed"] / 100));
+$entrepreneur_offset = $circumference * (1 - (($distribution["employed"] + $distribution["entrepreneur"]) / 100));
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AlumniX Core Engine</title>
+    <title>AlumniX Operations Center</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --crimson: #e11d48;
-            --crimson-dark: #be123c;
-            --crimson-light: #fff1f2;
-            --pitch-black: #09090b;
-            --slate-gray: #71717a;
-            --border-line: #e4e4e7;
-            --pure-white: #ffffff;
-            --zebra-tint: #fafafa;
-            --radius-sharp: 4px;
-            --bezier-fast: cubic-bezier(0.25, 1, 0.5, 1);
-            --bezier-fluid: cubic-bezier(0.4, 0, 0.2, 1);
+            --red-primary: #f43f5e;     /* High-Fidelity Crimson Accent */
+            --red-dark: #e11d48;        /* Deep Dynamic Crimson */
+            --red-light: #fff1f2;       /* Selected UI Accent Tint */
+            --black-text: #0f172a;      /* Slate Deep High Contrast Typography */
+            --gray-muted: #64748b;      /* Sharp Clean Subtitles */
+            --bg-pure-white: #ffffff;   /* Primary Surface */
+            --bg-body: #fafafa;         /* Outer Workspace Matte Background */
+            --border-sharp: #f1f5f9;    /* Clean Structural Dividers */
+            --border-darker: #e2e8f0;   /* Component Grid Limits */
+            --radius-box: 16px;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.03), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+            --transition-bounce: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            --transition-smooth: all 0.2s ease;
         }
 
+        /* Layout Framework Setup */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            color: var(--pitch-black);
-            background-color: var(--pure-white);
+            color: var(--black-text);
+            background-color: var(--bg-body);
             display: flex;
-            min-height: 100vh;
-            letter-spacing: -0.02em;
-            overflow-x: hidden;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes drawStroke { to { stroke-dashoffset: 0; } }
-        @keyframes growHeight { from { height: 0; } }
-
-        /* Left Navigation Console Frame */
-        .sidebar-console {
-            width: 260px;
-            background: var(--pure-white);
-            border-right: 2px solid var(--pitch-black);
+        /* Sidebar Viewport Pinning */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-pure-white);
+            border-right: 1px solid var(--border-darker);
             display: flex;
             flex-direction: column;
-            position: sticky;
-            top: 0;
             height: 100vh;
+            flex-shrink: 0;
             z-index: 100;
         }
+        .sidebar-brand {
+            padding: 24px 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-sharp);
+        }
+        .brand-logo {
+            width: 36px; height: 36px; background: var(--black-text); color: var(--bg-pure-white);
+            display: flex; align-items: center; justify-content: center; border-radius: 10px; font-weight: 800;
+            box-shadow: var(--shadow-sm); transition: var(--transition-bounce);
+        }
+        .sidebar-brand:hover .brand-logo { transform: rotate(-10deg) scale(1.05); background: var(--red-primary); }
+        .brand-text { font-size: 20px; font-weight: 800; letter-spacing: -0.03em; }
+        .brand-text span { color: var(--red-primary); }
 
-        .sidebar-brand-block {
-            padding: 24px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-line);
+        .profile-card {
+            padding: 18px 28px; display: flex; align-items: center; gap: 14px;
+            background: rgba(241, 245, 249, 0.4); border-bottom: 1px solid var(--border-sharp);
         }
-        .brand-logo-icon {
-            width: 32px; height: 32px; background: var(--pitch-black); display: flex;
-            align-items: center; justify-content: center; color: var(--pure-white); font-weight: 800; border-radius: var(--radius-sharp);
+        .profile-avatar {
+            width: 42px; height: 42px; border-radius: 50%; background: var(--black-text);
+            color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+            border: 2px solid white; box-shadow: 0 0 0 1px var(--border-darker);
         }
-        .brand-title { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.03em; }
+        .profile-name { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+        .profile-role { font-size: 11px; color: var(--gray-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
 
-        .user-profile-anchor {
-            padding: 24px; background: var(--zebra-tint); border-bottom: 1px solid var(--border-line); display: flex; flex-direction: column; align-items: center; text-align: center;
-        }
-        .avatar-frame {
-            width: 64px; height: 64px; border: 2px solid var(--pitch-black); border-radius: var(--radius-sharp); margin-bottom: 12px;
-            background: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--slate-gray); overflow: hidden;
-        }
-        .user-profile-anchor .profile-name { font-size: 14px; font-weight: 700; color: var(--pitch-black); }
-        .user-profile-anchor .profile-role { font-size: 11px; font-weight: 600; color: var(--slate-gray); text-transform: uppercase; margin-top: 2px; }
-
-        .sidebar-nav-container { flex: 1; overflow-y: auto; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
-        .nav-node-link {
-            display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; font-size: 13px; font-weight: 700;
-            text-decoration: none; color: var(--pitch-black); border-radius: var(--radius-sharp); transition: var(--bezier-fluid); cursor: pointer;
-        }
-        .nav-node-link:hover, .nav-node-link.active { background: var(--pitch-black); color: var(--pure-white); }
-        .nav-node-link .link-label-group { display: flex; align-items: center; gap: 12px; }
-        .nav-node-link i { width: 16px; text-align: center; font-size: 14px; }
+        /* Navigation Interactive Controllers */
+        .nav-container { flex: 1; overflow-y: auto; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+        .menu-dropdown-wrapper { display: flex; flex-direction: column; width: 100%; }
         
-        .badge-tag-new { background: var(--crimson); color: var(--pure-white); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 2px; text-transform: uppercase; }
-
-        .submenu-stack { padding-left: 42px; display: flex; flex-direction: column; gap: 2px; margin-bottom: 4px; }
-        .submenu-item { padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--slate-gray); text-decoration: none; border-radius: var(--radius-sharp); transition: var(--bezier-fluid); }
-        .submenu-item:hover, .submenu-item.active { color: var(--crimson); background: var(--crimson-light); }
-
-        /* Central Work Arena */
-        .main-workspace-shell { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .top-global-header { height: 70px; background: var(--pure-white); border-bottom: 1px solid var(--border-line); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; }
-        .search-container { position: relative; width: 340px; }
-        .search-container input {
-            width: 100%; padding: 10px 14px 10px 38px; border-radius: var(--radius-sharp); border: 1px solid var(--border-line);
-            font-size: 13px; font-weight: 600; background: var(--zebra-tint); transition: var(--bezier-fluid);
+        .nav-link {
+            display: flex; align-items: center; justify-content: space-between; padding: 13px 16px;
+            font-size: 13.5px; font-weight: 700; text-decoration: none; color: var(--gray-muted); border-radius: 12px;
+            cursor: pointer; background: transparent; border: none; width: 100%; outline: none;
+            transition: var(--transition-smooth);
         }
-        .search-container input:focus { outline: none; border-color: var(--pitch-black); background: var(--pure-white); }
-        .search-container i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--slate-gray); }
-
-        .header-toolbar-group { display: flex; align-items: center; gap: 20px; }
-        .action-icon-trigger { background: transparent; border: none; font-size: 16px; color: var(--pitch-black); cursor: pointer; position: relative; transition: var(--bezier-fluid); }
-        .action-icon-trigger:hover { color: var(--crimson); transform: scale(1.05); }
-        .notification-marker { position: absolute; top: -4px; right: -4px; width: 6px; height: 6px; background: var(--crimson); border-radius: 50%; }
-
-        .workspace-scroller { flex: 1; padding: 32px; overflow-y: auto; max-width: 1400px; width: 100%; margin: 0 auto; }
-        .breadcrumb-navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-        .breadcrumb-navbar h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.04em; text-transform: uppercase; }
-        .route-path-log { font-size: 12px; font-weight: 700; color: var(--slate-gray); }
-        .route-path-log span { color: var(--pitch-black); }
-
-        /* KPI Interface Layout Matrix */
-        .kpi-row-layout { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; margin-bottom: 32px; }
-        .kpi-metric-card {
-            background: var(--pure-white); border: 1px solid var(--border-line); padding: 24px; border-radius: var(--radius-sharp);
-            display: flex; justify-content: space-between; align-items: flex-start; transition: var(--bezier-fast); animation: slideInUp 0.5s var(--bezier-fast) both;
-        }
-        .kpi-metric-card:hover { border-color: var(--pitch-black); transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.03); }
-        .kpi-metric-card .num-value { font-size: 34px; font-weight: 800; color: var(--pitch-black); line-height: 1; margin-bottom: 6px; }
-        .kpi-metric-card .metric-label { font-size: 12px; font-weight: 700; color: var(--slate-gray); text-transform: uppercase; letter-spacing: 0.02em; }
-        .kpi-metric-card .icon-shell {
-            width: 42px; height: 42px; border: 1px solid var(--border-line); display: flex; align-items: center; justify-content: center;
-            font-size: 16px; color: var(--pitch-black); border-radius: var(--radius-sharp); transition: var(--bezier-fluid);
-        }
-        .kpi-metric-card:hover .icon-shell { background: var(--pitch-black); color: var(--pure-white); border-color: var(--pitch-black); }
-
-        /* Chart Tri-Section Panel CSS */
-        .analytics-tri-grid { display: grid; grid-template-columns: 0.9fr 1.2fr 1fr; gap: 24px; margin-bottom: 32px; }
-        .panel-widget-node { background: var(--pure-white); border: 1px solid var(--border-line); border-radius: var(--radius-sharp); padding: 24px; display: flex; flex-direction: column; animation: slideInUp 0.6s var(--bezier-fast) both; }
-        .panel-widget-node:hover { border-color: var(--pitch-black); }
-        .widget-header-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.02em; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border-line); }
-
-        .chart-canvas-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 200px; }
+        .nav-link:hover { color: var(--black-text); background: var(--border-sharp); }
+        .nav-link.active { background: var(--red-light); color: var(--red-primary); }
+        .nav-link div { display: flex; align-items: center; gap: 12px; }
+        .nav-link i.fa-chevron-right { font-size: 10px; transition: transform 0.2s ease; }
+        .menu-dropdown-wrapper.open .nav-link i.fa-chevron-right { transform: rotate(90deg); color: var(--black-text); }
         
-        .svg-donut-circle { transform: rotate(-90deg); transform-origin: 50% 50%; stroke-dasharray: 440; transition: stroke-dashoffset 1s var(--bezier-fast); }
+        /* Smooth Interactive Menu Accordion Node */
+        .sub-menu { 
+            padding-left: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.25s cubic-bezier(0, 1, 0, 1); 
+        }
+        .menu-dropdown-wrapper.open .sub-menu { max-height: 200px; margin-top: 4px; margin-bottom: 8px; transition: max-height 0.25s cubic-bezier(1, 0, 1, 0); }
         
-        .bar-chart-flex-container { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 180px; padding-top: 10px; }
-        .bar-column-node { width: 14px; background: var(--pitch-black); border-radius: var(--radius-sharp) var(--radius-sharp) 0 0; position: relative; animation: growHeight 0.8s var(--bezier-fast) both; transition: var(--bezier-fluid); }
-        .bar-column-node:hover { background: var(--crimson); }
-        .bar-column-node:hover::after {
-            content: attr(data-value); position: absolute; top: -24px; left: 50%; transform: translateX(-50%);
-            font-size: 10px; font-weight: 800; background: var(--pitch-black); color: var(--pure-white); padding: 2px 6px; border-radius: 2px; white-space: nowrap; z-index: 10;
+        .sub-link { 
+            padding: 10px 16px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            color: var(--gray-muted); 
+            text-decoration: none; 
+            border-radius: 10px; 
+            transition: var(--transition-bounce); 
+            display: flex; 
+            align-items: center; 
+            gap: 10px;
         }
+        .sub-link::before { content: ''; width: 5px; height: 5px; background: var(--border-darker); border-radius: 50%; transition: var(--transition-smooth); }
+        .sub-link:hover { color: var(--black-text); background: var(--border-sharp); transform: translateX(4px); }
+        .sub-link:hover::before { background: var(--black-text); transform: scale(1.3); }
+        .sub-link.active { color: var(--red-primary) !important; font-weight: 700; background: rgba(244, 63, 94, 0.03); }
+        .sub-link.active::before { background: var(--red-primary); }
 
-        .analytics-dual-split { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
-
-        /* Dynamic Table Grid Engine */
-        .custom-data-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .custom-data-table th { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--slate-gray); padding: 12px 16px; border-bottom: 2px solid var(--pitch-black); }
-        .custom-data-table td { padding: 14px 16px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--border-line); color: var(--pitch-black); vertical-align: middle; }
-        .custom-data-table tr:hover td { background: var(--zebra-tint); }
-
-        .sparkline-micro-flex { display: flex; align-items: flex-end; gap: 3px; height: 20px; width: 60px; }
-        .sparkline-bar { flex: 1; background: var(--border-line); height: 40%; transition: var(--bezier-fluid); }
-        .custom-data-table tr:hover .sparkline-bar { background: var(--pitch-black); }
-        .custom-data-table tr:hover .sparkline-bar.high-point { background: var(--crimson); }
-
-        .row-action-btn-cluster { display: flex; gap: 4px; }
-        .action-tool-btn {
-            border: 1px solid var(--border-line); background: var(--pure-white); color: var(--pitch-black); width: 28px; height: 28px;
-            display: inline-flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; border-radius: var(--radius-sharp); transition: var(--bezier-fluid);
-            text-decoration: none;
+        /* Workspace Main Layout Shell Frame */
+        .workspace { flex: 1; display: flex; flex-direction: column; height: 100vh; max-height: 100vh; overflow: hidden; }
+        .top-bar {
+            height: 75px; background: var(--bg-pure-white); border-bottom: 1px solid var(--border-darker);
+            display: flex; align-items: center; justify-content: space-between; padding: 0 40px; flex-shrink: 0;
         }
-        .action-tool-btn:hover { border-color: var(--pitch-black); background: var(--pitch-black); color: var(--pure-white); }
-        .action-tool-btn.btn-delete-alert:hover { background: var(--crimson); color: var(--pure-white); border-color: var(--crimson); }
-
-        @media (max-width: 1200px) {
-            .kpi-row-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-            .analytics-tri-grid, .analytics-dual-split { grid-template-columns: 1fr; }
+        .search-wrapper { position: relative; width: 320px; }
+        .search-wrapper input {
+            width: 100%; padding: 10px 16px 10px 42px; border-radius: 12px;
+            border: 1px solid var(--border-darker); font-size: 13px; background: var(--bg-body); outline: none;
+            transition: var(--transition-smooth); font-weight: 500;
         }
+        .search-wrapper input:focus { border-color: var(--black-text); background: white; box-shadow: var(--shadow-sm); }
+        .search-wrapper i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--gray-muted); font-size: 14px; }
+
+        .top-actions-cluster { display: flex; align-items: center; gap: 16px; }
+        .btn-action-trigger {
+            background: var(--black-text); color: white; border: none; padding: 11px 20px; border-radius: 12px;
+            font-size: 12.5px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px;
+            box-shadow: var(--shadow-sm); transition: var(--transition-bounce);
+        }
+        .btn-action-trigger:hover { background: var(--red-primary); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(244, 63, 94, 0.15); }
+        .btn-action-trigger:active { transform: translateY(0); }
+
+        /* FIXED SCROLLER BUG HERE: Forced Precise Viewport Constraints */
+        .main-scroller { 
+            height: calc(100vh - 75px);
+            overflow-y: auto; 
+            padding: 32px 40px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 28px; 
+        }
+        
+        .view-title-flex { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .view-title-flex h2 { font-size: 26px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text); }
+        
+        .live-status-pill { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; background: white; padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border-darker); box-shadow: var(--shadow-sm); }
+        .status-pulse-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; position: relative; }
+        .status-pulse-dot::after { content: ''; position: absolute; width: 100%; height: 100%; background: inherit; border-radius: inherit; animation: pulseWave 1.8s infinite ease-in-out; }
+
+        @keyframes pulseWave { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(3); opacity: 0; } }
+
+        /* Dashboard Structural Grids Elements */
+        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; flex-shrink: 0; }
+        .card-metric {
+            background: var(--bg-pure-white); border: 1px solid var(--border-darker); border-radius: var(--radius-box);
+            padding: 20px 24px; display: flex; justify-content: space-between; align-items: center;
+            transition: var(--transition-bounce); box-shadow: var(--shadow-md); position: relative; overflow: hidden;
+        }
+        .card-metric:hover { transform: translateY(-4px); border-color: var(--black-text); box-shadow: 0 12px 24px -10px rgba(15,23,42,0.08); }
+        .card-metric::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: transparent; transition: var(--transition-smooth); }
+        .card-metric:hover::before { background: var(--red-primary); }
+        
+        .num-val { font-size: 30px; font-weight: 800; line-height: 1; letter-spacing: -0.04em; color: var(--black-text); }
+        .lbl-val { font-size: 11px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; margin-top: 6px; letter-spacing: 0.03em; }
+        .icon-box { width: 44px; height: 44px; border-radius: 12px; background: var(--bg-body); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--black-text); border: 1px solid var(--border-sharp); transition: var(--transition-smooth); }
+        .card-metric:hover .icon-box { background: var(--black-text); color: white; border-color: var(--black-text); }
+
+        /* Charts Configurations Panels View */
+        .visualization-row { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 20px; flex-shrink: 0; }
+        .panel-block { background: var(--bg-pure-white); border: 1px solid var(--border-darker); border-radius: var(--radius-box); padding: 22px; display: flex; flex-direction: column; box-shadow: var(--shadow-md); position: relative; }
+        .panel-heading { font-size: 11.5px; font-weight: 800; text-transform: uppercase; color: var(--black-text); margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-sharp); letter-spacing: 0.05em; display: flex; align-items: center; justify-content: space-between; }
+        
+        .graphics-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; min-height: 150px; }
+        .donut-turn { transform: rotate(-90deg); transform-origin: center; transition: stroke-dashoffset 0.8s ease-in-out; }
+
+        /* Dynamic Graphics Chart Pillars Base Vector Setup */
+        .bar-chart-wrapper { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 140px; padding: 0 4px; }
+        .bar-pillar-group { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .bar-pillar { width: 14px; background: var(--black-text); border-radius: 4px 4px 0 0; position: relative; transition: var(--transition-bounce); cursor: pointer; }
+        .bar-pillar:hover { background: var(--red-primary); transform: scaleY(1.05); }
+        
+        .bar-pillar::after {
+            content: attr(data-count); position: absolute; top: -28px; left: 50%; transform: translateX(-50%) scale(0.8);
+            font-size: 10px; font-weight: 700; background: var(--black-text); color: white; padding: 3px 6px; border-radius: 6px; opacity: 0; transition: var(--transition-bounce); pointer-events: none;
+        }
+        .bar-pillar:hover::after { opacity: 1; transform: translateX(-50%) scale(1); top: -32px; }
+        .axis-labels { display: flex; justify-content: space-between; margin-top: 12px; font-size: 10.5px; color: var(--gray-muted); font-weight: 700; width: 100%; padding: 0 2px; border-top: 1px dashed var(--border-sharp); padding-top: 6px; }
+
+        /* Split Frame Architecture Grid Bottom Block Rows */
+        .split-bottom-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; flex-shrink: 0; margin-bottom: 20px; }
+        .panel-block.scrollable-list { display: flex; flex-direction: column; min-height: 380px; }
+        .table-wrapper { flex: 1; margin-top: 4px; padding-right: 2px; }
+
+        /* Tables Presentations Design Base Styles */
+        .table-core { width: 100%; border-collapse: collapse; text-align: left; }
+        .table-core th { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--gray-muted); padding: 10px 12px; border-bottom: 1px solid var(--border-darker); letter-spacing: 0.03em; background: white; }
+        .table-core td { padding: 14px 12px; font-size: 13px; font-weight: 600; border-bottom: 1px solid var(--border-sharp); vertical-align: middle; }
+        .table-core tr:last-child td { border-bottom: none; }
+        .table-core tr:hover td { background: rgba(248,250,252,0.9); }
+
+        /* Sparkline Vector Graphical Representation Nodes Elements */
+        .sparkline-flex { display: flex; align-items: flex-end; gap: 3px; height: 16px; width: 55px; }
+        .sparkline-bar { flex: 1; background: var(--border-darker); height: 40%; border-radius: 2px; transition: var(--transition-smooth); }
+        .table-core tr:hover .sparkline-bar { background: #cbd5e1; }
+        .table-core tr:hover .sparkline-bar.top-peak { background: var(--red-primary); }
+
+        .badge-status { font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; display: inline-block; letter-spacing: 0.02em; }
+        .badge-status.active { background: #dcfce7; color: #15803d; }
+        .badge-status.review { background: #fef9c3; color: #a16207; }
+
+        /* Functional Circle Links Configurations Action Triggers */
+        .action-circle-group { display: flex; gap: 6px; justify-content: flex-end; }
+        .circle-btn {
+            border: 1px solid var(--border-darker); background: var(--bg-pure-white); color: var(--black-text);
+            width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 11.5px; text-decoration: none; border-radius: 8px; transition: var(--transition-bounce);
+        }
+        .circle-btn:hover { background: var(--black-text); color: var(--bg-pure-white); border-color: var(--black-text); transform: scale(1.08); }
+        .circle-btn.danger-action:hover { background: var(--red-primary); color: white; border-color: var(--red-primary); }
+
+        /* Operational System Feeds Registry Elements Map View */
+        .timeline-stream { display: flex; flex-direction: column; gap: 14px; flex: 1; padding-right: 4px; }
+        .timeline-item { display: flex; gap: 14px; position: relative; padding-bottom: 2px; }
+        .timeline-item::before { content: ''; position: absolute; left: 15px; top: 32px; bottom: -18px; width: 2px; background: var(--border-sharp); }
+        .timeline-item:last-child::before { display: none; }
+        
+        .timeline-icon-frame {
+            width: 32px; height: 32px; border-radius: 50%; background: var(--bg-body); border: 1px solid var(--border-darker);
+            display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--black-text); flex-shrink: 0; z-index: 2;
+        }
+        .timeline-item:hover .timeline-icon-frame { background: var(--red-light); color: var(--red-primary); border-color: var(--red-primary); }
+        .timeline-body { flex: 1; background: var(--bg-body); padding: 12px 16px; border-radius: 12px; border: 1px solid var(--border-sharp); transition: var(--transition-smooth); }
+        .timeline-body:hover { background: white; border-color: var(--border-darker); box-shadow: var(--shadow-sm); }
+        .timeline-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .timeline-item-title { font-size: 12.5px; font-weight: 700; color: var(--black-text); }
+        .timeline-time { font-size: 10.5px; color: var(--gray-muted); font-weight: 600; }
+        .timeline-desc { font-size: 12px; color: var(--gray-muted); line-height: 1.4; font-weight: 500; }
+
+        /* Popups Layout Interface Modules Panels Elements Layout */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: white; border-radius: var(--radius-box); width: 460px; max-width: 90%;
+            padding: 28px; border: 1px solid var(--border-darker); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            transform: scale(0.9) translateY(10px); transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal-overlay.open .modal-box { transform: scale(1) translateY(0); }
+        
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-header h3 { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+        .modal-close { border: none; background: transparent; font-size: 16px; cursor: pointer; color: var(--gray-muted); width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; transition: var(--transition-smooth); }
+        .modal-close:hover { background: var(--border-sharp); color: var(--black-text); }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 11.5px; font-weight: 700; text-transform: uppercase; color: var(--gray-muted); margin-bottom: 6px; letter-spacing: 0.02em; }
+        .form-group input, .form-group textarea {
+            width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-darker);
+            font-family: inherit; font-size: 13px; font-weight: 600; outline: none; background: var(--bg-body); transition: var(--transition-smooth);
+        }
+        .form-group input:focus, .form-group textarea:focus { border-color: var(--black-text); background: white; }
+        
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-sharp); }
+        .btn-secondary { background: var(--bg-body); color: var(--black-text); border: 1px solid var(--border-darker); padding: 10px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: var(--transition-smooth); }
+        .btn-secondary:hover { background: var(--border-sharp); }
+
+        /* Toast Layout Structures Panel CSS Styles */
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 1100; display: flex; flex-direction: column; gap: 10px; }
+        .toast-card {
+            background: var(--black-text); color: white; padding: 14px 20px; border-radius: 12px;
+            font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); transform: translateY(40px); opacity: 0;
+            animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes toastIn { to { transform: translateY(0); opacity: 1; } }
+        .toast-card i { color: var(--red-primary); font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar-console">
-        <div class="sidebar-brand-block">
-            <div class="brand-logo-icon"><i class="fas fa-user-graduate"></i></div>
-            <div class="brand-title">AlumniX</div>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo"><i class="fas fa-layer-group"></i></div>
+            <div class="brand-text">Alumni<span>X</span></div>
         </div>
         
-        <div class="user-profile-anchor">
-            <div class="avatar-frame"><i class="fas fa-shield-alt"></i></div>
-            <div class="profile-name">Vedant Admin</div>
-            <div class="profile-role">Core Controller</div>
+        <div class="profile-card">
+            <div class="profile-avatar">VK</div>
+            <div>
+                <div class="profile-name">Vedant Khandale</div>
+                <div class="profile-role">Workspace Administrator</div>
+            </div>
         </div>
 
-        <nav class="sidebar-nav-container">
-            <a href="alumni_dashboard.php" class="nav-node-link active">
-                <div class="link-label-group"><i class="fas fa-chart-line"></i><span>Control Panel</span></div>
-                <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
-            </a>
-            <div class="submenu-stack">
-                <a href="alumni_dashboard.php" class="submenu-item active">Core Metrics</a>
-                <a href="alumni_directory.php" class="submenu-item">Alumni Directory</a>
-                <a href="verifications.php" class="submenu-item">Pending Approvals</a>
+        <nav class="nav-container">
+            <div class="menu-dropdown-wrapper open">
+                <button class="nav-link active" onclick="toggleMenuDropdown(this)">
+                    <div><i class="fas fa-chart-line"></i><span>Analytics Console</span></div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="sub-menu">
+                    <a href="admin_dashboard.php" class="sub-link active">Operational Overview</a>
+                    <a href="page_dashboard.php" class="sub-link">System Framework Nodes</a>
+                </div>
             </div>
 
-            <a href="job_board.php" class="nav-node-link">
-                <div class="link-label-group"><i class="fas fa-briefcase"></i><span>Job Board</span></div>
-                <span class="badge-tag-new">Live</span>
+            <a href="alumni_list.php" class="nav-link">
+                <div><i class="fas fa-users"></i><span>Alumni Directory</span></div>
+                <i class="fas fa-arrow-right" style="font-size: 11px; opacity: 0.4;"></i>
             </a>
-            <a href="events_manager.php" class="nav-node-link">
-                <div class="link-label-group"><i class="fas fa-handshake"></i><span>Chapters & Events</span></div>
+
+            <div class="menu-dropdown-wrapper">
+                <button class="nav-link" onclick="toggleMenuDropdown(this)">
+                    <div><i class="fas fa-briefcase"></i><span>Placement Pipeline</span></div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="sub-menu">
+                    <a href="jobs.php" class="sub-link">Job Controller</a>
+                    <a href="page_jobs.php" class="sub-link">Post New Openings</a>
+                    <a href="view_applications.php" class="sub-link">Review Submissions</a>
+                </div>
+            </div>
+
+            <div class="menu-dropdown-wrapper">
+                <button class="nav-link" onclick="toggleMenuDropdown(this)">
+                    <div><i class="fas fa-calendar-alt"></i><span>Event Management</span></div>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                <div class="sub-menu">
+                    <a href="event.php" class="sub-link">Active Programs</a>
+                    <a href="page_event.php" class="sub-link">Schedule Engagement</a>
+                </div>
+            </div>
+
+            <a href="helpers.php" class="nav-link" style="opacity: 0.6;">
+                <div><i class="fas fa-tools"></i><span>System Utilities</span></div>
             </a>
-            <a href="donations.php" class="nav-node-link">
-                <div class="link-label-group"><i class="fas fa-donate"></i><span>Fund Tracking</span></div>
+
+            <a href="admin_login.php" class="nav-link" style="margin-top: auto; border-top: 1px solid var(--border-sharp); padding-top: 16px;">
+                <div><i class="fas fa-shield-alt"></i><span>Secure Authentication</span></div>
             </a>
-            <a href="system_settings.php" class="nav-node-link">
-                <div class="link-label-group"><i class="fas fa-sliders-h"></i><span>Config Systems</span></div>
+            <a href="logout.php" class="nav-link" style="color: var(--red-primary);">
+                <div><i class="fas fa-power-off"></i><span>Terminate Session</span></div>
             </a>
         </nav>
     </aside>
 
-    <main class="main-workspace-shell">
-        <header class="top-global-header">
-            <div class="search-container">
+    <main class="workspace">
+        <header class="top-bar">
+            <div class="search-wrapper">
                 <i class="fas fa-search"></i>
-                <input type="text" placeholder="Search across alumni network nodes...">
+                <input type="text" placeholder="Search parameters, names, records...">
             </div>
-            <div class="header-toolbar-group">
-                <button class="action-icon-trigger"><i class="far fa-bell"></i><span class="notification-marker"></span></button>
-                <button class="action-icon-trigger"><i class="far fa-envelope"></i></button>
-                <a href="admin_profile.php" class="action-icon-trigger" style="font-size: 18px;"><i class="far fa-user-circle"></i></a>
+            
+            <div class="top-actions-cluster">
+                <button class="btn-action-trigger" onclick="openBroadcastModal()">
+                    <i class="fas fa-bullhorn"></i><span>Broadcast Alert</span>
+                </button>
             </div>
         </header>
 
-        <div class="workspace-scroller">
-            <div class="breadcrumb-navbar">
-                <div>
-                    <h2>Alumni Core Engine</h2>
+        <div class="main-scroller">
+            <div class="view-title-flex">
+                <h2>Control Center Workspace</h2>
+                <div class="live-status-pill">
+                    <span class="status-pulse-dot"></span><span>Static Operational Engine</span>
                 </div>
-                <div class="route-path-log">Network &nbsp;/&nbsp; <span>Dashboard Console</span></div>
             </div>
 
-            <section class="kpi-row-layout">
-                <div class="kpi-metric-card" style="animation-delay: 0.05s;">
+            <section class="metrics-grid">
+                <div class="card-metric">
                     <div>
-                        <div class="num-value"><?php echo number_format($stats["total_alumni"]); ?></div>
-                        <div class="metric-label">Verified Alumni</div>
+                        <div class="num-val"><?php echo number_format($stats["total_verified"]); ?></div>
+                        <div class="lbl-val">Verified Alumni</div>
                     </div>
-                    <div class="icon-shell"><i class="fas fa-users"></i></div>
+                    <div class="icon-box"><i class="fas fa-user-graduate"></i></div>
                 </div>
-                <div class="kpi-metric-card" style="animation-delay: 0.1s;">
+                <div class="card-metric">
                     <div>
-                        <div class="num-value"><?php echo $stats["placement_rate"]; ?>%</div>
-                        <div class="metric-label">Employment Rate</div>
+                        <div class="num-val"><?php echo $stats["active_postings"]; ?></div>
+                        <div class="lbl-val">Active Pipelines</div>
                     </div>
-                    <div class="icon-shell"><i class="fas fa-award"></i></div>
+                    <div class="icon-box"><i class="fas fa-briefcase"></i></div>
                 </div>
-                <div class="kpi-metric-card" style="animation-delay: 0.15s;">
+                <div class="card-metric">
                     <div>
-                        <div class="num-value"><?php echo $stats["active_jobs"]; ?></div>
-                        <div class="metric-label">Active Job Posts</div>
+                        <div class="num-val"><?php echo $stats["upcoming_events"]; ?></div>
+                        <div class="lbl-val">Scheduled Programs</div>
                     </div>
-                    <div class="icon-shell"><i class="fas fa-business-time"></i></div>
+                    <div class="icon-box"><i class="fas fa-calendar-day"></i></div>
                 </div>
-                <div class="kpi-metric-card" style="animation-delay: 0.2s;">
+                <div class="card-metric" style="border-color: rgba(244, 63, 94, 0.2); background: var(--red-light);">
                     <div>
-                        <div class="num-value" style="color: var(--crimson);"><?php echo $stats["pending_approvals"]; ?></div>
-                        <div class="metric-label">Pending Reviews</div>
+                        <div class="num-val" style="color: var(--red-primary);"><?php echo $stats["total_applications"]; ?></div>
+                        <div class="lbl-val" style="color: var(--red-primary);">Total Submissions</div>
                     </div>
-                    <div class="icon-shell" style="color: var(--crimson);"><i class="fas fa-user-clock"></i></div>
+                    <div class="icon-box" style="background: white; border-color: transparent; color: var(--red-primary);"><i class="fas fa-file-invoice"></i></div>
                 </div>
             </section>
 
-            <section class="analytics-tri-grid">
-                <article class="panel-widget-node" style="animation-delay: 0.25s;">
-                    <h3 class="widget-header-title">Alumni Profile Metrics</h3>
-                    <div class="chart-canvas-wrapper">
-                        <svg width="160" height="160" viewBox="0 0 160 160">
-                            <circle cx="80" cy="80" r="70" fill="transparent" stroke="#e4e4e7" stroke-width="12"/>
-                            <circle class="svg-donut-circle" cx="80" cy="80" r="70" fill="transparent" stroke="#09090b" stroke-width="12" stroke-dashoffset="<?php echo (440 - $employed_deg); ?>"/>
-                            <circle class="svg-donut-circle" cx="80" cy="80" r="70" fill="transparent" stroke="#e11d48" stroke-width="12" stroke-dashoffset="<?php echo (440 - $entrepreneur_deg); ?>"/>
+            <section class="visualization-row">
+                <article class="panel-block">
+                    <h3 class="panel-heading">Sector Distribution <i class="fas fa-chart-pie" style="color: var(--gray-muted);"></i></h3>
+                    <div class="graphics-container">
+                        <svg width="130" height="130" viewBox="0 0 140 140">
+                            <circle cx="70" cy="70" r="50" fill="transparent" stroke="var(--border-sharp)" stroke-width="11"/>
+                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--black-text)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $employed_offset; ?>" stroke-linecap="round"/>
+                            <circle class="donut-turn" cx="70" cy="70" r="50" fill="transparent" stroke="var(--red-primary)" stroke-width="11" stroke-dasharray="<?php echo $circumference; ?>" stroke-dashoffset="<?php echo $entrepreneur_offset; ?>" stroke-linecap="round"/>
                         </svg>
                         <div style="position: absolute; text-align: center;">
-                            <div style="font-size: 22px; font-weight: 800; color: var(--pitch-black);"><?php echo $employment_pool["total"]; ?></div>
-                            <div style="font-size: 10px; font-weight: 700; color: var(--slate-gray); text-transform: uppercase;">Total Pool</div>
+                            <div style="font-size: 22px; font-weight: 800; letter-spacing: -0.04em; color: var(--black-text);"><?php echo $distribution["employed"]; ?>%</div>
+                            <div style="font-size: 9.5px; font-weight: 700; color: var(--gray-muted); text-transform: uppercase; letter-spacing: 0.01em;">Corporate</div>
                         </div>
                     </div>
                 </article>
 
-                <article class="panel-widget-node" style="animation-delay: 0.3s;">
-                    <h3 class="widget-header-title">Monthly Alumni Signups</h3>
-                    <div class="bar-chart-flex-container">
-                        <?php foreach ($monthly_registrations as $index => $count): ?>
-                            <div class="bar-column-node" data-value="<?php echo $count; ?> Users" style="height: <?php echo ($count / max($monthly_registrations)) * 100; ?>%; animation-delay: <?php echo ($index * 0.05); ?>s;"></div>
+                <article class="panel-block">
+                    <h3 class="panel-heading">Registration Velocity <i class="fas fa-chart-bar" style="color: var(--gray-muted);"></i></h3>
+                    <div class="bar-chart-wrapper">
+                        <?php foreach($monthly_signups as $month => $val): ?>
+                            <div class="bar-pillar-group">
+                                <div class="bar-pillar" data-count="<?php echo $val; ?>" style="height: <?php echo ($val / 140) * 100; ?>%;"></div>
+                            </div>
                         <?php endforeach; ?>
+                    </div>
+                    <div class="axis-labels">
+                        <span>Jan</span><span>Mar</span><span>Jun</span><span>Sep</span><span>Dec</span>
                     </div>
                 </article>
 
-                <article class="panel-widget-node" style="animation-delay: 0.35s;">
-                    <h3 class="widget-header-title">Job Board Metrics</h3>
-                    <div class="chart-canvas-wrapper">
-                        <svg width="100%" height="150" viewBox="0 0 300 150" preserveAspectRatio="none">
-                            <path d="M0,130 Q60,40 120,100 T240,30 T300,5" fill="none" stroke="#e11d48" stroke-width="3" style="stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawStroke 1.5s var(--bezier-fast) forwards;"/>
-                            <path d="M0,145 Q60,80 120,120 T240,60 T300,20" fill="none" stroke="#09090b" stroke-width="2" style="stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: drawStroke 1.5s var(--bezier-fast) 0.2s forwards;"/>
+                <article class="panel-block">
+                    <h3 class="panel-heading">Volatility Index <i class="fas fa-wave-square" style="color: var(--gray-muted);"></i></h3>
+                    <div class="graphics-container">
+                        <svg class="vector-wave-svg" width="100%" height="110" viewBox="0 0 200 100" preserveAspectRatio="none">
+                            <path d="M0,75 Q35,15 75,65 T155,25 T200,5" fill="none" stroke="var(--red-primary)" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M0,85 Q35,35 75,75 T155,45 T200,25" fill="none" stroke="var(--black-text)" stroke-width="1.2" stroke-dasharray="4,4"/>
                         </svg>
                     </div>
                 </article>
             </section>
 
-            <section class="analytics-dual-split">
-                <article class="panel-widget-node" style="animation-delay: 0.4s;">
-                    <h3 class="widget-header-title">Chapter Engagement Trend</h3>
-                    <div class="chart-canvas-wrapper" style="min-height: 220px;">
-                        <svg width="100%" height="180" viewBox="0 0 500 180" preserveAspectRatio="none">
-                            <path d="M0,140 C120,120 180,50 280,80 C380,100 420,20 500,10" fill="none" stroke="#09090b" stroke-width="3"/>
-                            <path d="M0,165 C120,145 180,95 280,105 C380,115 420,50 500,35" fill="none" stroke="#e11d48" stroke-width="2" stroke-dasharray="4,4"/>
-                        </svg>
+            <section class="split-bottom-grid">
+                <article class="panel-block scrollable-list">
+                    <h3 class="panel-heading">Placement Infrastructure Pipelines Management</h3>
+                    <div class="table-wrapper">
+                        <table class="table-core">
+                            <thead>
+                                <tr>
+                                    <th>Ref ID</th>
+                                    <th>Role Framework Pipeline</th>
+                                    <th>Status</th>
+                                    <th>Activity Dynamics</th>
+                                    <th style="text-align: right;">Action Control</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recent_job_streams as $job): ?>
+                                    <tr>
+                                        <td style="color: var(--gray-muted); font-family: monospace; font-size: 11px;">#ALX-0<?php echo $job["id"]; ?></td>
+                                        <td>
+                                            <div style="font-weight: 700; color: var(--black-text); letter-spacing: -0.01em;"><?php echo htmlspecialchars($job["title"]); ?></div>
+                                            <div style="font-size: 11.5px; color: var(--gray-muted); font-weight: 600; margin-top: 1px;"><?php echo htmlspecialchars($job["company"]); ?> &middot; <span style="font-weight:500; font-size:11px;"><?php echo htmlspecialchars($job["location"]); ?></span></div>
+                                        </td>
+                                        <td>
+                                            <span class="badge-status <?php echo ($job["status"] == 'Active') ? 'active' : 'review'; ?>">
+                                                <?php echo $job["status"]; ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="sparkline-flex">
+                                                <?php foreach ($job["trend"] as $index => $t_val): ?>
+                                                    <div class="sparkline-bar <?php echo ($index == 3) ? 'top-peak' : ''; ?>" style="height: <?php echo $t_val; ?>%;"></div>
+                                                <?php endforeach; ?>
+                                            </div>
+                                        </td>
+                                        <td style="text-align: right;">
+                                            <div class="action-circle-group">
+                                                <a href="page_jobs.php?id=<?php echo $job["id"]; ?>" class="circle-btn" title="Modify Configuration Mapping Node"><i class="fas fa-sliders-h"></i></a>
+                                                <a href="view_applications.php?job_id=<?php echo $job["id"]; ?>" class="circle-btn danger-action" title="Review Submission Pipeline Logs"><i class="fas fa-arrow-right"></i></a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </article>
 
-                <article class="panel-widget-node" style="animation-delay: 0.45s; padding: 24px 16px;">
-                    <h3 class="widget-header-title" style="margin-left: 8px;">Active Job Board Analytics</h3>
-                    <table class="custom-data-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Role Title / Node</th>
-                                <th>App Trend</th>
-                                <th style="text-align: right;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($recent_jobs as $job): 
-                                $max_trend = max($job["trend"]);
-                            ?>
-                                <tr>
-                                    <td>#<?php echo $job["job_id"]; ?></td>
-                                    <td>
-                                        <strong><?php echo htmlspecialchars($job["title"]); ?></strong>
-                                        <div style="font-size: 11px; color: var(--slate-gray); font-weight: 500; margin-top: 2px;"><?php echo htmlspecialchars($job["company"]); ?></div>
-                                    </td>
-                                    <td>
-                                        <div class="sparkline-micro-flex">
-                                            <?php foreach ($job["trend"] as $point): ?>
-                                                <div class="sparkline-bar <?php echo ($point == $max_trend) ? 'high-point' : ''; ?>" style="height: <?php echo $point; ?>%;"></div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </td>
-                                    <td style="text-align: right;">
-                                        <div class="row-action-btn-cluster" style="justify-content: flex-end;">
-                                            <a href="job_edit.php?id=<?php echo $job["job_id"]; ?>" class="action-tool-btn"><i class="fas fa-sliders-h"></i></a>
-                                            <a href="job_delete.php?id=<?php echo $job["job_id"]; ?>" class="action-tool-btn btn-delete-alert"><i class="fas fa-trash-alt"></i></a>
-                                        </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                <article class="panel-block scrollable-list">
+                    <h3 class="panel-heading">Operational Log Registry Event Feeds</h3>
+                    <div class="timeline-stream">
+                        <?php foreach($recent_activities as $act): ?>
+                            <div class="timeline-item">
+                                <div class="timeline-icon-frame">
+                                    <?php if($act["type"] == 'verification'): ?><i class="fas fa-user-check"></i>
+                                    <?php elseif($act["type"] == 'job'): ?><i class="fas fa-briefcase"></i>
+                                    <?php else: ?><i class="fas fa-calendar-alt"></i><?php endif; ?>
+                                </div>
+                                <div class="timeline-body">
+                                    <div class="timeline-meta">
+                                        <h4 class="timeline-item-title"><?php echo $act["title"]; ?></h4>
+                                        <span class="timeline-time"><?php echo $act["time"]; ?></span>
+                                    </div>
+                                    <p class="timeline-desc"><?php echo $act["desc"]; ?></p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </article>
             </section>
         </div>
     </main>
+
+    <div class="modal-overlay" id="broadcastModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>Broadcast Live Notification</h3>
+                <button class="modal-close" onclick="closeBroadcastModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Broadcast Title Target Header</label>
+                    <input type="text" id="alertTitle" placeholder="e.g., Placement Drive Urgency Alert Baseline">
+                </div>
+                <div class="form-group">
+                    <label>Message Payload Contents</label>
+                    <textarea id="alertMessage" rows="4" placeholder="Enter notification message payload structure to be dispatched to the active nodes channels..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeBroadcastModal()">Cancel</button>
+                <button class="btn-action-trigger" style="padding: 10px 20px;" onclick="triggerBroadcastDispatch()">Dispatch Signal Trigger</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // Dropdown Menu Fluid Shifting Collapse/Expand Handler Controller Node
+        function toggleMenuDropdown(buttonElement) {
+            const wrapper = buttonElement.parentElement;
+            const isOpen = wrapper.classList.contains('open');
+            
+            document.querySelectorAll('.menu-dropdown-wrapper').forEach(item => {
+                if(item !== wrapper) item.classList.remove('open');
+            });
+
+            if (isOpen) {
+                wrapper.classList.remove('open');
+            } else {
+                wrapper.classList.add('open');
+            }
+        }
+
+        // Live Action Popups Controllers Management Engine
+        function openBroadcastModal() {
+            document.getElementById('broadcastModal').classList.add('open');
+        }
+
+        function closeBroadcastModal() {
+            document.getElementById('broadcastModal').classList.remove('open');
+            document.getElementById('alertTitle').value = '';
+            document.getElementById('alertMessage').value = '';
+        }
+
+        function triggerBroadcastDispatch() {
+            const title = document.getElementById('alertTitle').value.trim();
+            if(!title) {
+                showNotificationAlert('Validation Failure: Missing dispatch title header packet parameters.');
+                return;
+            }
+            closeBroadcastModal();
+            showNotificationAlert('Success Flag: Broadcast payload packet signaled and pushed to active matrix channels.');
+        }
+
+        function showNotificationAlert(message) {
+            const container = document.getElementById('toastContainer');
+            const card = document.createElement('div');
+            card.className = 'toast-card';
+            card.innerHTML = `<i class="fas fa-satellite-dish"></i> <span>${message}</span>`;
+            container.appendChild(card);
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-20px)';
+                setTimeout(() => card.remove(), 300);
+            }, 3500);
+        }
+    </script>
 </body>
 </html>
