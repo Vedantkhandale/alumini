@@ -3,56 +3,81 @@ session_start();
 include("includes/db.php");
 require_once __DIR__ . "/includes/account_mail.php";
 
-$reg_success = false;
-$error_msg = "";
-
-// 1. Data Retrieval from POST or COOKIE (if available)
-$saved_data = [];
-$fields = ['full_name', 'student_id', 'email', 'gender', 'batch_start', 'batch_end', 'grad_year', 'company'];
-foreach ($fields as $field) {
-    $saved_data[$field] = isset($_POST[$field]) ? $_POST[$field] : (isset($_COOKIE[$field]) ? $_COOKIE[$field] : "");
-}
-
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
-    $full_name = mysqli_real_escape_string($conn, $_POST["full_name"]);
-    $student_id = mysqli_real_escape_string($conn, $_POST["student_id"]);
-    $email = mysqli_real_escape_string($conn, trim($_POST["email"]));
+// Backend API & Registration Logic (Page bina reload hue handle hoga)
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["action"] === "validate_and_register") {
+    header('Content-Type: application/json');
     
-    // --- STEP 1: STRONG VALIDATIONS (English) ---
+    // Data Sanitization (SQL Injection aur XSS se bachao)
+    $full_name = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["full_name"])));
+    $student_id = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["student_id"])));
+    $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
+    $batch_start = intval($_POST["batch_start"]);
+    $batch_end = intval($_POST["batch_end"]);
+    $grad_year = intval($_POST["grad_year"]);
+    $company = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["company"])));
+    $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"]))); // lowercase me save hoga
+    
+    // 1. Basic Field & Format Validations
     if (strlen($full_name) < 3) {
-        $error_msg = "Full name must be at least 3 characters long.";
-    } elseif (!preg_match("/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/", $email)) {
-        $error_msg = "Invalid email format detected.";
-    } else {
-        // --- STEP 2: LIVE API CHECK ---
-        $api_key = "f23efedb202987ddf90de46f3cfc8e9e";
-        $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-        $response = json_decode(curl_exec($ch), true);
-        curl_close($ch);
-
-        if (isset($response['deliverability']) && $response['deliverability'] !== "DELIVERABLE") {
-            $error_msg = "The email address is unreachable or invalid.";
-        } else {
-            // --- STEP 3: DATABASE DUPLICATE CHECK ---
-            $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
-            if ($check->num_rows > 0) {
-                $error_msg = "This Student ID or Email is already registered.";
-            } else {
-                // SUCCESS: Save to DB & Clear Cookies
-                // (Proceed with DB Insert here as per previous code)
-                $reg_success = true;
-                foreach ($fields as $f) setcookie($f, "", time() - 3600, "/"); // Clear cookies
-            }
-        }
+        echo json_encode(["status" => "error", "message" => "Full name must be at least 3 characters long."]);
+        exit;
+    }
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(["status" => "error", "message" => "Bhai, email ka format sahi nahi hai!"]);
+        exit;
     }
 
-    // If error, save input to cookies for 10 minutes so user doesn't lose progress
-    if (!$reg_success) {
-        foreach ($_POST as $key => $value) {
-            if (in_array($key, $fields)) setcookie($key, $value, time() + 600, "/");
+    // 2. Database Duplicate Check (Pehle hi check karlo taaki API key ke credits bach sakein)
+    $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
+    if ($check->num_rows > 0) {
+        echo json_encode(["status" => "error", "message" => "This Student ID or Email is already registered!"]);
+        exit;
+    }
+
+    // 3. Pro-Level Live API Check via Abstract API
+    $api_key = "f23efedb202987ddf90de46f3cfc8e9e";
+    $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8); // 8 seconds timeout for safety
+    $api_response = curl_exec($ch);
+    curl_close($ch);
+
+    if ($api_response) {
+        $data = json_decode($api_response, true);
+        
+        // Targetted Filter: Deliverability, Disposable Email, and Quality Score check
+        $is_undeliverable = isset($data['deliverability']) && $data['deliverability'] === "UNDELIVERABLE";
+        $is_disposable = isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true;
+        $quality_score = isset($data['quality_score']) ? floatval($data['quality_score']) : 1.0;
+
+        if ($is_undeliverable) {
+            echo json_encode(["status" => "error", "message" => "Yeh email address exist nahi karta. Sahi email dalo."]);
+            exit;
         }
+        if ($is_disposable) {
+            echo json_encode(["status" => "error", "message" => "Bhai, temporary ya fake email allowed nahi hai!"]);
+            exit;
+        }
+        if ($quality_score < 0.7) {
+            echo json_encode(["status" => "error", "message" => "Email risky lag raha hai. Kripya apna personal email use karein."]);
+            exit;
+        }
+    } else {
+        // Fallback: Agar kisi wajah se API down ho ya credits khatam ho jayein, toh security check fail na ho
+        echo json_encode(["status" => "error", "message" => "Verification server busy hai. Kripya thodi der baad try karein."]);
+        exit;
+    }
+
+    // 4. Secure Database Insertion (Admin Panel Data)
+    $insert_query = "INSERT INTO users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email) 
+                     VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email')";
+    
+    if ($conn->query($insert_query)) {
+        echo json_encode(["status" => "success", "email" => $email]);
+        exit;
+    } else {
+        echo json_encode(["status" => "error", "message" => "Database Error: Data save nahi ho paya. " . $conn->error]);
+        exit;
     }
 }
 ?>
@@ -63,7 +88,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join AlumniX | Premium Registration</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -219,15 +244,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             <div class="dot"></div>
         </div>
 
-        <form id="regForm" method="POST" enctype="multipart/form-data" onsubmit="return handleFormSubmit();">
+        <form id="regForm" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="validate_and_register">
+
             <div class="form-step active">
                 <div class="field-group">
                     <label class="label">Full Name</label>
-                   <input type="text" name="full_name" value="<?php echo htmlspecialchars($saved_data['full_name']); ?>" class="input-style" required>
+                   <input type="text" name="full_name" class="input-style" autocomplete="off" required>
                 </div>
                 <div class="field-group">
                     <label class="label">College ID</label>
-                    <input type="text" name="student_id" class="input-style" placeholder="ST-2024-XXX" required>
+                    <input type="text" name="student_id" class="input-style" placeholder="ST-2024-XXX" autocomplete="off" required>
                 </div>
                 <div class="field-group">
                     <label class="label">Gender</label>
@@ -261,7 +288,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
                 </div>
                 <div class="field-group">
                     <label class="label">Current Org</label>
-                    <input type="text" name="company" class="input-style" placeholder="Google / Student">
+                    <input type="text" name="company" class="input-style" placeholder="Google / Student" autocomplete="off">
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-prev" onclick="prevStep(0)">Back</button>
@@ -277,7 +304,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
 
                 <div class="field-group">
                     <label class="label">Email</label>
-                    <input type="email" id="userEmail" name="email" class="input-style" placeholder="rahul@example.com" required>
+                    <input type="email" id="userEmail" name="email" class="input-style" placeholder="rahul@example.com" autocomplete="off" required>
                 </div>
 
                 <div class="field-group credential-note">
@@ -287,7 +314,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
 
                 <div class="btn-group">
                     <button type="button" class="btn btn-prev" onclick="prevStep(1)">Back</button>
-                    <button type="submit" id="finalSubmitBtn" name="register" class="btn btn-next">Join Now</button>
+                    <button type="submit" id="finalSubmitBtn" class="btn btn-next">Join Now</button>
                 </div>
             </div>
         </form>
@@ -336,47 +363,66 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["register"])) {
             }
         }
 
-        function handleFormSubmit() {
-            const email = document.getElementById("userEmail").value;
+        // ULTRA SECURE AJAX FORM SUBMISSION
+        document.getElementById("regForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById("userEmail").value.trim();
             const btn = document.getElementById("finalSubmitBtn");
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             
             if(!emailRegex.test(email)) {
-                Swal.fire('Error', 'Sahi email address format dalo!', 'error');
+                Swal.fire('Error', 'Bhai, valid email format use karo!', 'error');
                 return false;
             }
 
+            // Lock Button (Double click protection)
             btn.classList.add("loading-btn");
-            btn.innerText = "Processing...";
-            return true;
-        }
+            btn.innerText = "Securing Connection...";
+            btn.disabled = true;
+
+            const formData = new FormData(this);
+
+            fetch(window.location.href, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network error occured');
+                return response.json();
+            })
+            .then(data => {
+                if(data.status === "success") {
+                    Swal.fire({
+                        title: 'Registration Complete!',
+                        html: 'Admin panel me data save ho gaya hai. Confirmation mail sent to: <strong>' + data.email + '</strong>.',
+                        icon: 'success',
+                        confirmButtonColor: '#ff4d4d'
+                    }).then(() => {
+                        window.location.href = 'index.php';
+                    });
+                } else {
+                    // Unlock button if failed
+                    btn.classList.remove("loading-btn");
+                    btn.innerText = "Join Now";
+                    btn.disabled = false;
+                    
+                    Swal.fire({
+                        title: 'Rejected!',
+                        text: data.message,
+                        icon: 'error',
+                        confirmButtonColor: '#ff4d4d'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                btn.classList.remove("loading-btn");
+                btn.innerText = "Join Now";
+                btn.disabled = false;
+                Swal.fire('Error', 'Server down ya network timeout error! Badme try karein.', 'error');
+            });
+        });
     </script>
-
-    <?php if ($reg_success): ?>
-        <script>
-            Swal.fire({
-                title: 'Registration Received!',
-                html: 'Thanks — we sent a confirmation to <strong><?= htmlspecialchars($email ?? "", ENT_QUOTES) ?></strong>.',
-                icon: 'success',
-                confirmButtonColor: '#ff4d4d'
-            }).then(() => {
-                window.location.href = 'index.php';
-            });
-        </script>
-    <?php endif; ?>
-
-    <?php if (!empty($error_msg)): ?>
-        <script>
-            Swal.fire({
-                title: 'Oops!',
-                text: '<?= htmlspecialchars($error_msg, ENT_QUOTES) ?>',
-                icon: 'error',
-                confirmButtonColor: '#ff4d4d'
-            });
-            // Button loading state ko reverse karne k liye
-            document.getElementById("finalSubmitBtn").classList.remove("loading-btn");
-            document.getElementById("finalSubmitBtn").innerText = "Join Now";
-        </script>
-    <?php endif; ?>
 </body>
 </html>
