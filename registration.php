@@ -3,11 +3,11 @@ session_start();
 include("includes/db.php");
 require_once __DIR__ . "/includes/account_mail.php";
 
-// Backend API & Registration Logic (Page bina reload hue handle hoga)
+// Backend API & Registration Logic
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["action"] === "validate_and_register") {
     header('Content-Type: application/json');
     
-    // Data Sanitization (SQL Injection aur XSS se bachao)
+    // Data Sanitization
     $full_name = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["full_name"])));
     $student_id = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["student_id"])));
     $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
@@ -15,68 +15,88 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
     $batch_end = intval($_POST["batch_end"]);
     $grad_year = intval($_POST["grad_year"]);
     $company = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["company"])));
-    $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"]))); // lowercase me save hoga
+    $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"])));
     
-    // 1. Basic Field & Format Validations
+    // Image Handling Logic (Prevents DB skipping/failures)
+    $profile_img_name = "default.png"; 
+    if (isset($_FILES['profile_img']) && $_FILES['profile_img']['error'] === UPLOAD_ERR_OK) {
+        $fileTmpPath = $_FILES['profile_img']['tmp_name'];
+        $fileName = $_FILES['profile_img']['name'];
+        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+        
+        $profile_img_name = time() . '_' . md5($fileName) . '.' . $fileExtension;
+        $uploadFileDir = './uploads/';
+        
+        if(!is_dir($uploadFileDir)){
+            mkdir($uploadFileDir, 0755, true);
+        }
+        move_uploaded_file($fileTmpPath, $uploadFileDir . $profile_img_name);
+    }
+
+    // 1. Basic Format Validations (English Responses)
     if (strlen($full_name) < 3) {
         echo json_encode(["status" => "error", "message" => "Full name must be at least 3 characters long."]);
         exit;
     }
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(["status" => "error", "message" => "Bhai, email ka format sahi nahi hai!"]);
+        echo json_encode(["status" => "error", "message" => "The provided email address format is invalid."]);
         exit;
     }
 
-    // 2. Database Duplicate Check (Pehle hi check karlo taaki API key ke credits bach sakein)
+    // 2. Database Duplicate Check
     $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
-    if ($check->num_rows > 0) {
-        echo json_encode(["status" => "error", "message" => "This Student ID or Email is already registered!"]);
+    if ($check && $check->num_rows > 0) {
+        echo json_encode(["status" => "error", "message" => "This Student ID or Email address is already registered."]);
         exit;
     }
 
-    // 3. Pro-Level Live API Check via Abstract API
+    // 3. Live API Check via Abstract API (With Solid Response Validation)
     $api_key = "f23efedb202987ddf90de46f3cfc8e9e";
     $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 8); // 8 seconds timeout for safety
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8); // 8 seconds limit for stable network validation
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
     $api_response = curl_exec($ch);
+    $curl_error = curl_error($ch);
     curl_close($ch);
 
-    if ($api_response) {
-        $data = json_decode($api_response, true);
-        
-        // Targetted Filter: Deliverability, Disposable Email, and Quality Score check
-        $is_undeliverable = isset($data['deliverability']) && $data['deliverability'] === "UNDELIVERABLE";
+    if ($api_response === false || !empty($curl_error)) {
+        echo json_encode(["status" => "error", "message" => "The validation gateway timed out. Please check your internet connectivity and try again."]);
+        exit;
+    }
+
+    $data = json_decode($api_response, true);
+    if ($data && isset($data['deliverability'])) {
+        $is_undeliverable = $data['deliverability'] === "UNDELIVERABLE";
         $is_disposable = isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true;
         $quality_score = isset($data['quality_score']) ? floatval($data['quality_score']) : 1.0;
 
         if ($is_undeliverable) {
-            echo json_encode(["status" => "error", "message" => "Yeh email address exist nahi karta. Sahi email dalo."]);
+            echo json_encode(["status" => "error", "message" => "This email address does not exist. Please enter a valid live email."]);
             exit;
         }
         if ($is_disposable) {
-            echo json_encode(["status" => "error", "message" => "Bhai, temporary ya fake email allowed nahi hai!"]);
+            echo json_encode(["status" => "error", "message" => "Temporary or disposable email addresses are not allowed."]);
             exit;
         }
-        if ($quality_score < 0.7) {
-            echo json_encode(["status" => "error", "message" => "Email risky lag raha hai. Kripya apna personal email use karein."]);
+        if ($quality_score < 0.4) { 
+            echo json_encode(["status" => "error", "message" => "This email carries a high risk score. Please use an authentic email address."]);
             exit;
         }
     } else {
-        // Fallback: Agar kisi wajah se API down ho ya credits khatam ho jayein, toh security check fail na ho
-        echo json_encode(["status" => "error", "message" => "Verification server busy hai. Kripya thodi der baad try karein."]);
+        echo json_encode(["status" => "error", "message" => "Invalid API response or verification limit reached. Contact Admin."]);
         exit;
     }
 
-    // 4. Secure Database Insertion (Admin Panel Data)
-    $insert_query = "INSERT INTO users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email) 
-                     VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email')";
+    // 4. Secure Database Insertion (Executes if Email is 100% Valid)
+    $insert_query = "INSERT INTO users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
+                     VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
     
     if ($conn->query($insert_query)) {
         echo json_encode(["status" => "success", "email" => $email]);
         exit;
     } else {
-        echo json_encode(["status" => "error", "message" => "Database Error: Data save nahi ho paya. " . $conn->error]);
+        echo json_encode(["status" => "error", "message" => "Database Connection Error: Failed to submit registration profile. " . $conn->error]);
         exit;
     }
 }
@@ -93,6 +113,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
     <style>
         :root {
             --primary: #ff4d4d;
+            --error-color: #ef4444;
+            --success-color: #10b981;
             --bg: #f8f8f8;
             --card-bg: #ffffff;
             --text-main: #111111;
@@ -148,7 +170,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .field-group { margin-bottom: 15px; }
+        .field-group { margin-bottom: 15px; position: relative; }
         .label {
             font-size: 10px;
             font-weight: 800;
@@ -173,6 +195,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         }
 
         .input-style:focus { border-color: var(--primary); background: #fff; }
+        
+        .input-style.input-err { border-color: var(--error-color) !important; background-color: #fef2f2; }
+        .input-style.input-success { border-color: var(--success-color) !important; background-color: #f0fdf4; }
+        
+        .error-msg-text { color: var(--error-color); font-size: 11px; font-weight: 600; margin-top: 4px; display: none;}
+
         .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-group { display: flex; gap: 10px; margin-top: 25px; }
         
@@ -303,8 +331,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 <input type="file" id="fileInput" name="profile_img" style="display:none" accept="image/*" onchange="previewImage(this)">
 
                 <div class="field-group">
-                    <label class="label">Email</label>
-                    <input type="email" id="userEmail" name="email" class="input-style" placeholder="rahul@example.com" autocomplete="off" required>
+                    <label class="label">Email Address</label>
+                    <input type="email" id="userEmail" name="email" class="input-style" placeholder="name@example.com" autocomplete="off" required>
+                    <div class="error-msg-text" id="emailErrorHint">Please enter a valid email format!</div>
                 </div>
 
                 <div class="field-group credential-note">
@@ -324,6 +353,38 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         const steps = document.querySelectorAll(".form-step");
         const dots = document.querySelectorAll(".dot");
         const titles = ["Personal Info", "Academic Details", "Contact Details"];
+        const emailInput = document.getElementById("userEmail");
+        const emailErrorHint = document.getElementById("emailErrorHint");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        emailInput.addEventListener("input", function() {
+            validateEmailField();
+        });
+
+        emailInput.addEventListener("blur", function() {
+            validateEmailField();
+        });
+
+        function validateEmailField() {
+            const emailVal = emailInput.value.trim();
+            if (emailVal === "") {
+                emailInput.classList.remove("input-err", "input-success");
+                emailErrorHint.style.display = "none";
+                return false;
+            }
+            
+            if (!emailRegex.test(emailVal)) {
+                emailInput.classList.add("input-err");
+                emailInput.classList.remove("input-success");
+                emailErrorHint.style.display = "block";
+                return false;
+            } else {
+                emailInput.classList.remove("input-err");
+                emailInput.classList.add("input-success");
+                emailErrorHint.style.display = "none";
+                return true;
+            }
+        }
 
         function nextStep(idx) {
             const inputs = steps[idx - 1].querySelectorAll("input[required], select[required]");
@@ -331,10 +392,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
 
             inputs.forEach((input) => {
                 if (!input.value.trim()) {
-                    input.style.borderColor = "var(--primary)";
+                    input.classList.add("input-err");
                     valid = false;
                 } else {
-                    input.style.borderColor = "var(--border)";
+                    input.classList.remove("input-err");
                 }
             });
 
@@ -343,6 +404,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 steps[idx].classList.add("active");
                 dots[idx].classList.add("active");
                 document.getElementById("step-title").innerText = titles[idx];
+            } else {
+                Swal.fire({
+                    title: 'Form Incomplete',
+                    text: 'Please populate all mandatory fields before proceeding.',
+                    icon: 'warning',
+                    confirmButtonColor: '#ff4d4d'
+                });
             }
         }
 
@@ -363,52 +431,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             }
         }
 
-        // ULTRA SECURE AJAX FORM SUBMISSION
         document.getElementById("regForm").addEventListener("submit", function(e) {
             e.preventDefault();
             
-            const email = document.getElementById("userEmail").value.trim();
-            const btn = document.getElementById("finalSubmitBtn");
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            
-            if(!emailRegex.test(email)) {
-                Swal.fire('Error', 'Bhai, valid email format use karo!', 'error');
+            if(!validateEmailField()) {
+                Swal.fire({
+                    title: 'Invalid Email!',
+                    text: 'Please input a completely valid email format to proceed.',
+                    icon: 'error',
+                    confirmButtonColor: '#ff4d4d'
+                });
                 return false;
             }
 
-            // Lock Button (Double click protection)
+            const btn = document.getElementById("finalSubmitBtn");
             btn.classList.add("loading-btn");
-            btn.innerText = "Securing Connection...";
+            btn.innerText = "Processing Profile...";
             btn.disabled = true;
 
             const formData = new FormData(this);
 
-            fetch(window.location.href, {
+            fetch("", {
                 method: "POST",
                 body: formData
             })
             .then(response => {
-                if (!response.ok) throw new Error('Network error occured');
+                if (!response.ok) throw new Error('Network failure detected');
                 return response.json();
             })
             .then(data => {
                 if(data.status === "success") {
                     Swal.fire({
-                        title: 'Registration Complete!',
-                        html: 'Admin panel me data save ho gaya hai. Confirmation mail sent to: <strong>' + data.email + '</strong>.',
+                        title: 'Registration Submitted!',
+                        html: 'Your profile has been saved for verification.<br>Status updates sent to: <strong>' + data.email + '</strong>.',
                         icon: 'success',
                         confirmButtonColor: '#ff4d4d'
                     }).then(() => {
-                        window.location.href = 'index.php';
+                        window.location.reload(); 
                     });
                 } else {
-                    // Unlock button if failed
                     btn.classList.remove("loading-btn");
                     btn.innerText = "Join Now";
                     btn.disabled = false;
                     
                     Swal.fire({
-                        title: 'Rejected!',
+                        title: 'Submission Rejected!',
                         text: data.message,
                         icon: 'error',
                         confirmButtonColor: '#ff4d4d'
@@ -420,7 +487,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 btn.classList.remove("loading-btn");
                 btn.innerText = "Join Now";
                 btn.disabled = false;
-                Swal.fire('Error', 'Server down ya network timeout error! Badme try karein.', 'error');
+                Swal.fire({
+                    title: 'System Execution Delay',
+                    text: 'The confirmation gateway is taking longer to respond. Please try submitting again in a few moments.',
+                    icon: 'error',
+                    confirmButtonColor: '#ff4d4d'
+                });
             });
         });
     </script>
