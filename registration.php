@@ -33,7 +33,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         move_uploaded_file($fileTmpPath, $uploadFileDir . $profile_img_name);
     }
 
-    // 1. Basic Format Validations (English Responses)
+    // 1. Basic Format Validations
     if (strlen($full_name) < 3) {
         echo json_encode(["status" => "error", "message" => "Full name must be at least 3 characters long."]);
         exit;
@@ -50,45 +50,48 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         exit;
     }
 
-    // 3. Live API Check via Abstract API (With Solid Response Validation)
-    $api_key = "f23efedb202987ddf90de46f3cfc8e9e";
+    // 3. Live API Check via Abstract API (With Solid Fallback Mechanism)
+    $api_key = "38e4450699d38f381bbecb4553803ae9";
     $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 8); // 8 seconds limit for stable network validation
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6); // Responsive short timeout to prevent execution delays
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
     $api_response = curl_exec($ch);
     $curl_error = curl_error($ch);
     curl_close($ch);
 
-    if ($api_response === false || !empty($curl_error)) {
-        echo json_encode(["status" => "error", "message" => "The validation gateway timed out. Please check your internet connectivity and try again."]);
-        exit;
+    // Only filter strictly if API answers properly within time
+    if ($api_response !== false && empty($curl_error)) {
+        $data = json_decode($api_response, true);
+        
+        if ($data && isset($data['deliverability'])) {
+            $is_undeliverable = ($data['deliverability'] === "UNDELIVERABLE");
+            
+            $is_disposable = false;
+            if (isset($data['is_disposable_email']) && is_array($data['is_disposable_email'])) {
+                $is_disposable = isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true;
+            } elseif (isset($data['is_disposable_email']) && $data['is_disposable_email'] === true) {
+                $is_disposable = true;
+            }
+            
+            $quality_score = isset($data['quality_score']) ? floatval($data['quality_score']) : 1.0;
+
+            if ($is_undeliverable) {
+                echo json_encode(["status" => "error", "message" => "This email address does not exist. Please enter a valid live email."]);
+                exit;
+            }
+            if ($is_disposable) {
+                echo json_encode(["status" => "error", "message" => "Temporary or disposable email addresses are not allowed."]);
+                exit;
+            }
+            if ($quality_score < 0.2) { 
+                echo json_encode(["status" => "error", "message" => "This email carries a high risk score. Please use an authentic email address."]);
+                exit;
+            }
+        }
     }
 
-    $data = json_decode($api_response, true);
-    if ($data && isset($data['deliverability'])) {
-        $is_undeliverable = $data['deliverability'] === "UNDELIVERABLE";
-        $is_disposable = isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true;
-        $quality_score = isset($data['quality_score']) ? floatval($data['quality_score']) : 1.0;
-
-        if ($is_undeliverable) {
-            echo json_encode(["status" => "error", "message" => "This email address does not exist. Please enter a valid live email."]);
-            exit;
-        }
-        if ($is_disposable) {
-            echo json_encode(["status" => "error", "message" => "Temporary or disposable email addresses are not allowed."]);
-            exit;
-        }
-        if ($quality_score < 0.4) { 
-            echo json_encode(["status" => "error", "message" => "This email carries a high risk score. Please use an authentic email address."]);
-            exit;
-        }
-    } else {
-        echo json_encode(["status" => "error", "message" => "Invalid API response or verification limit reached. Contact Admin."]);
-        exit;
-    }
-
-    // 4. Secure Database Insertion (Executes if Email is 100% Valid)
+    // 4. Secure Database Insertion (Ensures data arrives safely in Admin panel)
     $insert_query = "INSERT INTO users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
                      VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
     
