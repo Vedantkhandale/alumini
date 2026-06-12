@@ -1,105 +1,114 @@
 <?php
+// Error reporting aur strict alerts active rakhein taaki koi query crash chhup na sake
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 session_start();
 include("includes/db.php");
 require_once __DIR__ . "/includes/account_mail.php";
 
 // Backend API & Registration Logic
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["action"] === "validate_and_register") {
+    
+    ob_start(); // Buffer start taaki koi accidental warning output break na kare
     header('Content-Type: application/json');
     
-    // Data Sanitization
-    $full_name = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["full_name"])));
-    $student_id = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["student_id"])));
-    $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
-    $batch_start = intval($_POST["batch_start"]);
-    $batch_end = intval($_POST["batch_end"]);
-    $grad_year = intval($_POST["grad_year"]);
-    $company = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["company"])));
-    $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"])));
-    
-    // Image Handling Logic (Prevents DB skipping/failures)
-    $profile_img_name = "default.png"; 
-    if (isset($_FILES['profile_img']) && $_FILES['profile_img']['error'] === UPLOAD_ERR_OK) {
-        $fileTmpPath = $_FILES['profile_img']['tmp_name'];
-        $fileName = $_FILES['profile_img']['name'];
-        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+    try {
+        // Data Sanitization
+        $full_name = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["full_name"])));
+        $student_id = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["student_id"])));
+        $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
+        $batch_start = intval($_POST["batch_start"]);
+        $batch_end = intval($_POST["batch_end"]);
+        $grad_year = intval($_POST["grad_year"]);
+        $company = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["company"])));
+        $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"])));
         
-        $profile_img_name = time() . '_' . md5($fileName) . '.' . $fileExtension;
-        $uploadFileDir = './uploads/';
-        
-        if(!is_dir($uploadFileDir)){
-            mkdir($uploadFileDir, 0755, true);
+        // Image Handling Logic
+        $profile_img_name = "default.png"; 
+        if (isset($_FILES['profile_img']) && $_FILES['profile_img']['error'] === UPLOAD_ERR_OK) {
+            $fileTmpPath = $_FILES['profile_img']['tmp_name'];
+            $fileName = $_FILES['profile_img']['name'];
+            $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            
+            $profile_img_name = time() . '_' . md5($fileName) . '.' . $fileExtension;
+            $uploadFileDir = './uploads/';
+            
+            if(!is_dir($uploadFileDir)){
+                mkdir($uploadFileDir, 0755, true);
+            }
+            move_uploaded_file($fileTmpPath, $uploadFileDir . $profile_img_name);
         }
-        move_uploaded_file($fileTmpPath, $uploadFileDir . $profile_img_name);
-    }
 
-    // 1. Basic Format Validations
-    if (strlen($full_name) < 3) {
-        echo json_encode(["status" => "error", "message" => "Full name must be at least 3 characters long."]);
-        exit;
-    }
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo json_encode(["status" => "error", "message" => "The provided email address format is invalid."]);
-        exit;
-    }
+        // 1. Basic Format Validations
+        if (strlen($full_name) < 3) {
+            throw new Exception("Full name must be at least 3 characters long.");
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new Exception("The provided email address format is invalid.");
+        }
 
-    // 2. Database Duplicate Check
-    $check = $conn->query("SELECT id FROM users WHERE email='$email' OR student_id='$student_id'");
-    if ($check && $check->num_rows > 0) {
-        echo json_encode(["status" => "error", "message" => "This Student ID or Email address is already registered."]);
-        exit;
-    }
+        // 2. Database Duplicate Check mapped to 'alumni_users'
+        $check = $conn->query("SELECT id FROM alumni_users WHERE email='$email' OR student_id='$student_id'");
+        if ($check && $check->num_rows > 0) {
+            throw new Exception("This Student ID or Email address is already registered.");
+        }
 
-    // 3. Live API Check via Abstract API (With Solid Fallback Mechanism)
-    $api_key = "38e4450699d38f381bbecb4553803ae9";
-    $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 6); // Responsive short timeout to prevent execution delays
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
-    $api_response = curl_exec($ch);
-    $curl_error = curl_error($ch);
-    curl_close($ch);
+        // 3. Live API Check via Abstract API (With Dynamic Built-in Fallback)
+        $api_key = "38e4450699d38f381bbecb4553803ae9";
+        $ch = curl_init("https://emailvalidation.abstractapi.com/v1/?api_key=$api_key&email=" . urlencode($email));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 4); 
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); 
+        $api_response = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
 
-    // Only filter strictly if API answers properly within time
-    if ($api_response !== false && empty($curl_error)) {
-        $data = json_decode($api_response, true);
-        
-        if ($data && isset($data['deliverability'])) {
-            $is_undeliverable = ($data['deliverability'] === "UNDELIVERABLE");
-            
-            $is_disposable = false;
-            if (isset($data['is_disposable_email']) && is_array($data['is_disposable_email'])) {
-                $is_disposable = isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true;
-            } elseif (isset($data['is_disposable_email']) && $data['is_disposable_email'] === true) {
-                $is_disposable = true;
+        $validation_passed = true;
+        $error_message = "";
+
+        if ($api_response !== false && empty($curl_error)) {
+            $data = json_decode($api_response, true);
+            if ($data && isset($data['deliverability'])) {
+                if ($data['deliverability'] === "UNDELIVERABLE") {
+                    $validation_passed = false;
+                    $error_message = "This email address does not exist. Please enter a valid live email.";
+                } elseif (isset($data['is_disposable_email']['value']) && $data['is_disposable_email']['value'] === true) {
+                    $validation_passed = false;
+                    $error_message = "Temporary or disposable email addresses are not allowed.";
+                } elseif (isset($data['quality_score']) && floatval($data['quality_score']) < 0.2) {
+                    $validation_passed = false;
+                    $error_message = "This email carries a high risk score. Please use an authentic email address.";
+                }
             }
-            
-            $quality_score = isset($data['quality_score']) ? floatval($data['quality_score']) : 1.0;
-
-            if ($is_undeliverable) {
-                echo json_encode(["status" => "error", "message" => "This email address does not exist. Please enter a valid live email."]);
-                exit;
-            }
-            if ($is_disposable) {
-                echo json_encode(["status" => "error", "message" => "Temporary or disposable email addresses are not allowed."]);
-                exit;
-            }
-            if ($quality_score < 0.2) { 
-                echo json_encode(["status" => "error", "message" => "This email carries a high risk score. Please use an authentic email address."]);
-                exit;
+        } else {
+            $domain = substr(strrchr($email, "@"), 1);
+            if (!checkdnsrr($domain, "MX")) {
+                $validation_passed = false;
+                $error_message = "The email domain seems invalid or has no mail server attached.";
             }
         }
-    }
 
-    // 4. Secure Database Insertion (Ensures data arrives safely in Admin panel)
-    $insert_query = "INSERT INTO users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
-                     VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
-    
-    if ($conn->query($insert_query)) {
-        echo json_encode(["status" => "success", "email" => $email]);
-        exit;
-    } else {
-        echo json_encode(["status" => "error", "message" => "Database Connection Error: Failed to submit registration profile. " . $conn->error]);
+        if (!$validation_passed) {
+            throw new Exception($error_message);
+        }
+
+        // 4. Secure Database Insertion into 'alumni_users'
+        $insert_query = "INSERT INTO alumni_users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
+                         VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
+        
+        if ($conn->query($insert_query)) {
+            ob_end_clean();
+            echo json_encode(["status" => "success", "email" => $email]);
+            exit;
+        } else {
+            throw new Exception("Database Connection Error: " . $conn->error);
+        }
+
+    } catch (Exception $e) {
+        ob_end_clean();
+        echo json_encode(["status" => "error", "message" => $e->getMessage()]);
         exit;
     }
 }
@@ -115,14 +124,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #ff4d4d;
-            --error-color: #ef4444;
-            --success-color: #10b981;
-            --bg: #f8f8f8;
-            --card-bg: #ffffff;
-            --text-main: #111111;
-            --text-gray: #6b7280;
-            --border: #e5e7eb;
+            --primary: #e63946;          /* Crimson Red */
+            --primary-hover: #bd1e2c;    /* Dark Crimson Red */
+            --error-color: #f43f5e;      /* Red Error Info */
+            --success-color: #10b981;    /* Emerald Success Green */
+            --bg: #111111;               /* Deep Matte Black Background */
+            --card-bg: #1a1a1a;          /* Rich Dark Gray/Black Card Background */
+            --text-main: #ffffff;        /* Pure White Text */
+            --text-gray: #a3a3a3;        /* Muted Muted Gray Text */
+            --border: #2d2d2d;           /* Slate Dark Border Accent */
+            --input-bg: #242424;         /* Charcoal Inner Input Fields Background */
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -136,128 +147,128 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             align-items: center;
             justify-content: center;
             padding: 24px;
+            background-image: radial-gradient(circle at top right, rgba(230, 57, 70, 0.12), transparent 45%);
         }
 
         .wizard-card {
             background: var(--card-bg);
             width: 100%;
-            max-width: 430px;
-            padding: 32px;
+            max-width: 440px;
+            padding: 40px 32px;
             border-radius: 24px;
             border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
             position: relative;
         }
 
-        .step-header { text-align: center; margin-bottom: 20px; }
-        .step-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+        .step-header { text-align: center; margin-bottom: 28px; }
+        .step-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: #fff; }
         .step-header span { color: var(--primary); }
         #step-title {
             color: var(--text-gray);
-            font-size: 12px;
-            margin-top: 5px;
-            font-weight: 600;
+            font-size: 11px;
+            margin-top: 8px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1.2px;
         }
 
-        .progress-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 25px; }
-        .dot { width: 35px; height: 4px; background: var(--border); border-radius: 10px; transition: 0.4s; }
-        .dot.active { background: var(--primary); }
+        .progress-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; }
+        .dot { width: 40px; height: 5px; background: var(--border); border-radius: 10px; transition: 0.4s; }
+        .dot.active { background: var(--primary); box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); }
 
         .form-step { display: none; }
-        .form-step.active { display: block; animation: fadeIn 0.4s ease; }
+        .form-step.active { display: block; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .field-group { margin-bottom: 15px; position: relative; }
+        .field-group { margin-bottom: 20px; position: relative; }
         .label {
-            font-size: 10px;
-            font-weight: 800;
+            font-size: 11px;
+            font-weight: 700;
             color: var(--text-gray);
             text-transform: uppercase;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             display: block;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
         .input-style {
             width: 100%;
-            padding: 12px 16px;
-            background: #fff;
+            padding: 14px 16px;
+            background: var(--input-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 14px;
             color: var(--text-main);
             outline: none;
-            transition: 0.2s;
-            font-size: 13px;
+            transition: all 0.25s ease;
+            font-size: 14px;
             font-weight: 500;
         }
 
-        .input-style:focus { border-color: var(--primary); background: #fff; }
+        .input-style:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2); }
+        .input-style.input-err { border-color: var(--error-color) !important; background-color: rgba(244, 63, 94, 0.05); }
+        .input-style.input-success { border-color: var(--success-color) !important; background-color: rgba(16, 185, 129, 0.05); }
         
-        .input-style.input-err { border-color: var(--error-color) !important; background-color: #fef2f2; }
-        .input-style.input-success { border-color: var(--success-color) !important; background-color: #f0fdf4; }
-        
-        .error-msg-text { color: var(--error-color); font-size: 11px; font-weight: 600; margin-top: 4px; display: none;}
+        .error-msg-text { color: var(--error-color); font-size: 11px; font-weight: 600; margin-top: 6px; display: none;}
 
-        .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .btn-group { display: flex; gap: 10px; margin-top: 25px; }
+        .batch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .btn-group { display: flex; gap: 12px; margin-top: 30px; }
         
         .btn {
             flex: 1;
-            padding: 14px;
-            border-radius: 12px;
+            padding: 15px;
+            border-radius: 14px;
             font-weight: 700;
             border: none;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s ease;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 13px;
             letter-spacing: 0.5px;
         }
 
-        .btn-next { background: var(--primary); color: #fff; }
-        .btn-next:hover { background: #ef4444; }
-        .btn-prev { background: #f3f4f6; color: var(--text-gray); }
-        .btn-prev:hover { background: #e5e7eb; }
+        .btn-next { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25); }
+        .btn-next:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-prev { background: #242424; color: var(--text-gray); border: 1px solid var(--border); }
+        .btn-prev:hover { background: #2d2d2d; color: #fff; }
 
         .img-preview-box {
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
             border: 2px dashed var(--border);
-            margin: 0 auto 15px;
+            margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             cursor: pointer;
+            background: var(--input-bg);
+            transition: 0.2s;
         }
-
+        .img-preview-box:hover { border-color: var(--primary); }
         .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
+
         select.input-style { appearance: none; cursor: pointer; }
 
         .credential-note {
             padding: 14px 16px;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(230, 57, 70, 0.2);
             border-radius: 14px;
-            background: #fff7f7;
+            background: rgba(230, 57, 70, 0.03);
         }
-
-        .credential-note p {
-            color: var(--text-gray);
-            font-size: 12px;
-            line-height: 1.7;
-        }
+        .credential-note p { color: var(--text-gray); font-size: 12px; line-height: 1.6; }
         
         .loading-btn {
-            background: #ccc !important;
-            color: #666 !important;
+            background: #404040 !important;
+            color: #a3a3a3 !important;
             cursor: not-allowed !important;
+            transform: none !important;
+            box-shadow: none !important;
         }
     </style>
 </head>
@@ -281,7 +292,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             <div class="form-step active">
                 <div class="field-group">
                     <label class="label">Full Name</label>
-                   <input type="text" name="full_name" class="input-style" autocomplete="off" required>
+                   <input type="text" name="full_name" class="input-style" autocomplete="off" placeholder="John Doe" required>
                 </div>
                 <div class="field-group">
                     <label class="label">College ID</label>
@@ -290,7 +301,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 <div class="field-group">
                     <label class="label">Gender</label>
                     <select name="gender" class="input-style" required>
-                        <option value="" disabled selected>Select</option>
+                        <option value="" disabled selected>Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                     </select>
@@ -311,7 +322,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 <div class="field-group">
                     <label class="label">Graduation Year</label>
                     <select name="grad_year" class="input-style" required>
-                        <option value="" disabled selected>Year</option>
+                        <option value="" disabled selected>Select Year</option>
                         <?php for ($year = 2028; $year >= 2010; $year--): ?>
                             <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
                         <?php endfor; ?>
@@ -329,7 +340,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
 
             <div class="form-step">
                 <div class="img-preview-box" id="preview" onclick="document.getElementById('fileInput').click();">
-                    <i class="fas fa-camera" style="color: #999; font-size: 16px;"></i>
+                    <i class="fas fa-camera" style="color: var(--primary); font-size: 20px;"></i>
                 </div>
                 <input type="file" id="fileInput" name="profile_img" style="display:none" accept="image/*" onchange="previewImage(this)">
 
@@ -340,8 +351,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 </div>
 
                 <div class="field-group credential-note">
-                    <label class="label">Login Credentials</label>
-                    <p>Your email will be your login ID. A generated password will be emailed after admin approval.</p>
+                    <p><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i> Your email will be your login ID. A generated password will be emailed after admin approval.</p>
                 </div>
 
                 <div class="btn-group">
@@ -360,13 +370,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         const emailErrorHint = document.getElementById("emailErrorHint");
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        emailInput.addEventListener("input", function() {
-            validateEmailField();
-        });
-
-        emailInput.addEventListener("blur", function() {
-            validateEmailField();
-        });
+        emailInput.addEventListener("input", validateEmailField);
+        emailInput.addEventListener("blur", validateEmailField);
 
         function validateEmailField() {
             const emailVal = emailInput.value.trim();
@@ -375,7 +380,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 emailErrorHint.style.display = "none";
                 return false;
             }
-            
             if (!emailRegex.test(emailVal)) {
                 emailInput.classList.add("input-err");
                 emailInput.classList.remove("input-success");
@@ -410,9 +414,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             } else {
                 Swal.fire({
                     title: 'Form Incomplete',
-                    text: 'Please populate all mandatory fields before proceeding.',
+                    text: 'Please fill in all required fields.',
                     icon: 'warning',
-                    confirmButtonColor: '#ff4d4d'
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    confirmButtonColor: '#e63946'
                 });
             }
         }
@@ -440,9 +446,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             if(!validateEmailField()) {
                 Swal.fire({
                     title: 'Invalid Email!',
-                    text: 'Please input a completely valid email format to proceed.',
+                    text: 'Please input a valid email format to proceed.',
                     icon: 'error',
-                    confirmButtonColor: '#ff4d4d'
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    confirmButtonColor: '#e63946'
                 });
                 return false;
             }
@@ -452,49 +460,49 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             btn.innerText = "Processing Profile...";
             btn.disabled = true;
 
-            const formData = new FormData(this);
-
             fetch("", {
                 method: "POST",
-                body: formData
+                body: new FormData(this)
             })
             .then(response => {
-                if (!response.ok) throw new Error('Network failure detected');
+                if (!response.ok) throw new Error('Network failure');
                 return response.json();
             })
             .then(data => {
                 if(data.status === "success") {
                     Swal.fire({
-                        title: 'Registration Submitted!',
-                        html: 'Your profile has been saved for verification.<br>Status updates sent to: <strong>' + data.email + '</strong>.',
+                        title: 'Successfully Submitted!',
+                        html: 'Profile saved for verification.<br>Updates will be sent to: <strong>' + data.email + '</strong>.',
                         icon: 'success',
-                        confirmButtonColor: '#ff4d4d'
-                    }).then(() => {
-                        window.location.reload(); 
-                    });
+                        background: '#1a1a1a',
+                        color: '#fff',
+                        confirmButtonColor: '#e63946'
+                    }).then(() => { window.location.reload(); });
                 } else {
                     btn.classList.remove("loading-btn");
                     btn.innerText = "Join Now";
                     btn.disabled = false;
-                    
                     Swal.fire({
-                        title: 'Submission Rejected!',
+                        title: 'Submission Failed',
                         text: data.message,
                         icon: 'error',
-                        confirmButtonColor: '#ff4d4d'
+                        background: '#1a1a1a',
+                        color: '#fff',
+                        confirmButtonColor: '#e63946'
                     });
                 }
             })
             .catch(error => {
-                console.error("Error:", error);
                 btn.classList.remove("loading-btn");
                 btn.innerText = "Join Now";
                 btn.disabled = false;
                 Swal.fire({
-                    title: 'System Execution Delay',
-                    text: 'The confirmation gateway is taking longer to respond. Please try submitting again in a few moments.',
+                    title: 'System Error',
+                    text: 'Unable to process registration. Try again.',
                     icon: 'error',
-                    confirmButtonColor: '#ff4d4d'
+                    background: '#1a1a1a',
+                    color: '#fff',
+                    confirmButtonColor: '#e63946'
                 });
             });
         });
