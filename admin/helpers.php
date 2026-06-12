@@ -138,8 +138,8 @@ function timeAgo($timestamp)
 }
 
 function alumnixApproveUserEngine($conn, $memberId) {
-    // Fixed: 'users' table ko badal kar 'alumni_users' kiya
-    $stmt = $conn->prepare("SELECT id, full_name, email, status FROM alumini_users WHERE id = ? LIMIT 1");
+    // FIXED: Changed 'alumini_users' to 'alumni_users' to maintain uniformity
+    $stmt = $conn->prepare("SELECT id, full_name, email, status FROM alumni_users WHERE id = ? LIMIT 1");
     if (!$stmt) return ['ok' => false, 'message' => 'Query error.'];
 
     $stmt->bind_param('i', $memberId);
@@ -160,7 +160,6 @@ function alumnixApproveUserEngine($conn, $memberId) {
 
     $conn->begin_transaction();
 
-    // Fixed: 'users' table ko badal kar 'alumni_users' kiya
     $update = $conn->prepare("UPDATE alumni_users SET status = 'approved', password = ? WHERE id = ?");
     $update->bind_param('si', $hashedPassword, $memberId);
     $saved = $update->execute();

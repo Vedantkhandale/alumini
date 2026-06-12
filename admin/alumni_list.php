@@ -28,7 +28,7 @@ if (isset($_GET["reject"])) {
 
 if (isset($_GET["delete"])) {
     $id = (int) $_GET["delete"];
-    $conn->query("DELETE FROM users WHERE id='{$id}'");
+    $conn->query("DELETE FROM alumini_users WHERE id='{$id}'");
     adminSetFlash("success", "Member record deleted.");
     header("Location: alumni_list.php");
     exit();
@@ -36,9 +36,9 @@ if (isset($_GET["delete"])) {
 
 $flash = adminPullFlash();
 $stats = [
-    "pending" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
-    "approved" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
-    "rejected" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='rejected'"),
+    "pending" => adminCount($conn, "SELECT COUNT(*) FROM alumini_users WHERE role='alumni' AND status='pending'"),
+    "approved" => adminCount($conn, "SELECT COUNT(*) FROM alumini_users WHERE role='alumni' AND status IN ('approved', 'active')"),
+    "rejected" => adminCount($conn, "SELECT COUNT(*) FROM alumini_users WHERE role='alumni' AND status='rejected'"),
 ];
 
 $alumniUsers = adminRows(
