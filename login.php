@@ -7,13 +7,22 @@ $success = false;
 $redirect_url = "";
 
 if (isset($_POST["login"])) {
-    $email = mysqli_real_escape_string($conn, $_POST["email"]);
+    $email = trim((string) ($_POST["email"] ?? ""));
     $pass = $_POST["password"] ?? "";
 
-    $result = $conn->query("SELECT * FROM users WHERE email='$email' LIMIT 1");
+    $stmt = $conn->prepare("SELECT * FROM alumni_users WHERE email = ? LIMIT 1");
 
-    if ($result && $result->num_rows > 0) {
-        $user = $result->fetch_assoc();
+    if ($stmt) {
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $user = ($result && $result->num_rows > 0) ? $result->fetch_assoc() : null;
+        $stmt->close();
+    } else {
+        $user = null;
+    }
+
+    if ($user) {
         $status = strtolower(trim((string) ($user["status"] ?? "pending")));
 
         if ($status === "pending") {

@@ -14,8 +14,16 @@ if(isset($_POST['get_code'])){
     if($user_captcha !== $correct_ans){
         $message = "❌ Wrong Captcha! Try again.";
     } else {
-        $check = $conn->query("SELECT * FROM users WHERE email='$email'");
-        if($check->num_rows > 0){
+        $check = $conn->prepare("SELECT id FROM alumni_users WHERE email = ? LIMIT 1");
+        $exists = false;
+        if ($check) {
+            $check->bind_param("s", $email);
+            $check->execute();
+            $result = $check->get_result();
+            $exists = $result && $result->num_rows > 0;
+            $check->close();
+        }
+        if($exists){
             $reset_code = rand(100000, 999999);
             $_SESSION['reset_email'] = $email;
             $_SESSION['reset_token'] = $reset_code;

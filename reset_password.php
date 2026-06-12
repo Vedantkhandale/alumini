@@ -4,7 +4,7 @@ include("includes/db.php");
 
 // Agar user direct is page pe aaye bina code generate kiye, toh wapas bhej do
 if(!isset($_SESSION['reset_email']) || !isset($_SESSION['reset_token'])){
-    header("Location: forgot.php");
+    header("Location: forget_password.php");
     exit();
 }
 
@@ -26,9 +26,15 @@ if(isset($_POST['reset_now'])){
         $email = $_SESSION['reset_email'];
         
         // Database Update
-        $update = $conn->query("UPDATE users SET password='$hashed_pass' WHERE email='$email'");
-        
-        if($update){
+        $stmt = $conn->prepare("UPDATE alumni_users SET password = ? WHERE email = ?");
+        $updated = false;
+        if ($stmt) {
+            $stmt->bind_param("ss", $hashed_pass, $email);
+            $updated = $stmt->execute();
+            $stmt->close();
+        }
+
+        if($updated){
             // Kaam ho gaya, ab session saaf karo
             unset($_SESSION['reset_email']);
             unset($_SESSION['reset_token']);
