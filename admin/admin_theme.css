@@ -1,30 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&display=swap");
 
 :root {
-    --page-bg: #06111a;
-    --page-bg-2: #0b1824;
-    --sidebar-bg: linear-gradient(180deg, rgba(9, 22, 35, 0.96), rgba(8, 18, 30, 0.88));
-    --panel-bg: rgba(11, 27, 42, 0.74);
-    --panel-bg-soft: rgba(255, 255, 255, 0.05);
-    --panel-border: rgba(255, 255, 255, 0.09);
-    --panel-shadow: 0 32px 80px rgba(0, 0, 0, 0.28);
-    --text-main: #f6f8fb;
-    --text-soft: #9eb1c6;
-    --text-dim: #6f8095;
-    --ink-main: #08121c;
-    --ink-soft: #566473;
-    --surface-light: rgba(255, 255, 255, 0.96);
-    --surface-muted: rgba(255, 255, 255, 0.08);
-    --surface-line: rgba(255, 255, 255, 0.08);
-    --surface-line-soft: rgba(8, 18, 28, 0.08);
-    --accent: #ff6a4f;
-    --accent-strong: #ff4f66;
-    --accent-soft: rgba(255, 106, 79, 0.16);
-    --accent-gold: #ffbf66;
-    --accent-cyan: #78e8ff;
-    --success: #17c67a;
-    --warning: #ffb54a;
-    --danger: #ff8080;
+    /* --- AlumniX Premium White, Red & Black Theme --- */
+    --page-bg: #f9fbfd;
+    --page-bg-2: #f3f6fa;
+    --sidebar-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 251, 0.88));
+    --panel-bg: rgba(255, 255, 255, 0.82);
+    --panel-bg-soft: rgba(0, 0, 0, 0.03);
+    --panel-border: rgba(0, 0, 0, 0.07);
+    --panel-shadow: 0 24px 60px rgba(4, 12, 22, 0.05), 0 4px 12px rgba(4, 12, 22, 0.02);
+    --text-main: #0b121f; /* Premium dark black for text */
+    --text-soft: #5c6b7d; /* Elegant subtle dark text */
+    --text-dim: #8496ae;
+    --ink-main: #ffffff;
+    --ink-soft: #f1f4f8;
+    --surface-light: rgba(11, 18, 31, 0.98); /* For metric cards / dark surfaces */
+    --surface-muted: rgba(0, 0, 0, 0.04);
+    --surface-line: rgba(0, 0, 0, 0.06);
+    --surface-line-soft: rgba(255, 255, 255, 0.6);
+    
+    /* Brand Accent: Crimson Red & Deep Black */
+    --accent: #ff334b; 
+    --accent-strong: #de1a32;
+    --accent-soft: rgba(255, 51, 75, 0.09);
+    --accent-gold: #111111; /* Sleek Black element pairing */
+    --accent-cyan: #ff5268;
+    
+    /* Statuses */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    
     --radius-xl: 34px;
     --radius-lg: 26px;
     --radius-md: 20px;
@@ -36,7 +42,32 @@
 }
 
 html {
-    color-scheme: dark;
+    color-scheme: light;
+    scroll-behavior: smooth;
+}
+
+/* --- Smooth Keyframe Animations --- */
+@keyframes float {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(3deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes floatReverse {
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(12px) rotate(-4deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes fadeInShell {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+    0% { transform: scale(1); opacity: 0.15; }
+    50% { transform: scale(1.08); opacity: 0.25; }
+    100% { transform: scale(1); opacity: 0.15; }
 }
 
 body.admin-theme,
@@ -46,13 +77,15 @@ body.admin-login-theme {
     font-family: "Plus Jakarta Sans", sans-serif;
     color: var(--text-main);
     background:
-        radial-gradient(circle at top left, rgba(255, 106, 79, 0.22), transparent 20%),
-        radial-gradient(circle at top right, rgba(255, 191, 102, 0.14), transparent 18%),
-        radial-gradient(circle at 20% 80%, rgba(120, 232, 255, 0.14), transparent 16%),
-        linear-gradient(180deg, var(--page-bg) 0%, var(--page-bg-2) 48%, #040c14 100%);
+        radial-gradient(circle at 15% 15%, rgba(255, 51, 75, 0.06), transparent 25%),
+        radial-gradient(circle at 85% 20%, rgba(17, 17, 17, 0.04), transparent 22%),
+        radial-gradient(circle at 50% 80%, rgba(255, 51, 75, 0.04), transparent 30%),
+        linear-gradient(180deg, var(--page-bg) 0%, var(--page-bg-2) 100%);
     background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
 }
 
+/* --- Floating Soft Aesthetic Orbs --- */
 body.admin-theme::before,
 body.admin-theme::after,
 body.admin-login-theme::before,
@@ -60,26 +93,28 @@ body.admin-login-theme::after {
     content: "";
     position: fixed;
     inset: auto;
-    width: 320px;
-    height: 320px;
+    width: 400px;
+    height: 400px;
     border-radius: 50%;
-    filter: blur(80px);
+    filter: blur(100px);
     pointer-events: none;
     z-index: 0;
 }
 
 body.admin-theme::before,
 body.admin-login-theme::before {
-    top: -120px;
-    left: -80px;
-    background: rgba(255, 106, 79, 0.18);
+    top: -150px;
+    left: -100px;
+    background: rgba(255, 51, 75, 0.12);
+    animation: pulseGlow 8s infinite ease-in-out;
 }
 
 body.admin-theme::after,
 body.admin-login-theme::after {
-    right: -100px;
-    bottom: -120px;
-    background: rgba(120, 232, 255, 0.12);
+    right: -120px;
+    bottom: -150px;
+    background: rgba(17, 17, 17, 0.05);
+    animation: pulseGlow 12s infinite ease-in-out 2s;
 }
 
 .admin-shell {
@@ -91,8 +126,10 @@ body.admin-login-theme::after {
     display: grid;
     grid-template-columns: 300px minmax(0, 1fr);
     gap: 24px;
+    animation: fadeInShell 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* --- Sidebar Glassmorphism --- */
 .admin-sidebar {
     position: sticky;
     top: 24px;
@@ -102,11 +139,17 @@ body.admin-login-theme::after {
     background: var(--sidebar-bg);
     border: 1px solid var(--panel-border);
     box-shadow: var(--panel-shadow);
-    backdrop-filter: blur(24px);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
     display: flex;
     flex-direction: column;
     gap: 22px;
     overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+.admin-sidebar:hover {
+    box-shadow: 0 32px 70px rgba(4, 12, 22, 0.08);
 }
 
 .admin-sidebar::after {
@@ -114,8 +157,8 @@ body.admin-login-theme::after {
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent 30%),
-        linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.02));
+        linear-gradient(135deg, rgba(255, 255, 255, 0.6), transparent 40%),
+        linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.01));
     pointer-events: none;
 }
 
@@ -141,7 +184,12 @@ body.admin-login-theme::after {
     color: #fff;
     font-size: 22px;
     background: linear-gradient(135deg, var(--accent), var(--accent-gold));
-    box-shadow: 0 20px 30px rgba(255, 106, 79, 0.25);
+    box-shadow: 0 12px 24px rgba(255, 51, 75, 0.25);
+    transition: transform 0.3s ease;
+}
+
+.brand-lockup:hover .brand-mark {
+    transform: rotate(-6deg) scale(1.05);
 }
 
 .brand-copy strong {
@@ -149,15 +197,16 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: 28px;
     line-height: 1;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
+    color: var(--accent-gold);
 }
 
 .brand-copy span {
     display: block;
     margin-top: 6px;
-    color: var(--text-soft);
+    color: var(--accent);
     font-size: 12px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
 }
@@ -168,8 +217,14 @@ body.admin-login-theme::after {
     gap: 14px;
     padding: 18px;
     border-radius: 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 0.3s ease;
+}
+
+.admin-profile:hover {
+    background: rgba(255, 51, 75, 0.03);
+    border-color: rgba(255, 51, 75, 0.1);
 }
 
 .profile-mark {
@@ -181,13 +236,15 @@ body.admin-login-theme::after {
     flex-shrink: 0;
     font-weight: 800;
     color: #fff;
-    background: linear-gradient(135deg, rgba(255, 106, 79, 0.9), rgba(255, 79, 102, 0.85));
+    background: linear-gradient(135deg, var(--accent), #ff4f66);
+    box-shadow: 0 8px 16px rgba(255, 51, 75, 0.15);
 }
 
 .profile-copy strong {
     display: block;
     font-size: 15px;
     line-height: 1.35;
+    color: var(--text-main);
 }
 
 .profile-copy span {
@@ -204,7 +261,7 @@ body.admin-login-theme::after {
     position: relative;
     z-index: 1;
     display: grid;
-    gap: 10px;
+    gap: 8px;
 }
 
 .sidebar-link {
@@ -218,44 +275,52 @@ body.admin-login-theme::after {
     font-size: 14px;
     font-weight: 700;
     border: 1px solid transparent;
-    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-link i {
     width: 18px;
     text-align: center;
     color: inherit;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-link:hover i {
+    transform: scale(1.1);
 }
 
 .sidebar-link:hover,
 .sidebar-link.is-active {
-    color: #fff;
-    background: linear-gradient(135deg, rgba(255, 106, 79, 0.14), rgba(255, 191, 102, 0.08));
-    border-color: rgba(255, 255, 255, 0.08);
-    transform: translateX(3px);
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: rgba(255, 51, 75, 0.08);
+    transform: translateX(4px);
 }
 
 .sidebar-link.logout {
     margin-top: 10px;
-    color: #ffd1d1;
+    color: var(--danger);
 }
 
 .sidebar-link.logout:hover {
     color: #fff;
-    background: linear-gradient(135deg, rgba(255, 79, 102, 0.22), rgba(255, 106, 79, 0.1));
+    background: linear-gradient(135deg, var(--danger), #ff6b6b);
+    transform: translateX(4px);
+    box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
 }
 
 .sidebar-foot {
     margin-top: auto;
     padding: 18px;
     border-radius: 22px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.04);
 }
 
 .sidebar-foot strong {
     display: block;
     font-size: 14px;
+    color: var(--text-main);
 }
 
 .sidebar-foot p {
@@ -280,13 +345,14 @@ body.admin-login-theme::after {
     overflow: hidden;
 }
 
+/* --- Hero Banner Light Premium Accent --- */
 .workspace-hero {
     padding: 32px;
     border-radius: var(--radius-xl);
     background:
-        linear-gradient(135deg, rgba(255, 106, 79, 0.18), rgba(255, 191, 102, 0.08) 36%, rgba(7, 17, 27, 0.72) 100%),
-        rgba(10, 23, 37, 0.88);
-    border: 1px solid rgba(255, 255, 255, 0.09);
+        linear-gradient(135deg, rgba(255, 51, 75, 0.06), rgba(17, 17, 17, 0.02) 50%, rgba(255, 255, 255, 0.8) 100%),
+        rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--panel-border);
     box-shadow: var(--panel-shadow);
     display: flex;
     justify-content: space-between;
@@ -298,11 +364,12 @@ body.admin-login-theme::after {
     position: absolute;
     width: 260px;
     height: 260px;
-    right: -100px;
-    top: -120px;
+    right: -60px;
+    top: -80px;
     border-radius: 50%;
-    background: rgba(120, 232, 255, 0.12);
-    filter: blur(8px);
+    background: rgba(255, 51, 75, 0.05);
+    filter: blur(40px);
+    animation: float 6s infinite ease-in-out;
 }
 
 .hero-copy,
@@ -321,9 +388,9 @@ body.admin-login-theme::after {
     gap: 8px;
     padding: 10px 16px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: rgba(255, 51, 75, 0.06);
+    border: 1px solid rgba(255, 51, 75, 0.1);
+    color: var(--accent);
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -335,8 +402,8 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: clamp(34px, 4.6vw, 58px);
     line-height: 0.95;
-    letter-spacing: -0.06em;
-    max-width: 12ch;
+    letter-spacing: -0.05em;
+    color: var(--accent-gold);
 }
 
 .hero-text {
@@ -355,6 +422,7 @@ body.admin-login-theme::after {
     gap: 12px;
 }
 
+/* --- Premium Buttons with Fluid Animations --- */
 .action-btn,
 .submit-btn,
 .small-btn,
@@ -368,41 +436,63 @@ body.admin-login-theme::after {
     text-decoration: none;
     font-weight: 800;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .action-btn:hover,
 .submit-btn:hover,
 .small-btn:hover,
 .action-pill:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px rgba(255, 51, 75, 0.2);
+}
+
+.action-btn:active,
+.submit-btn:active,
+.small-btn:active,
+.action-pill:active {
+    transform: translateY(-1px);
 }
 
 .action-btn {
     min-height: 48px;
-    padding: 0 18px;
+    padding: 0 22px;
     font-size: 13px;
 }
 
 .action-btn.primary,
-.submit-btn {
+.submit-btn,
+.login-submit {
     color: #fff;
     background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-    box-shadow: 0 18px 28px rgba(255, 106, 79, 0.24);
+    box-shadow: 0 10px 24px rgba(255, 51, 75, 0.25);
+}
+
+.action-btn.primary:hover,
+.submit-btn:hover,
+.login-submit:hover {
+    background: linear-gradient(135deg, var(--accent-strong), #c91027);
+    box-shadow: 0 14px 30px rgba(255, 51, 75, 0.35);
 }
 
 .action-btn.secondary,
 .small-btn.secondary {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.action-btn.secondary:hover,
+.small-btn.secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.04);
 }
 
 .small-btn {
     min-height: 40px;
-    padding: 0 14px;
-    color: var(--ink-main);
-    background: rgba(255, 255, 255, 0.92);
+    padding: 0 16px;
+    color: #fff;
+    background: var(--surface-light);
     font-size: 12px;
 }
 
@@ -412,16 +502,21 @@ body.admin-login-theme::after {
     gap: 18px;
 }
 
+/* --- High Contrast Sexy Metric Cards --- */
 .metric-card {
     min-height: 184px;
     padding: 24px;
     border-radius: 30px;
-    color: var(--ink-main);
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 247, 250, 0.94)),
-        var(--surface-light);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    box-shadow: 0 24px 50px rgba(4, 14, 24, 0.16);
+    color: #ffffff;
+    background: linear-gradient(145deg, #161f30, #0b121f); /* Deep Black/Blue for maximum pop */
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 20px 40px rgba(11, 18, 31, 0.12);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 30px 60px rgba(11, 18, 31, 0.2);
 }
 
 .metric-card::after {
@@ -430,11 +525,11 @@ body.admin-login-theme::after {
     inset: auto auto 0 0;
     width: 100%;
     height: 5px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-gold));
+    background: linear-gradient(90deg, var(--accent), #ff7686);
 }
 
 .metric-label {
-    color: #6a7b8f;
+    color: rgba(255, 255, 255, 0.55);
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.14em;
@@ -447,12 +542,13 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: clamp(36px, 4vw, 54px);
     line-height: 0.95;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.05em;
+    color: #ffffff;
 }
 
 .metric-note {
     margin-top: 12px;
-    color: var(--ink-soft);
+    color: rgba(255, 255, 255, 0.45);
     font-size: 13px;
     line-height: 1.7;
     max-width: 24ch;
@@ -468,8 +564,8 @@ body.admin-login-theme::after {
     place-items: center;
     border-radius: 18px;
     color: #fff;
-    background: linear-gradient(135deg, var(--accent), var(--accent-gold));
-    box-shadow: 0 20px 28px rgba(255, 106, 79, 0.24);
+    background: linear-gradient(135deg, var(--accent), #ff6b6b);
+    box-shadow: 0 8px 20px rgba(255, 51, 75, 0.3);
     font-size: 20px;
 }
 
@@ -492,13 +588,21 @@ body.admin-login-theme::after {
     gap: 20px;
 }
 
+/* --- Panel Cards Glassmorphism --- */
 .panel-card {
     padding: 24px;
     border-radius: 30px;
     background: var(--panel-bg);
     border: 1px solid var(--panel-border);
     box-shadow: var(--panel-shadow);
-    backdrop-filter: blur(22px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.panel-card:hover {
+    border-color: rgba(255, 51, 75, 0.12);
+    box-shadow: 0 30px 70px rgba(4, 12, 22, 0.07);
 }
 
 .panel-head {
@@ -514,7 +618,8 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: 28px;
     line-height: 1;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
+    color: var(--text-main);
 }
 
 .panel-copy {
@@ -526,29 +631,32 @@ body.admin-login-theme::after {
 }
 
 .panel-link {
-    color: #fff;
+    color: var(--accent);
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     text-decoration: none;
     white-space: nowrap;
+    transition: color 0.2s ease;
 }
 
 .panel-link:hover {
-    color: var(--accent-gold);
+    color: var(--accent-strong);
 }
 
+/* --- Flash Banners Minimal Alert Design --- */
 .flash-banner {
     padding: 20px 22px;
     border-radius: 26px;
     border: 1px solid transparent;
-    box-shadow: var(--panel-shadow);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.02);
 }
 
 .flash-banner h3 {
     margin: 0 0 8px;
     font-size: 16px;
+    font-weight: 700;
 }
 
 .flash-banner p {
@@ -564,28 +672,28 @@ body.admin-login-theme::after {
     margin-right: 10px;
     padding: 8px 12px;
     border-radius: 12px;
-    background: rgba(7, 17, 27, 0.08);
+    background: rgba(0, 0, 0, 0.05);
     color: inherit;
     font-size: 12px;
     font-weight: 700;
 }
 
 .flash-success {
-    color: #0f5132;
-    background: rgba(240, 253, 244, 0.96);
-    border-color: rgba(22, 163, 74, 0.16);
+    color: #065f46;
+    background: #ecfdf5;
+    border-color: rgba(16, 185, 129, 0.2);
 }
 
 .flash-warning {
-    color: #7c4a03;
-    background: rgba(255, 251, 235, 0.96);
-    border-color: rgba(245, 158, 11, 0.18);
+    color: #92400e;
+    background: #fffbef;
+    border-color: rgba(245, 158, 11, 0.2);
 }
 
 .flash-error {
-    color: #7f1d1d;
-    background: rgba(254, 242, 242, 0.96);
-    border-color: rgba(239, 68, 68, 0.18);
+    color: #991b1b;
+    background: #fef2f2;
+    border-color: rgba(239, 68, 68, 0.2);
 }
 
 .queue-banner {
@@ -595,14 +703,15 @@ body.admin-login-theme::after {
     align-items: center;
     padding: 18px 22px;
     border-radius: 24px;
-    color: #fff;
-    background: linear-gradient(135deg, rgba(255, 106, 79, 0.2), rgba(255, 191, 102, 0.12));
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    background: linear-gradient(135deg, rgba(255, 51, 75, 0.06), rgba(0, 0, 0, 0.02));
+    border: 1px solid rgba(255, 51, 75, 0.12);
 }
 
 .queue-banner strong {
     display: block;
     font-size: 16px;
+    color: var(--accent);
 }
 
 .queue-banner span {
@@ -613,11 +722,12 @@ body.admin-login-theme::after {
     line-height: 1.7;
 }
 
+/* --- Crisp Tables & Modern Shells --- */
 .data-shell {
     overflow: auto;
     border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--panel-border);
+    background: rgba(0, 0, 0, 0.01);
 }
 
 .data-table {
@@ -630,7 +740,7 @@ body.admin-login-theme::after {
 .data-table td {
     padding: 16px 18px;
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
 }
 
 .data-table th {
@@ -639,12 +749,22 @@ body.admin-login-theme::after {
     font-weight: 800;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--panel-border);
+    background: rgba(0, 0, 0, 0.01);
 }
 
 .data-table td {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
     font-size: 14px;
+    color: var(--text-main);
+}
+
+.data-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background: rgba(255, 51, 75, 0.01);
 }
 
 .data-table tbody tr:last-child td {
@@ -654,8 +774,9 @@ body.admin-login-theme::after {
 .primary-cell strong,
 .row-title {
     display: block;
-    color: #fff;
+    color: var(--text-main);
     font-size: 15px;
+    font-weight: 700;
     line-height: 1.45;
 }
 
@@ -681,45 +802,46 @@ body.admin-login-theme::after {
     gap: 7px;
     padding: 8px 12px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.03);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     color: var(--text-soft);
     font-size: 12px;
     font-weight: 700;
 }
 
+/* --- Clean Badges Look --- */
 .status-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
     min-height: 34px;
-    padding: 0 12px;
+    padding: 0 14px;
     border-radius: 999px;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
 .status-pending {
-    color: #4f3200;
-    background: rgba(255, 211, 115, 0.92);
+    color: #7c2d12;
+    background: #ffedd5;
 }
 
 .status-approved {
-    color: #07331e;
-    background: rgba(111, 242, 176, 0.92);
+    color: #064e3b;
+    background: #d1fae5;
 }
 
 .status-rejected {
-    color: #521313;
-    background: rgba(255, 147, 147, 0.92);
+    color: #7f1d1d;
+    background: #fee2e2;
 }
 
 .status-neutral {
-    color: #0b1623;
-    background: rgba(218, 229, 241, 0.92);
+    color: #1f2937;
+    background: #e5e7eb;
 }
 
 .row-actions {
@@ -737,20 +859,25 @@ body.admin-login-theme::after {
 }
 
 .approve {
-    background: linear-gradient(135deg, #1ccf84, #0fa968);
+    background: linear-gradient(135deg, #10b981, #059669);
 }
+.approve:hover { box-shadow: 0 6px 14px rgba(16, 185, 129, 0.25); }
 
 .reject {
-    background: linear-gradient(135deg, #ffbf66, #ff995a);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
 }
+.reject:hover { box-shadow: 0 6px 14px rgba(245, 158, 11, 0.25); }
 
 .delete {
-    background: linear-gradient(135deg, #ff6a6a, #ff4f66);
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
 }
+.delete:hover { box-shadow: 0 6px 14px rgba(255, 51, 75, 0.25); }
 
 .ghost {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-main);
 }
+.ghost:hover { background: rgba(0, 0, 0, 0.08); box-shadow: none; }
 
 .record-list {
     display: grid;
@@ -763,9 +890,16 @@ body.admin-login-theme::after {
     gap: 16px;
     padding: 18px;
     border-radius: 24px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.04);
     align-items: center;
+    transition: all 0.2s ease;
+}
+
+.record-card:hover {
+    transform: translateX(4px);
+    background: rgba(255, 51, 75, 0.02);
+    border-color: rgba(255, 51, 75, 0.1);
 }
 
 .record-icon,
@@ -777,7 +911,8 @@ body.admin-login-theme::after {
     display: grid;
     place-items: center;
     color: #fff;
-    background: linear-gradient(135deg, rgba(255, 106, 79, 0.88), rgba(255, 191, 102, 0.88));
+    background: linear-gradient(135deg, var(--accent), #ff7686);
+    box-shadow: 0 8px 16px rgba(255, 51, 75, 0.15);
 }
 
 .record-icon i {
@@ -786,7 +921,7 @@ body.admin-login-theme::after {
 
 .record-title {
     display: block;
-    color: #fff;
+    color: var(--text-main);
     font-size: 15px;
     font-weight: 800;
     line-height: 1.45;
@@ -822,8 +957,8 @@ body.admin-login-theme::after {
     padding: 46px 24px;
     text-align: center;
     border-radius: 26px;
-    border: 1px dashed rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(0, 0, 0, 0.15);
+    background: rgba(0, 0, 0, 0.01);
     color: var(--text-soft);
 }
 
@@ -831,7 +966,7 @@ body.admin-login-theme::after {
     display: block;
     margin-bottom: 14px;
     font-size: 34px;
-    color: var(--accent-gold);
+    color: var(--accent);
 }
 
 .form-stack {
@@ -849,25 +984,29 @@ body.admin-login-theme::after {
     text-transform: uppercase;
 }
 
+/* --- Premium Form Controls --- */
 .field input,
 .field textarea,
-.field select {
+.field select,
+.login-field input {
     width: 100%;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.02);
+    color: var(--text-main);
     border-radius: 18px;
     padding: 14px 16px;
     font: inherit;
     outline: none;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .field input:focus,
 .field textarea:focus,
-.field select:focus {
-    border-color: rgba(255, 191, 102, 0.8);
-    background: rgba(255, 255, 255, 0.08);
+.field select:focus,
+.login-field input:focus {
+    border-color: var(--accent);
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(255, 51, 75, 0.08);
 }
 
 .field textarea {
@@ -875,12 +1014,7 @@ body.admin-login-theme::after {
     resize: vertical;
 }
 
-.submit-btn {
-    min-height: 48px;
-    padding: 0 18px;
-    font-size: 13px;
-}
-
+/* --- Ultra Premium Login Screen --- */
 .login-shell {
     position: relative;
     z-index: 1;
@@ -901,20 +1035,33 @@ body.admin-login-theme::after {
 .login-showcase,
 .login-card {
     border-radius: var(--radius-xl);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--panel-border);
     box-shadow: var(--panel-shadow);
-    backdrop-filter: blur(22px);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
 }
 
 .login-showcase {
     padding: 36px;
     background:
-        linear-gradient(135deg, rgba(255, 106, 79, 0.16), rgba(255, 191, 102, 0.08) 32%, rgba(10, 23, 37, 0.86) 100%),
-        rgba(10, 23, 37, 0.88);
+        linear-gradient(135deg, rgba(255, 51, 75, 0.08), rgba(0, 0, 0, 0.01) 40%, rgba(255, 255, 255, 0.8) 100%),
+        rgba(255, 255, 255, 0.95);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-height: 640px;
+}
+
+.login-showcase::before {
+    content: "";
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 51, 75, 0.05);
+    filter: blur(30px);
+    top: 20%;
+    left: 10%;
+    animation: floatReverse 8s infinite ease-in-out;
 }
 
 .login-kicker,
@@ -924,8 +1071,9 @@ body.admin-login-theme::after {
     gap: 8px;
     padding: 10px 16px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: rgba(255, 51, 75, 0.06);
+    border: 1px solid rgba(255, 51, 75, 0.08);
+    color: var(--accent);
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -938,8 +1086,8 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: clamp(38px, 6vw, 72px);
     line-height: 0.92;
-    letter-spacing: -0.06em;
-    max-width: 10ch;
+    letter-spacing: -0.05em;
+    color: var(--accent-gold);
 }
 
 .login-copy {
@@ -956,16 +1104,18 @@ body.admin-login-theme::after {
     margin-top: 24px;
 }
 
+/* Right Side Card (The Form Container) - Clean Solid White Pop */
 .login-card {
     padding: 34px;
-    background: rgba(8, 18, 29, 0.88);
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .login-brand {
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    color: #fff;
+    color: var(--text-main);
     text-decoration: none;
 }
 
@@ -976,7 +1126,7 @@ body.admin-login-theme::after {
 }
 
 .login-brand span {
-    color: var(--accent-gold);
+    color: var(--accent);
 }
 
 .login-card h2 {
@@ -984,7 +1134,8 @@ body.admin-login-theme::after {
     font-family: "Syne", sans-serif;
     font-size: 34px;
     line-height: 1;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
+    color: var(--text-main);
 }
 
 .login-card p {
@@ -1010,22 +1161,15 @@ body.admin-login-theme::after {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-soft);
+    transition: color 0.2s ease;
+}
+
+.login-field input:focus + i {
+    color: var(--accent);
 }
 
 .login-field input {
-    width: 100%;
-    padding: 16px 16px 16px 46px;
-    border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
-    font: inherit;
-    outline: none;
-}
-
-.login-field input:focus {
-    border-color: rgba(255, 191, 102, 0.8);
-    background: rgba(255, 255, 255, 0.07);
+    padding-left: 46px;
 }
 
 .login-submit {
@@ -1036,20 +1180,16 @@ body.admin-login-theme::after {
     color: #fff;
     font: inherit;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
     cursor: pointer;
-    box-shadow: 0 18px 28px rgba(255, 106, 79, 0.24);
 }
 
-.login-submit:hover {
-    transform: translateY(-2px);
-}
-
+/* Notice box inside login */
 .login-note {
     margin-top: 18px;
     padding: 16px;
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.04);
     color: var(--text-soft);
     font-size: 12px;
     line-height: 1.8;
@@ -1060,6 +1200,7 @@ body.admin-login-theme::after {
     gap: 8px;
 }
 
+/* --- Media Queries (Preserved Layout Rules) --- */
 @media (max-width: 1240px) {
     .metric-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
