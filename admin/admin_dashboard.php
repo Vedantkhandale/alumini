@@ -6,8 +6,8 @@ $adminName = (string) ($_SESSION["admin"] ?? "Admin");
 $initials = strtoupper(substr(trim($adminName), 0, 1) ?: "A");
 
 $stats = [
-    "verified_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status IN ('approved', 'active')"),
-    "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM users WHERE role='alumni' AND status='pending'"),
+    "verified_alumni" => adminCount($conn, "SELECT COUNT(*) FROM alumni_users WHERE role='alumni' AND status IN ('approved', 'active')"),
+    "pending_alumni" => adminCount($conn, "SELECT COUNT(*) FROM alumni_users WHERE role='alumni' AND status='pending'"),
     "active_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='approved'"),
     "pending_jobs" => adminCount($conn, "SELECT COUNT(*) FROM jobs WHERE status='pending'"),
     "upcoming_events" => adminCount($conn, "SELECT COUNT(*) FROM events WHERE event_date >= CURDATE()"),
@@ -29,7 +29,7 @@ $recentJobs = adminRows(
         u.full_name AS owner_name,
         COUNT(ja.id) AS applications
      FROM jobs j
-     LEFT JOIN users u ON j.alumni_id = u.id
+     LEFT JOIN alumni_users u ON j.alumni_id = u.id
      LEFT JOIN job_applications ja ON ja.job_id = j.id
      GROUP BY j.id, j.title, j.company, j.location, j.status, u.full_name
      ORDER BY
@@ -38,10 +38,11 @@ $recentJobs = adminRows(
      LIMIT 6"
 );
 
+// 🛠️ Yahan 'alumini_users' ko sahi karke 'alumni_users' kar diya hai:
 $pendingAlumni = adminRows(
     $conn,
     "SELECT id, full_name, email, student_id, batch
-     FROM users
+     FROM alumni_users
      WHERE role='alumni' AND status='pending'
      ORDER BY id DESC
      LIMIT 5"
@@ -64,7 +65,7 @@ $recentApplications = adminRows(
         j.title AS job_title,
         j.company
      FROM job_applications ja
-     JOIN users u ON ja.alumni_id = u.id
+     JOIN alumni_users u ON ja.alumni_id = u.id
      JOIN jobs j ON ja.job_id = j.id
      ORDER BY ja.apply_time DESC
      LIMIT 5"
@@ -92,19 +93,21 @@ function dashboardStatusClass($status): string
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --accent: #ef4444;
-            --accent-dark: #dc2626;
-            --accent-soft: #fee2e2;
-            --ink: #111827;
-            --muted: #64748b;
-            --line: #e5e7eb;
-            --panel: #ffffff;
-            --page: #f8fafc;
-            --good: #16a34a;
-            --warn: #d97706;
-            --bad: #dc2626;
-            --shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
-            --radius: 18px;
+            /* Premium High-Contrast Red, Black & White Theme */
+            --accent: #e60000; /* Vibrant Red */
+            --accent-dark: #b30000;
+            --accent-soft: rgba(230, 0, 0, 0.08);
+            --ink: #000000; /* Pure Black */
+            --muted: #666666;
+            --line: #000000; /* Bold Black Lines */
+            --panel: #ffffff; /* Pure White */
+            --page: #ffffff; /* Pure White Background */
+            --good: #000000;
+            --warn: #e60000;
+            --bad: #e60000;
+            --shadow: 4px 4px 0px rgba(0, 0, 0, 1); /* Neobrutalism sharp shadow */
+            --radius: 8px; /* Sharper edges for a modern premium feel */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -113,11 +116,13 @@ function dashboardStatusClass($status): string
             background: var(--page);
             color: var(--ink);
             font-family: "Plus Jakarta Sans", sans-serif;
+            background-image: radial-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
         .layout {
             display: grid;
-            grid-template-columns: 270px minmax(0, 1fr);
+            grid-template-columns: 280px minmax(0, 1fr);
             min-height: 100vh;
         }
 
@@ -125,20 +130,21 @@ function dashboardStatusClass($status): string
             position: sticky;
             top: 0;
             height: 100vh;
-            background: #0f172a;
-            color: #fff;
-            padding: 24px 18px;
+            background: var(--ink); /* Deep black sidebar */
+            color: #ffffff;
+            padding: 30px 20px;
             display: flex;
             flex-direction: column;
-            gap: 22px;
+            gap: 25px;
+            border-right: 2px solid var(--accent);
         }
 
         .brand {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 0 8px 18px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 0 8px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .brand-mark,
@@ -150,52 +156,56 @@ function dashboardStatusClass($status): string
         }
 
         .brand-mark {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
+            width: 45px;
+            height: 45px;
+            border-radius: var(--radius);
             background: var(--accent);
+            color: #fff;
+            font-size: 18px;
+            box-shadow: 0 0 15px rgba(230, 0, 0, 0.4);
         }
 
         .brand-text {
             font-family: "Space Grotesk", sans-serif;
-            font-size: 22px;
+            font-size: 26px;
             font-weight: 700;
             letter-spacing: -0.03em;
         }
 
-        .brand-text span { color: #fca5a5; }
+        .brand-text span { color: var(--accent); }
 
         .admin-card {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 14px;
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.08);
+            padding: 16px;
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .avatar {
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            border-radius: var(--radius);
             background: #fff;
-            color: #0f172a;
+            color: var(--ink);
+            font-size: 16px;
         }
 
         .admin-name {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 800;
             line-height: 1.2;
         }
 
         .admin-role {
-            margin-top: 3px;
+            margin-top: 4px;
             font-size: 11px;
-            color: #cbd5e1;
+            color: #a1a1aa;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.1em;
         }
 
         .nav {
@@ -206,30 +216,40 @@ function dashboardStatusClass($status): string
         .nav a {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            color: #cbd5e1;
+            gap: 14px;
+            padding: 14px 16px;
+            border-radius: var(--radius);
+            color: #a1a1aa;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
-            transition: 0.2s ease;
+            transition: var(--transition);
+            border: 1px solid transparent;
         }
 
         .nav a:hover,
         .nav a.active {
-            background: rgba(239, 68, 68, 0.18);
-            color: #fff;
+            background: rgba(230, 0, 0, 0.1);
+            color: #ffffff;
+            border-color: var(--accent);
+            transform: translateX(4px);
         }
 
+        .nav a.active i { color: var(--accent); }
+
         .nav a.logout {
-            margin-top: 12px;
-            color: #fecaca;
+            margin-top: auto;
+            color: #ff4d4d;
+        }
+
+        .nav a.logout:hover {
+            background: #ff4d4d;
+            color: #000;
         }
 
         .main {
             min-width: 0;
-            padding: 28px;
+            padding: 35px 40px;
         }
 
         .topbar {
@@ -237,7 +257,7 @@ function dashboardStatusClass($status): string
             align-items: center;
             justify-content: space-between;
             gap: 18px;
-            margin-bottom: 22px;
+            margin-bottom: 30px;
         }
 
         .eyebrow {
@@ -245,56 +265,74 @@ function dashboardStatusClass($status): string
             align-items: center;
             gap: 8px;
             color: var(--accent);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
+            background: var(--accent-soft);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid var(--accent);
         }
 
         h1 {
-            margin-top: 8px;
+            margin-top: 12px;
             font-family: "Space Grotesk", sans-serif;
-            font-size: clamp(30px, 4vw, 48px);
-            line-height: 0.98;
-            letter-spacing: -0.05em;
+            font-size: clamp(32px, 4vw, 54px);
+            line-height: 1;
+            letter-spacing: -0.04em;
+            color: var(--ink);
         }
 
         .topbar p {
-            margin-top: 10px;
+            margin-top: 12px;
             color: var(--muted);
-            font-size: 14px;
-            line-height: 1.7;
-            max-width: 680px;
+            font-size: 15px;
+            line-height: 1.6;
+            max-width: 600px;
+            font-weight: 500;
         }
 
         .top-actions {
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-end;
-            gap: 10px;
+            gap: 12px;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 9px;
-            min-height: 42px;
-            padding: 11px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--line);
-            background: #fff;
+            gap: 10px;
+            min-height: 46px;
+            padding: 0 20px;
+            border-radius: var(--radius);
+            border: 2px solid var(--ink);
+            background: var(--panel);
             color: var(--ink);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
             white-space: nowrap;
+            transition: var(--transition);
+            box-shadow: 3px 3px 0px var(--ink);
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px var(--ink);
         }
 
         .btn.primary {
             border-color: var(--accent);
             background: var(--accent);
-            color: #fff;
+            color: #ffffff;
+            box-shadow: 3px 3px 0px var(--ink);
+        }
+        
+        .btn.primary:hover {
+            box-shadow: 5px 5px 0px var(--ink);
         }
 
         .alert-strip {
@@ -302,57 +340,68 @@ function dashboardStatusClass($status): string
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            padding: 16px 18px;
-            margin-bottom: 18px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
             border-radius: var(--radius);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-            background: #fff;
+            border: 2px solid var(--ink);
+            background: var(--panel);
             box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .alert-strip::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: var(--accent);
         }
 
         .alert-strip strong {
             display: block;
-            font-size: 14px;
+            font-size: 16px;
+            font-weight: 800;
         }
 
         .alert-strip span {
             display: block;
-            margin-top: 3px;
+            margin-top: 4px;
             color: var(--muted);
-            font-size: 13px;
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .metrics {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
-            margin-bottom: 18px;
+            gap: 20px;
+            margin-bottom: 24px;
         }
 
         .metric,
         .panel {
             background: var(--panel);
-            border: 1px solid var(--line);
+            border: 2px solid var(--ink);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        
+        .metric:hover {
+            transform: translateY(-4px);
+            box-shadow: 6px 6px 0px var(--ink);
         }
 
         .metric {
-            padding: 20px;
-            min-height: 132px;
+            padding: 24px;
+            min-height: 140px;
             display: flex;
             justify-content: space-between;
             gap: 14px;
-            overflow: hidden;
             position: relative;
-        }
-
-        .metric::before {
-            content: "";
-            position: absolute;
-            inset: 0 0 auto 0;
-            height: 4px;
-            background: var(--accent);
         }
 
         .metric-label {
@@ -360,50 +409,53 @@ function dashboardStatusClass($status): string
             font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.1em;
         }
 
         .metric-value {
-            margin-top: 11px;
+            margin-top: 12px;
             font-family: "Space Grotesk", sans-serif;
-            font-size: 38px;
+            font-size: 42px;
             font-weight: 700;
             line-height: 1;
-            letter-spacing: -0.05em;
+            color: var(--ink);
         }
 
         .metric-note {
-            margin-top: 10px;
-            color: var(--muted);
-            font-size: 12px;
+            margin-top: 12px;
+            color: var(--accent);
+            font-size: 13px;
             font-weight: 700;
         }
 
         .metric-icon {
-            width: 46px;
-            height: 46px;
+            width: 50px;
+            height: 50px;
             display: grid;
             place-items: center;
-            border-radius: 14px;
-            color: var(--accent);
-            background: var(--accent-soft);
+            border-radius: var(--radius);
+            color: #fff;
+            background: var(--ink);
+            font-size: 20px;
             flex-shrink: 0;
+            border: 2px solid var(--ink);
+            box-shadow: 2px 2px 0px var(--accent);
         }
 
         .grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr);
-            gap: 18px;
+            grid-template-columns: minmax(0, 1.5fr) minmax(340px, 0.9fr);
+            gap: 24px;
             align-items: start;
         }
 
         .stack {
             display: grid;
-            gap: 18px;
+            gap: 24px;
         }
 
         .panel {
-            padding: 20px;
+            padding: 24px;
         }
 
         .panel-head {
@@ -411,78 +463,94 @@ function dashboardStatusClass($status): string
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--line);
-            margin-bottom: 14px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--ink);
+            margin-bottom: 20px;
         }
 
         .panel-title {
-            font-size: 15px;
+            font-size: 18px;
             font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .panel-link {
             color: var(--accent);
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 800;
             text-decoration: none;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            transition: 0.2s;
         }
+
+        .panel-link:hover { border-color: var(--accent); }
 
         .health {
             display: grid;
             grid-template-columns: 180px minmax(0, 1fr);
-            gap: 20px;
+            gap: 24px;
             align-items: center;
         }
 
         .ring {
-            width: 154px;
-            height: 154px;
+            width: 160px;
+            height: 160px;
             border-radius: 50%;
             display: grid;
             place-items: center;
-            background: conic-gradient(var(--accent) <?php echo $approvalPercent; ?>%, #e5e7eb 0);
+            background: conic-gradient(var(--accent) <?php echo $approvalPercent; ?>%, var(--ink) 0);
+            box-shadow: 0 0 0 2px var(--ink);
         }
 
         .ring-inner {
-            width: 116px;
-            height: 116px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             display: grid;
             place-items: center;
-            background: #fff;
+            background: var(--panel);
             text-align: center;
+            border: 2px solid var(--ink);
         }
 
         .ring-inner strong {
             font-family: "Space Grotesk", sans-serif;
-            font-size: 32px;
+            font-size: 34px;
             line-height: 1;
+            color: var(--ink);
         }
 
         .ring-inner span {
             margin-top: 4px;
-            color: var(--muted);
-            font-size: 11px;
+            color: var(--accent);
+            font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
         }
 
         .health-list {
             display: grid;
-            gap: 12px;
+            gap: 14px;
         }
 
         .health-row {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            padding: 13px 14px;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            background: #f8fafc;
-            font-size: 13px;
+            padding: 14px 16px;
+            border: 2px solid var(--ink);
+            border-radius: var(--radius);
+            background: #ffffff;
+            font-size: 14px;
             font-weight: 800;
+            transition: var(--transition);
+        }
+
+        .health-row:hover {
+            transform: translateX(4px);
+            border-color: var(--accent);
         }
 
         .health-row span {
@@ -490,112 +558,133 @@ function dashboardStatusClass($status): string
             font-weight: 700;
         }
 
-        .table-wrap {
-            overflow-x: auto;
-        }
+        .table-wrap { overflow-x: auto; }
 
         table {
             width: 100%;
             min-width: 720px;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 0 8px;
         }
 
         th {
-            color: var(--muted);
+            color: var(--ink);
             text-align: left;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 0 12px 12px;
+            letter-spacing: 0.1em;
+            padding: 0 16px 8px;
+            border-bottom: 2px solid var(--ink);
         }
 
         td {
-            border-top: 1px solid var(--line);
-            padding: 15px 12px;
+            padding: 16px;
             vertical-align: middle;
-            font-size: 13px;
+            font-size: 14px;
+            background: #ffffff;
+            border-top: 2px solid var(--ink);
+            border-bottom: 2px solid var(--ink);
         }
+
+        td:first-child { border-left: 2px solid var(--ink); border-radius: var(--radius) 0 0 var(--radius); }
+        td:last-child { border-right: 2px solid var(--ink); border-radius: 0 var(--radius) var(--radius) 0; }
 
         .title-cell {
             font-weight: 800;
             color: var(--ink);
+            font-size: 15px;
         }
 
         .subtext {
-            margin-top: 4px;
+            margin-top: 6px;
             color: var(--muted);
             font-size: 12px;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .badge {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 76px;
-            padding: 7px 10px;
-            border-radius: 999px;
+            min-width: 80px;
+            padding: 6px 12px;
+            border-radius: 4px;
             font-size: 11px;
             font-weight: 800;
             text-transform: uppercase;
+            border: 2px solid var(--ink);
         }
 
-        .is-approved { background: #dcfce7; color: var(--good); }
-        .is-pending { background: #fef3c7; color: var(--warn); }
-        .is-rejected { background: #fee2e2; color: var(--bad); }
+        .is-approved { background: #ffffff; color: var(--ink); border-color: var(--ink); box-shadow: 2px 2px 0px var(--ink); }
+        .is-pending { background: var(--accent); color: #ffffff; border-color: var(--ink); box-shadow: 2px 2px 0px var(--ink); }
+        .is-rejected { background: #000000; color: #ffffff; border-color: var(--ink); }
 
         .mini-actions {
             display: flex;
             justify-content: flex-end;
-            gap: 8px;
+            gap: 10px;
         }
 
         .icon-btn {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             display: inline-grid;
             place-items: center;
-            border-radius: 10px;
+            border-radius: var(--radius);
             color: var(--ink);
-            border: 1px solid var(--line);
+            border: 2px solid var(--ink);
             background: #fff;
             text-decoration: none;
+            transition: var(--transition);
+            box-shadow: 2px 2px 0px var(--ink);
         }
 
         .icon-btn:hover {
             background: var(--accent);
-            border-color: var(--accent);
             color: #fff;
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px var(--ink);
         }
 
         .list {
             display: grid;
-            gap: 12px;
+            gap: 14px;
         }
 
         .person,
         .event,
         .activity {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             align-items: flex-start;
-            padding: 14px;
-            border: 1px solid var(--line);
-            border-radius: 14px;
-            background: #f8fafc;
+            padding: 16px;
+            border: 2px solid var(--ink);
+            border-radius: var(--radius);
+            background: #ffffff;
+            transition: var(--transition);
+        }
+
+        .person:hover,
+        .event:hover,
+        .activity:hover {
+            border-color: var(--accent);
+            transform: translateX(4px);
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.1);
         }
 
         .list-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: var(--radius);
             display: grid;
             place-items: center;
-            color: var(--accent);
-            background: #fff;
-            border: 1px solid var(--line);
+            color: #ffffff;
+            background: var(--ink);
+            border: 2px solid var(--ink);
             flex-shrink: 0;
+            font-size: 16px;
+            box-shadow: 2px 2px 0px var(--accent);
         }
 
         .list-body {
@@ -604,13 +693,14 @@ function dashboardStatusClass($status): string
         }
 
         .list-title {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 800;
             overflow-wrap: anywhere;
+            color: var(--ink);
         }
 
         .list-meta {
-            margin-top: 4px;
+            margin-top: 6px;
             color: var(--muted);
             font-size: 12px;
             font-weight: 600;
@@ -618,14 +708,16 @@ function dashboardStatusClass($status): string
         }
 
         .empty {
-            padding: 24px;
-            border: 1px dashed #cbd5e1;
-            border-radius: 14px;
-            color: var(--muted);
+            padding: 30px;
+            border: 2px dashed var(--ink);
+            border-radius: var(--radius);
+            color: var(--ink);
             text-align: center;
-            font-size: 13px;
-            font-weight: 700;
-            background: #f8fafc;
+            font-size: 14px;
+            font-weight: 800;
+            background: rgba(0,0,0,0.02);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         @media (max-width: 1160px) {
@@ -633,6 +725,8 @@ function dashboardStatusClass($status): string
             .sidebar {
                 position: relative;
                 height: auto;
+                border-right: none;
+                border-bottom: 2px solid var(--accent);
             }
             .nav {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -643,7 +737,7 @@ function dashboardStatusClass($status): string
         }
 
         @media (max-width: 720px) {
-            .main { padding: 18px; }
+            .main { padding: 20px; }
             .topbar,
             .alert-strip,
             .health {
