@@ -1,6 +1,6 @@
-<?php 
-include(__DIR__ . "/../includes/header.php"); 
-include(__DIR__ . "/../includes/db.php"); 
+<?php
+session_start();
+include(__DIR__ . "/../includes/db.php");
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
@@ -105,4 +105,3 @@ body{background:var(--bg-white);margin:0;padding:0;font-family:'Plus Jakarta San
     });
 </script>
 
-<?php include(__DIR__ . "/../includes/footer.php"); ?>

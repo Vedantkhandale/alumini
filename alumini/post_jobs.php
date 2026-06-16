@@ -108,7 +108,7 @@ if(isset($_POST['post'])){
 <div class="form-card">
     <div class="header">
         <h2>Post an Opportunity 🚀</h2>
-        <p>Help your fellow alumni find their next big role.</p>
+        <p>Submit a job for the alumni board. Admin will review and approve valid posts before they go live.</p>
     </div>
 
     <form method="POST">

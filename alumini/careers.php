@@ -44,14 +44,15 @@ $user_id = $_SESSION['user']['id'] ?? null;
 	<div class="page-header">
 		<div>
 			<div class="page-title">Careers</div>
-			<div class="subtitle">All admin-approved jobs are listed below</div>
+			<div class="subtitle">All admin-approved jobs are listed below. Alumni job posts are reviewed by admin before they go live.</div>
 		</div>
-		<div style="display:flex;gap:12px;align-items:center">
+		<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
 			<div class="filters">
 				<button id="filter-all" class="btn-details small">All</button>
 				<button id="filter-admin" class="btn-details small">Admin</button>
 				<button id="filter-alumni" class="btn-details small">Alumni</button>
 			</div>
+			<a href="my_jobs.php" class="btn-details">My Posts</a>
 			<a href="post_jobs.php" class="btn-details">Post a Job</a>
 		</div>
 	</div>

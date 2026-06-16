@@ -62,7 +62,7 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PRO Dashboard | AlumniX</title>
+    <title>Alumni Dashboard | AlumniX</title>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -176,21 +176,83 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
             padding: 28px 32px;
             border-radius: 30px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 18px;
             border: 1px solid rgba(15, 23, 42, 0.08);
             box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
         }
 
-        .top-nav h2 {
-            font-size: 32px;
-            margin-bottom: 6px;
-            letter-spacing: -0.04em;
+        .hero-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
         }
 
-        .top-nav p {
-            color: #6b7280;
-            font-size: 14px;
+        .hero-copy {
+            max-width: 720px;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--primary-soft);
+            color: var(--primary);
+            padding: 10px 16px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+        }
+
+        .hero-title {
+            margin: 14px 0 10px;
+            font-size: clamp(32px, 4vw, 48px);
+            line-height: 1.05;
+            font-weight: 800;
+        }
+
+        .hero-text {
+            color: #475569;
+            font-size: 15px;
+            line-height: 1.8;
+            max-width: 620px;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .hero-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 24px;
+            border-radius: 18px;
+            font-weight: 700;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .hero-btn.primary {
+            background: linear-gradient(135deg, #2563eb, #2563ebcc);
+            color: white;
+            border: 1px solid transparent;
+        }
+
+        .hero-btn.secondary {
+            background: white;
+            color: var(--dark);
+            border: 1px solid #e2e8f0;
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 30px rgba(15, 23, 42, 0.12);
         }
 
         .top-nav .notification-pill {
@@ -439,6 +501,24 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
             box-shadow: 0 12px 24px rgba(236, 72, 153, 0.14);
         }
 
+        .profile-link-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #2563eb;
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .profile-link-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.2);
+        }
+
         @media (max-width: 1050px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -480,15 +560,25 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
 
         <div class="main-feed">
             <div class="top-nav">
-                <div>
-                    <h2>Hello, <?php echo htmlspecialchars($user['full_name']); ?>!</h2>
-                    <p>Welcome back to your alumni dashboard — everything you need in one place.</p>
+            <div class="hero-section">
+                <div class="hero-copy">
+                    <span class="hero-tag"><i class="fas fa-star"></i> Alumni HQ</span>
+                    <h1 class="hero-title">Welcome back, <?php echo htmlspecialchars(explode(' ', $user['full_name'])[0]); ?>.</h1>
+                    <p class="hero-text">This is your professional alumni workspace. Track open opportunities, upcoming events, and your profile at a glance. Everything is built for alumni-first access.</p>
                 </div>
-                <div class="notification-pill">
-                    <i class="fas fa-bell"></i>
-                    3 Notifications
+                <div class="hero-actions">
+                    <a href="profile.php" class="hero-btn primary"><i class="fas fa-user-circle"></i> View Profile</a>
+                    <a href="my_jobs.php" class="hero-btn secondary"><i class="fas fa-clipboard-list"></i> Manage My Posts</a>
                 </div>
             </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div style="min-width:220px;"><p style="margin:0;color:#6b7280;font-size:14px;">Stay updated with the latest jobs and events curated by your alumni network.</p></div>
+                <div class="notification-pill">
+                    <i class="fas fa-bell"></i>
+                    Alumni updates
+                </div>
+            </div>
+        </div>
 
             <div class="stats-grid">
                 <div class="stat-card">
@@ -582,6 +672,7 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
                         </div>
                         <a href="profile.php" class="button-secondary"><i class="fas fa-user"></i> View Profile</a>
                         <a href="careers.php" class="button-secondary"><i class="fas fa-briefcase"></i> Browse Jobs</a>
+                        <a href="my_jobs.php" class="button-secondary"><i class="fas fa-clipboard-list"></i> My Job Posts</a>
                         <a href="events.php" class="button-secondary"><i class="fas fa-calendar-check"></i> Explore Events</a>
                     </div>
                 </div>
