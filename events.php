@@ -162,48 +162,55 @@ body {
 
 <div class="page">
     <div class="mesh-bg"></div>
-    
-    <div class="page-header">
-        <h1 class="page-title reveal-header">Summit <span>2026</span></h1>
-    </div>
+    <div class="container py-5">
+        <div class="row align-items-center gy-4">
+            <div class="col-12 col-lg-8">
+                <div class="page-header text-center text-lg-start">
+                    <h1 class="page-title reveal-header">Summit <span>2026</span></h1>
+                </div>
+            </div>
+        </div>
 
-    <div class="grid">
-        <?php
-        $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC");
+        <div class="row g-4 mt-4">
+            <?php
+            $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC");
 
-        if($res && $res->num_rows > 0){
-            while($row = $res->fetch_assoc()){ 
-                $eDate = strtotime($row['event_date']);
-                $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
-                $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
-                $defaultImages = [
-                    'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
-                    'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=800&q=80'
-                ];
-                $imgUrl = !empty($row['image'])
-                    ? 'uploads/events/' . $row['image']
-                    : $defaultImages[$row['id'] % count($defaultImages)];
+            if($res && $res->num_rows > 0){
+                while($row = $res->fetch_assoc()){
+                    $eDate = strtotime($row['event_date']);
+                    $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
+                    $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
+                    $defaultImages = [
+                        'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
+                        'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=800&q=80'
+                    ];
+                    $imgUrl = !empty($row['image'])
+                        ? 'uploads/events/' . $row['image']
+                        : $defaultImages[$row['id'] % count($defaultImages)];
             ?>
-                <div class="event-card reveal-card">
-                    <div class="img-wrap">
-                        <img src="<?= $imgUrl ?>" alt="Event" loading="lazy">
-                        <div class="date-badge"><?= date('d M', $eDate) ?></div>
-                    </div>
-                    <div class="content-area">
-                        <div class="meta-info">
-                            <span><i class="fas fa-clock"></i> <?= $time ?></span>
-                            <span style="margin-left:10px;"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($loc) ?></span>
+                <div class="col-12 col-md-6 col-xl-4">
+                    <div class="event-card reveal-card h-100">
+                        <div class="img-wrap">
+                            <img src="<?= $imgUrl ?>" alt="Event" loading="lazy">
+                            <div class="date-badge"><?= date('d M', $eDate) ?></div>
                         </div>
-                        <h3><?= htmlspecialchars($row['title']) ?></h3>
-                        <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-premium">View Event</a>
+                        <div class="content-area">
+                            <div class="meta-info">
+                                <span><i class="fas fa-clock"></i> <?= $time ?></span>
+                                <span style="margin-left:10px;"><i class="fas fa-map-marker-alt"></i> <?= htmlspecialchars($loc) ?></span>
+                            </div>
+                            <h3><?= htmlspecialchars($row['title']) ?></h3>
+                            <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-premium">View Event</a>
+                        </div>
                     </div>
                 </div>
             <?php }
-        } else {
-            echo "<h2 style='grid-column:1/-1; text-align:center; color:#999;'>No Events Found</h2>";
-        }
-        ?>
+            } else {
+                echo '<div class="col-12"><h2 class="text-center text-muted">No Events Found</h2></div>';
+            }
+            ?>
+        </div>
     </div>
 </div>
 

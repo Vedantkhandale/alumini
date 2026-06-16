@@ -1,3 +1,11 @@
+<?php
+if (!isset($siteRoot)) {
+    $siteRoot = '';
+    if (strpos($_SERVER['SCRIPT_NAME'] ?? '', '/alumini/') === 0 || basename(dirname($_SERVER['SCRIPT_NAME'] ?? '')) === 'alumini') {
+        $siteRoot = '/alumini';
+    }
+}
+?>
 <style>
 /* ========================================
     ALUMNI PORTAL - SEXY FOOTER
@@ -165,10 +173,10 @@
 
         <div class="footer-box">
             <h3>Explore</h3>
-            <a href="index.php">Network Hub</a>
-            <a href="events.php">Global Meets</a>
-            <a href="jobs.php">Career Portal</a>
-            <a href="alumni.php">Success Stories</a>
+            <a href="<?= $siteRoot ?>/index.php">Network Hub</a>
+            <a href="<?= $siteRoot ?>/events.php">Global Meets</a>
+            <a href="<?= $siteRoot ?>/jobs.php">Career Portal</a>
+            <a href="<?= $siteRoot ?>/alumni.php">Success Stories</a>
         </div>
 
         <div class="footer-box">

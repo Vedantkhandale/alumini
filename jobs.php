@@ -26,11 +26,21 @@ $jobs = fetchRows($conn, "SELECT id, title, company, location, description, appl
     .public-shell {
         background: var(--bg-soft);
         min-height: 100vh;
-        padding: 140px 8% 80px; 
+        padding: 130px 6% 70px;
+        max-width: 1300px;
+        margin: 0 auto;
         color: var(--text-main);
         position: relative;
         display: flex;
         flex-direction: column;
+    }
+
+    @media(max-width: 992px) {
+        .public-shell { padding: 120px 5% 60px; }
+    }
+
+    @media(max-width: 768px) {
+        .public-shell { padding: 110px 5% 55px; }
     }
 
     .subpage-hero {

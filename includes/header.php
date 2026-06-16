@@ -1,7 +1,12 @@
 <?php
 $pageTitle = $pageTitle ?? "AlumniX";
-$currentPage = basename($_SERVER["PHP_SELF"] ?? "index.php");
+$currentPage = basename($_SERVER["SCRIPT_NAME"] ?? "index.php");
+$siteRoot = '';
+if (strpos($_SERVER['SCRIPT_NAME'] ?? '', '/alumini/') === 0 || basename(dirname($_SERVER['SCRIPT_NAME'] ?? '')) === 'alumini') {
+    $siteRoot = '/alumini';
+}
 $isHomePage = ($currentPage == 'index.php');
+$logoPath = $siteRoot . '/images/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -29,214 +34,307 @@ $isHomePage = ($currentPage == 'index.php');
             font-family: 'Plus Jakarta Sans', sans-serif;
         }
 
-        nav {
+        .navbar {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
-            z-index: 1100;
-            transition: all 0.36s cubic-bezier(0.22, 1, 0.36, 1);
-            padding: 14px 0;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            z-index: 1200;
+            background: rgba(6, 10, 20, 0.62);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: background 0.28s ease, padding 0.28s ease;
         }
 
         .nav-container {
-            max-width: 1300px;
+            max-width: 1320px;
             margin: auto;
-            padding: 0 28px;
+            padding: 14px 26px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            gap: 18px;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            min-height: 72px;
         }
 
-        nav.transparent { background: transparent; }
-        nav.transparent .nav-links a,
-        nav.transparent .nav-login,
-        nav.transparent .menu-btn { color: #fff; }
-        nav.transparent .logo-text { color: #fff; }
-
-        nav.scrolled {
-            background: var(--glass-dark);
-            backdrop-filter: var(--blur);
-            -webkit-backdrop-filter: var(--blur);
-            padding: 15px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        .navbar.transparent {
+            background: transparent;
+            border-bottom-color: transparent;
         }
 
-        nav.scrolled .logo-text,
-        nav.scrolled .nav-links a,
-        nav.scrolled .nav-login,
-        nav.scrolled .menu-btn { color: #fff; }
+        .navbar.scrolled {
+            background: rgba(6, 10, 20, 0.78);
+        }
 
-        .logo a {
+        .navbar-brand {
             display: flex;
             align-items: center;
             gap: 12px;
+            color: #fff;
             text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 800;
         }
 
         .logo img {
             height: 38px;
             width: auto;
-            transition: transform 0.28s ease;
-            border-radius: 6px;
+            transition: transform 0.25s ease;
+            border-radius: 8px;
         }
 
-        .logo img:hover { transform: translateY(-3px) scale(1.02); }
-
         .logo-text {
-            font-size: 22px;
-            font-weight: 900;
-            letter-spacing: -1px;
-            transition: 0.28s;
+            letter-spacing: -0.04em;
             color: #fff;
         }
 
-        .logo-text span { color: var(--primary); }
-
-        .nav-links {
-            display: flex;
-            gap: 30px;
-            align-items: center;
+        .logo-text span {
+            color: var(--primary);
         }
 
-        .nav-links a {
+        .nav-center {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            gap: 1.8rem;
+            z-index: 1;
+        }
+
+        .nav-center a {
+            color: rgba(255, 255, 255, 0.87);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            transition: 0.3s;
             position: relative;
-            opacity: 0.7;
-            padding: 5px 0;
+            padding: 0.2rem 0;
+            transition: color 0.22s ease, transform 0.22s ease;
         }
 
-        .nav-links a::after {
+        .nav-center a:hover,
+        .nav-center a.active {
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .nav-center a.active::after {
             content: '';
             position: absolute;
-            bottom: 0;
+            bottom: -5px;
             left: 0;
-            width: 0;
+            width: 100%;
             height: 2px;
-            background: var(--primary);
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ff4d4d;
+            border-radius: 2px;
         }
 
-        .nav-links a:hover::after,
-        .nav-links a.is-active::after { width: 100%; }
-
-        .nav-links a:hover,
-        .nav-links a.is-active {
-            opacity: 1;
-            color: #fff !important;
-        }
-
-        .nav-actions {
+        .nav-right {
             display: flex;
             align-items: center;
-            gap: 25px;
         }
-
-        .nav-login {
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 700;
-            transition: 0.3s;
-            opacity: 0.8;
-        }
-
-        .nav-login:hover { opacity: 1; color: var(--primary) !important; }
 
         .nav-btn {
-            text-decoration: none;
-            padding: 10px 26px;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #ff6a6a, #ff3b3b);
+            padding: 10px 22px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #ff5d5d, #ff2d2d);
             color: #fff !important;
-            font-size: 13px;
-            font-weight: 900;
-            letter-spacing: 0.6px;
-            box-shadow: 0 10px 30px rgba(255, 59, 59, 0.16);
-            transition: transform 0.28s ease, box-shadow 0.28s ease;
-            text-transform: uppercase;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            box-shadow: 0 14px 34px rgba(255, 77, 77, 0.24);
+            text-transform: none;
+            white-space: nowrap;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
         }
 
         .nav-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 40px rgba(255, 59, 59, 0.22);
+            transform: translateY(-1px);
+            box-shadow: 0 18px 42px rgba(255, 77, 77, 0.28);
         }
 
-        .menu-btn {
+        .navbar-toggler {
+            border: none;
             display: none;
-            font-size: 24px;
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            transition: background 0.2s ease;
         }
 
-        @media(max-width: 992px) {
-            .nav-links, .nav-login { display: none; }
-            .menu-btn { display: block; }
-            .nav-container { padding: 0 20px; }
+        .navbar-toggler:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+
+        .mobile-menu {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-8px);
+            transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease;
+            background: rgba(12, 18, 34, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 0 18px;
+            margin: 10px 26px 0;
+        }
+
+        .mobile-menu.open {
+            max-height: 420px;
+            opacity: 1;
+            transform: translateY(0);
+            padding-top: 16px;
+            padding-bottom: 16px;
+        }
+
+        .mobile-link {
+            display: block;
+            color: rgba(255, 255, 255, 0.92);
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 14px 12px;
+            border-radius: 14px;
+            transition: background 0.22s ease;
+        }
+
+        .mobile-link:hover,
+        .mobile-link.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        .mobile-cta {
+            display: block;
+            margin-top: 12px;
+            padding: 12px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #ff5d5d, #ff2d2d);
+            border-radius: 999px;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+        }
+
+        @media (max-width: 767.98px) {
+            .nav-center,
+            .nav-right {
+                display: none !important;
+            }
+
+            .navbar-toggler {
+                display: inline-flex;
+            }
+
+            .nav-container {
+                padding: 14px 18px;
+            }
+
+            .mobile-menu {
+                margin: 10px 18px 0;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <nav id="mainNav" class="<?= $isHomePage ? 'transparent' : 'scrolled' ?>">
-        <div class="nav-container">
-            <div class="logo">
-                <a href="index.php">
-                    <?php if (file_exists('images/logo.png')): ?>
-                        <img src="images/logo.png" alt="Logo">
-                    <?php endif; ?>
-                    <div class="logo-text">Alumni<span>X</span></div>
-                </a>
+    <nav id="mainNav" class="navbar <?= $isHomePage ? 'transparent' : 'scrolled' ?>">
+        <div class="container-fluid nav-container">
+            <a class="navbar-brand logo" href="<?= $siteRoot ?>/index.php">
+                <?php if (!empty($logoPath) && file_exists($_SERVER['DOCUMENT_ROOT'] . $logoPath)): ?>
+                    <img src="<?= $logoPath ?>" alt="AlumniX Logo">
+                <?php endif; ?>
+                <span class="logo-text">Alumni<span>X</span></span>
+            </a>
+
+            <div class="nav-center d-none d-md-flex">
+                <a class="<?= $currentPage == 'index.php' ? 'active' : '' ?>" href="<?= $siteRoot ?>/index.php">Home</a>
+                <a class="<?= (strpos($currentPage, 'events') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/events.php">Events</a>
+                <a class="<?= (strpos($currentPage, 'jobs') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/jobs.php">Jobs</a>
+                <a class="<?= (strpos($currentPage, 'alumni') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/alumni.php">Network</a>
             </div>
 
-            <div class="nav-links">
-                <a href="index.php" class="<?= $currentPage == 'index.php' ? 'is-active' : '' ?>">Home</a>
-                <a href="events.php" class="<?= (strpos($currentPage, 'events') !== false) ? 'is-active' : '' ?>">Events</a>
-                <a href="jobs.php" class="<?= (strpos($currentPage, 'jobs') !== false) ? 'is-active' : '' ?>">Jobs</a>
-                <a href="alumni.php" class="<?= (strpos($currentPage, 'alumni') !== false) ? 'is-active' : '' ?>">Network</a>
+            <div class="nav-right d-none d-md-flex">
+                <a href="<?= $siteRoot ?>/registration.php" class="nav-btn">Join Now</a>
             </div>
 
-            <div class="nav-actions">
-                <a href="registration.php" class="nav-btn">Join Now</a>
-                <div class="menu-btn"><i class="fas fa-bars-staggered"></i></div>
-            </div>
+            <button id="mobileToggle" class="navbar-toggler d-md-none" type="button" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+
+        <div class="mobile-menu" id="mobileMenu">
+            <a class="mobile-link <?= $currentPage == 'index.php' ? 'active' : '' ?>" href="<?= $siteRoot ?>/index.php">Home</a>
+            <a class="mobile-link <?= (strpos($currentPage, 'events') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/events.php">Events</a>
+            <a class="mobile-link <?= (strpos($currentPage, 'jobs') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/jobs.php">Jobs</a>
+            <a class="mobile-link <?= (strpos($currentPage, 'alumni') !== false) ? 'active' : '' ?>" href="<?= $siteRoot ?>/alumni.php">Network</a>
+            <a class="mobile-cta" href="<?= $siteRoot ?>/registration.php">Join Now</a>
         </div>
     </nav>
 
     <script>
-        const nav = document.getElementById("mainNav");
+        const nav = document.getElementById('mainNav');
+        const mobileToggle = document.getElementById('mobileToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
         const isHomePage = <?= json_encode($isHomePage) ?>;
 
-        if (isHomePage) {
-            window.addEventListener("scroll", () => {
-                if (window.scrollY > 40) {
-                    nav.classList.add("scrolled");
-                    nav.classList.remove("transparent");
-                } else {
-                    nav.classList.add("transparent");
-                    nav.classList.remove("scrolled");
-                }
-            });
-        }
-
-        function setNavHeight() {
+        const setNavHeight = () => {
             if (!nav) return;
-            const h = nav.offsetHeight;
-            document.documentElement.style.setProperty('--nav-height', h + 'px');
-            if (!document.querySelector('.hero-section')) {
-                document.body.style.paddingTop = h + 'px';
-            } else {
-                document.body.style.paddingTop = '';
-            }
-        }
+            const height = nav.offsetHeight;
+            document.documentElement.style.setProperty('--nav-height', `${height}px`);
+            document.body.style.paddingTop = `${height}px`;
+        };
 
-        window.addEventListener('resize', setNavHeight);
-        window.addEventListener('load', setNavHeight);
-        setNavHeight();
+        const updateNavState = () => {
+            if (!isHomePage) {
+                nav.classList.add('scrolled');
+                nav.classList.remove('transparent');
+                return;
+            }
+
+            if (window.scrollY > 24) {
+                nav.classList.add('scrolled');
+                nav.classList.remove('transparent');
+            } else {
+                nav.classList.add('transparent');
+                nav.classList.remove('scrolled');
+            }
+        };
+
+        const closeMobileMenu = () => {
+            if (!mobileMenu) return;
+            mobileMenu.classList.remove('open');
+            mobileToggle.setAttribute('aria-expanded', 'false');
+        };
+
+        const toggleMobileMenu = () => {
+            if (!mobileMenu || !mobileToggle) return;
+            const isOpen = mobileMenu.classList.toggle('open');
+            mobileToggle.setAttribute('aria-expanded', String(isOpen));
+        };
+
+        mobileToggle?.addEventListener('click', toggleMobileMenu);
+
+        window.addEventListener('resize', () => {
+            setNavHeight();
+            if (window.innerWidth >= 768) {
+                closeMobileMenu();
+            }
+        });
+
+        window.addEventListener('load', () => {
+            setNavHeight();
+            updateNavState();
+        });
+
+        window.addEventListener('scroll', updateNavState);
     </script>

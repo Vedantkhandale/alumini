@@ -27,13 +27,23 @@ include(__DIR__ . "/includes/db.php");
     }
 
     .page {
-        padding: 160px 8% 80px;
+        padding: 130px 6% 80px;
         background: var(--bg-light);
         min-height: 100vh;
+        max-width: 1300px;
+        margin: 0 auto;
         position: relative;
         overflow-x: hidden;
         display: flex;
         flex-direction: column;
+    }
+
+    @media(max-width: 992px) {
+        .page { padding: 120px 5% 70px; }
+    }
+
+    @media(max-width: 768px) {
+        .page { padding: 110px 5% 60px; }
     }
 
     /* Texture Pattern */
