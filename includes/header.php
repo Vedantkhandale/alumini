@@ -12,6 +12,7 @@ $isHomePage = ($currentPage == 'index.php');
     
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa6mY5S0vQvVb1rYF0QgY6bZr2a8aE6z9FQZ6Y5mY5QKf5Z2X5p6Jv9K" crossorigin="anonymous">
 
     <style>
         :root {

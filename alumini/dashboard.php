@@ -655,17 +655,6 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
                 </div>
 
                 <div style="display:flex; flex-direction:column; gap:20px;">
-                    <div class="card profile-card">
-                        <div class="profile-avatar"><?php echo strtoupper(substr($user['full_name'], 0, 1)); ?></div>
-                        <h4><?php echo htmlspecialchars($user['full_name']); ?></h4>
-                        <p>Verified Alumni</p>
-                        <ul class="profile-list" style="margin-top: 22px;">
-                            <li class="profile-item"><span class="profile-label">Email</span><span class="profile-value"><?php echo htmlspecialchars($user['email']); ?></span></li>
-                            <li class="profile-item"><span class="profile-label">Graduation Year</span><span class="profile-value"><?php echo htmlspecialchars($user['grad_year'] ?? 'N/A'); ?></span></li>
-                            <li class="profile-item"><span class="profile-label">Department</span><span class="profile-value"><?php echo htmlspecialchars($user['department'] ?? 'N/A'); ?></span></li>
-                        </ul>
-                    </div>
-
                     <div class="card">
                         <div class="section-header">
                             <h3>Quick Actions</h3>
