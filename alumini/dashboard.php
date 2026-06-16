@@ -67,6 +67,8 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
     <style>
         :root {
@@ -635,6 +637,30 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
         <?php if (isset($_GET['msg']) && $_GET['msg'] == 'applied'): ?>
             Swal.fire('Success!', 'You have successfully registered for the event!', 'success');
         <?php endif; ?>
+        // Animations: count-up and reveal
+        document.addEventListener('DOMContentLoaded', function(){
+            if(window.gsap) gsap.registerPlugin(ScrollTrigger);
+
+            // Count up for stats
+            const counters = document.querySelectorAll('.stat-value');
+            counters.forEach((el)=>{
+                const target = parseInt(el.textContent) || 0;
+                let cur = 0;
+                const step = Math.max(1, Math.floor(target / 60));
+                const id = setInterval(()=>{
+                    cur += step;
+                    if(cur >= target){ el.textContent = target; clearInterval(id); }
+                    else el.textContent = cur;
+                }, 12);
+            });
+
+            // Reveal cards
+            if(window.gsap){
+                gsap.utils.toArray('.card').forEach((card,i)=>{
+                    gsap.from(card,{y:20,opacity:0,duration:0.7,delay:0.08*i,scrollTrigger:{trigger:card,start:'top 90%'}});
+                });
+            }
+        });
     </script>
 
 </body>

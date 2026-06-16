@@ -1,136 +1,131 @@
 <?php
 session_start();
 include(__DIR__ . "/../includes/db.php");
-$user_id = $_SESSION['user']['id']; 
+$user_id = $_SESSION['user']['id'] ?? null;
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Careers Portal | AlumniX</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root { --primary: #e11d48; --dark: #0f172a; --white: #ffffff; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; }
-        
-        .apply-modal {
-            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(8px);
-        }
-        .modal-content {
-            background: var(--white); width: 90%; max-width: 500px; margin: 50px auto;
-            padding: 35px; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        }
-        .input-box { width: 100%; padding: 12px; margin-top: 8px; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; transition: 0.3s; }
-        .input-box:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.1); }
-        .form-label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-        .btn-submit { background: var(--primary); color: white; border: none; width: 100%; padding: 15px; border-radius: 12px; font-weight: 700; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn-submit:hover { transform: translateY(-2px); opacity: 0.9; }
-    </style>
+	<meta charset="UTF-8">
+	<title>Careers | AlumniX</title>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+	<style>
+		:root{--accent:#ec4899;--dark:#0f172a;--bg:#f8fafc;--card:#ffffff}
+		body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);margin:0;padding:0}
+		.page{padding:56px 6%}
+		.page-header{display:flex;justify-content:space-between;align-items:end;margin-bottom:20px}
+		.page-title{font-size:28px;font-weight:800}
+		.subtitle{color:#64748b;font-weight:600}
+		.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+		.job-card{background:var(--card);border-radius:20px;padding:18px;border:1px solid #eef2f6;box-shadow:0 14px 30px rgba(15,23,42,0.04);transition:transform .28s,box-shadow .28s}
+		.job-card:hover{transform:translateY(-6px);box-shadow:0 28px 64px rgba(15,23,42,0.08)}
+		.job-meta{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+		.job-title{font-size:18px;font-weight:800;margin:0}
+		.job-company{color:var(--accent);font-weight:800}
+		.job-desc{color:#475569;font-size:13px;margin:10px 0}
+		.job-actions{display:flex;gap:10px;margin-top:12px}
+		.btn-apply{flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#ec4899,#f97316);color:#fff;font-weight:800;cursor:pointer}
+		.btn-details{flex:1;padding:12px;border-radius:12px;border:1px solid #eef2f6;background:#fff;color:#0f172a;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+		.badge-source{margin-top:10px;font-size:12px;color:#94a3b8;font-weight:700}
+		@media(max-width:1100px){.grid{grid-template-columns:repeat(2,1fr)}}
+		@media(max-width:700px){.grid{grid-template-columns:1fr}.page{padding:30px 5%}}
+		.btn-details.small{padding:8px 10px}
+		.filters{display:flex;gap:8px}
+	</style>
 </head>
 <body>
 
-<div class="jobs-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; padding: 50px 8%;">
-    <?php
-    $jobs = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC");
-    while($job = $jobs->fetch_assoc()):
-    ?>
-    <div class="job-card" style="background: white; padding: 25px; border-radius: 20px; border: 1px solid #e2e8f0;">
-        <h3 style="margin: 0;"><?php echo $job['title']; ?></h3>
-        <p style="color: var(--primary); font-weight: 700;"><?php echo $job['company']; ?></p>
-        <button onclick="openApplyModal(<?php echo $job['id']; ?>, '<?php echo $job['title']; ?>')" 
-                style="margin-top:15px; width: 100%; background: var(--dark); color: white; border: none; padding: 12px; border-radius: 10px; cursor: pointer;">
-            Apply Now
-        </button>
-    </div>
-    <?php endwhile; ?>
+<div class="page">
+	<div class="page-header">
+		<div>
+			<div class="page-title">Careers</div>
+			<div class="subtitle">All admin-approved jobs are listed below</div>
+		</div>
+		<div style="display:flex;gap:12px;align-items:center">
+			<div class="filters">
+				<button id="filter-all" class="btn-details small">All</button>
+				<button id="filter-admin" class="btn-details small">Admin</button>
+				<button id="filter-alumni" class="btn-details small">Alumni</button>
+			</div>
+			<a href="post_jobs.php" class="btn-details">Post a Job</a>
+		</div>
+	</div>
+
+	<div class="grid" id="jobsGrid">
+		<?php
+		$jobs = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC");
+		if ($jobs && $jobs->num_rows > 0) {
+			while ($job = $jobs->fetch_assoc()) {
+				$logo = !empty($job['logo']) ? 'uploads/logos/'.htmlspecialchars($job['logo']) : 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?auto=format&fit=crop&w=800&q=60';
+				$location = !empty($job['location']) ? htmlspecialchars($job['location']) : 'Remote / Onsite';
+				$snippet = !empty($job['description']) ? (strlen($job['description'])>120 ? htmlspecialchars(substr($job['description'],0,120)).'...' : htmlspecialchars($job['description'])) : '';
+				$source = $job['posted_by'] ?? $job['source'] ?? $job['created_by'] ?? 'admin';
+		?>
+		<div class="job-card reveal-card" data-source="<?php echo htmlspecialchars($source) ?>">
+			<div class="job-meta">
+				<div style="display:flex;gap:12px;align-items:center">
+					<div style="width:56px;height:56px;border-radius:12px;overflow:hidden;background:#f3f4f6;flex:0 0 56px"><img src="<?php echo $logo ?>" style="width:100%;height:100%;object-fit:cover"></div>
+					<div>
+						<h4 class="job-title"><?php echo htmlspecialchars($job['title']) ?></h4>
+						<div class="job-company"><?php echo htmlspecialchars($job['company']) ?></div>
+					</div>
+				</div>
+				<div style="text-align:right;color:#64748b;font-weight:700;font-size:13px"><?php echo $location ?></div>
+			</div>
+			<div class="job-desc"><?php echo $snippet ?></div>
+			<div class="job-actions">
+				<button class="btn-apply" onclick="openApplyModal(<?php echo $job['id'] ?>,'<?php echo addslashes(htmlspecialchars($job['title'])) ?>')">Apply</button>
+				<a href="go_to_job.php?job_id=<?php echo $job['id'] ?>" class="btn-details">Details</a>
+			</div>
+			<div class="badge-source">Source: <?php echo ucfirst(htmlspecialchars($source)); ?></div>
+		</div>
+		<?php }
+		} else {
+			echo '<div style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:40px;border-radius:12px;background:#fff">No jobs available.</div>';
+		}
+		?>
+	</div>
 </div>
 
-<!-- Sexy Apply Modal -->
+<!-- Apply Modal -->
 <div id="applyModal" class="apply-modal">
-    <div class="modal-content">
-        <h2 style="margin-bottom: 20px; font-weight: 800;">Apply for <span id="jobTitleLabel" style="color: var(--primary);">Job</span></h2>
-        
-        <form id="applicationForm">
-            <input type="hidden" name="job_id" id="target_job_id">
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                    <label class="form-label">Email Address</label>
-                    <input type="email" name="email" class="input-box" placeholder="mail@example.com" required>
-                </div>
-                <div>
-                    <label class="form-label">Total Experience</label>
-                    <input type="text" name="experience" class="input-box" placeholder="e.g. 2 Years" required>
-                </div>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <label class="form-label">Known Tech Languages</label>
-                <input type="text" name="tech_languages" class="input-box" placeholder="PHP, Python, JavaScript, etc." required>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <label class="form-label">Key Skills & Interests</label>
-                <textarea name="skills" class="input-box" rows="3" placeholder="Explain your core strengths..." required></textarea>
-            </div>
-
-            <div style="margin-top: 15px;">
-                <label class="form-label">Resume Link (GDrive/LinkedIn)</label>
-                <input type="url" name="resume_link" class="input-box" placeholder="https://..." required>
-            </div>
-
-            <button type="submit" id="submitBtn" class="btn-submit">Send Application</button>
-            <button type="button" onclick="closeModal()" style="width: 100%; background: none; border: none; color: #94a3b8; margin-top: 10px; cursor: pointer;">Close</button>
-        </form>
-    </div>
+	<div class="modal-panel" style="display:none"></div>
 </div>
 
 <script>
-    function openApplyModal(id, title) {
-        document.getElementById('target_job_id').value = id;
-        document.getElementById('jobTitleLabel').innerText = title;
-        document.getElementById('applyModal').style.display = 'block';
-    }
+	// GSAP animations
+	document.addEventListener('DOMContentLoaded', function(){
+		if(window.gsap) gsap.from('.reveal-card',{y:40,opacity:0,duration:0.9,stagger:0.08,delay:0.15});
 
-    function closeModal() {
-        document.getElementById('applyModal').style.display = 'none';
-    }
+		// Filters
+		const grid = document.getElementById('jobsGrid');
+		const cards = Array.from(grid.querySelectorAll('.job-card'));
+		function applyFilter(source){
+			cards.forEach(c=>{
+				if(source==='all' || (c.dataset.source && c.dataset.source.toLowerCase()===source)){
+					c.style.display='block';
+				} else c.style.display='none';
+			});
+		}
+		document.getElementById('filter-all').addEventListener('click', ()=>applyFilter('all'));
+		document.getElementById('filter-admin').addEventListener('click', ()=>applyFilter('admin'));
+		document.getElementById('filter-alumni').addEventListener('click', ()=>applyFilter('alumni'));
 
-    // JS Logic for Real-time Apply
-    document.getElementById('applicationForm').onsubmit = function(e) {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.innerText = "Applying...";
-        btn.disabled = true;
-
-        const formData = new FormData(this);
-        formData.append('ajax_apply', '1');
-
-        fetch('process_application.php', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            if(data.includes('success')) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Your application has been sent to Admin.',
-                    icon: 'success',
-                    confirmButtonColor: '#e11d48'
-                });
-                closeModal();
-                this.reset();
-            } else {
-                Swal.fire('Error!', 'Something went wrong.', 'error');
-            }
-            btn.innerText = "Send Application";
-            btn.disabled = false;
-        });
-    };
+		// Modal open placeholder (keeps previous apply flow)
+		window.openApplyModal = function(id,title){
+			Swal.fire({
+				title: 'Apply for '+title,
+				html: '<p>To apply, open the job details and submit your application.</p>',
+				confirmButtonText: 'Open Job',
+				showCancelButton:true
+			}).then(res=>{ if(res.isConfirmed) window.location.href='go_to_job.php?job_id='+id; });
+		};
+	});
 </script>
 
 </body>
