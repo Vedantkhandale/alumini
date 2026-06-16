@@ -42,6 +42,8 @@ if ($applied_res) {
     $applied_count = (int) $applied_res->fetch_assoc()['cnt'];
 }
 
+$upcoming_events = $conn->query("SELECT * FROM events WHERE event_date >= CURDATE() ORDER BY event_date ASC LIMIT 5");
+
 // --- 3. EVENT APPLY LOGIC ---
 if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
     $event_id = mysqli_real_escape_string($conn, $_GET['apply_event']);
@@ -338,6 +340,103 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
             font-weight: 800;
         }
 
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .section-header .section-subtitle {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .event-list .event-item,
+        .profile-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-radius: 22px;
+            background: rgba(241, 245, 249, 0.95);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            gap: 12px;
+        }
+
+        .event-list .event-item h4,
+        .profile-list .profile-label {
+            margin: 0;
+        }
+
+        .event-list .event-item h4 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .event-meta,
+        .profile-value {
+            color: #475569;
+            font-size: 13px;
+        }
+
+        .profile-item {
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+        }
+
+        .profile-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .profile-label {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .profile-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .button-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(236, 72, 153, 0.12);
+            color: #ec4899;
+            padding: 12px 20px;
+            border-radius: 16px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid rgba(236, 72, 153, 0.16);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .button-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(236, 72, 153, 0.14);
+        }
+
         @media (max-width: 1050px) {
             .stats-grid {
                 grid-template-columns: 1fr;
@@ -381,7 +480,7 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
             <div class="top-nav">
                 <div>
                     <h2>Hello, <?php echo htmlspecialchars($user['full_name']); ?>!</h2>
-                    <p>Welcome back to your alumni hub — yahan se sab control karein.</p>
+                    <p>Welcome back to your alumni dashboard — everything you need in one place.</p>
                 </div>
                 <div class="notification-pill">
                     <i class="fas fa-bell"></i>
@@ -415,18 +514,20 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
 
             <div class="bento-grid">
                 <div class="card">
-                    <h3 style="margin-bottom: 20px; font-weight: 800;">New Career Opportunities</h3>
+                    <div class="section-header">
+                        <h3>Latest Career Opportunities</h3>
+                        <span class="section-subtitle">Updated in real time</span>
+                    </div>
                     <?php
-                    $result = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 5");
+                    $result = $conn->query("SELECT * FROM jobs WHERE status='approved' ORDER BY id DESC LIMIT 6");
                     if ($result && $result->num_rows > 0) {
                         while ($row = $result->fetch_assoc()) {
-                            // TRACKING LINK ADDED HERE
                             echo '<div class="job-item">
                                     <div>
-                                        <h4 style="font-size: 16px;">' . htmlspecialchars($row['title']) . '</h4>
-                                        <p style="font-size: 12px; color: #64748b;">' . htmlspecialchars($row['company']) . '</p>
+                                        <h4>' . htmlspecialchars($row['title']) . '</h4>
+                                        <p class="event-meta">' . htmlspecialchars($row['company']) . ' • ' . htmlspecialchars($row['location'] ?? 'Remote / Onsite') . '</p>
                                     </div>
-                                    <a href="go_to_job.php?job_id=' . $row['id'] . '" target="_blank" class="btn-red" style="text-decoration:none; font-size:12px;">Apply</a>
+                                    <a href="go_to_job.php?job_id=' . $row['id'] . '" target="_blank" class="btn-red">Apply</a>
                                   </div>';
                         }
                     } else {
@@ -435,27 +536,51 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
                     ?>
                 </div>
 
+                <div class="card">
+                    <div class="section-header">
+                        <h3>Upcoming Events</h3>
+                        <span class="section-subtitle"><?php echo $events_count; ?> events coming soon</span>
+                    </div>
+                    <div class="event-list">
+                        <?php
+                        if ($upcoming_events && $upcoming_events->num_rows > 0) {
+                            while ($event = $upcoming_events->fetch_assoc()) {
+                                $e_title = $event['event_name'] ?? ($event['title'] ?? 'Untitled Event');
+                                echo '<div class="event-item">
+                                        <div>
+                                            <h4>' . htmlspecialchars($e_title) . '</h4>
+                                            <span class="event-meta">' . date('d M, Y', strtotime($event['event_date'])) . ' • ' . htmlspecialchars($event['location'] ?? 'Online') . '</span>
+                                        </div>
+                                        <a href="?apply_event=' . $event['id'] . '" class="button-secondary">RSVP</a>
+                                      </div>';
+                            }
+                        } else {
+                            echo "<p style='color:#64748b; text-align:center;'>No upcoming events yet.</p>";
+                        }
+                        ?>
+                    </div>
+                </div>
+
                 <div style="display:flex; flex-direction:column; gap:20px;">
-                    <div class="card" style="text-align:center; background: var(--dark); color: white;">
-                        <div style="width:70px; height:70px; background:var(--accent); border-radius:20px; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:800;">
-                            <?php echo strtoupper(substr($user['full_name'], 0, 1)); ?>
-                        </div>
+                    <div class="card profile-card">
+                        <div class="profile-avatar"><?php echo strtoupper(substr($user['full_name'], 0, 1)); ?></div>
                         <h4><?php echo htmlspecialchars($user['full_name']); ?></h4>
-                        <p style="font-size: 12px; opacity: 0.7;">Verified Alumni</p>
+                        <p>Verified Alumni</p>
+                        <ul class="profile-list" style="margin-top: 22px;">
+                            <li class="profile-item"><span class="profile-label">Email</span><span class="profile-value"><?php echo htmlspecialchars($user['email']); ?></span></li>
+                            <li class="profile-item"><span class="profile-label">Graduation Year</span><span class="profile-value"><?php echo htmlspecialchars($user['grad_year'] ?? 'N/A'); ?></span></li>
+                            <li class="profile-item"><span class="profile-label">Department</span><span class="profile-value"><?php echo htmlspecialchars($user['department'] ?? 'N/A'); ?></span></li>
+                        </ul>
                     </div>
 
                     <div class="card">
-                        <h4 style="margin-bottom:15px; font-weight:800;">Next Event</h4>
-                        <?php
-                        $ev = $conn->query("SELECT * FROM events ORDER BY event_date ASC LIMIT 1");
-                        if ($ev && $ev->num_rows > 0) {
-                            $event = $ev->fetch_assoc();
-                            $e_title = $event['event_name'] ?? ($event['title'] ?? 'Untitled Event');
-                            echo "<p style='font-size:13px; font-weight:700; color:var(--accent);'>" . date('d M, Y', strtotime($event['event_date'])) . "</p>";
-                            echo "<h5 style='margin:5px 0;'>" . htmlspecialchars($e_title) . "</h5>";
-                            echo "<a href='?apply_event=" . $event['id'] . "' class='btn-red' style='display:block; text-align:center; margin-top:10px; text-decoration:none; font-size:12px;'>Register</a>";
-                        }
-                        ?>
+                        <div class="section-header">
+                            <h3>Quick Actions</h3>
+                            <span class="section-subtitle">Access everything fast</span>
+                        </div>
+                        <a href="profile.php" class="button-secondary"><i class="fas fa-user"></i> View Profile</a>
+                        <a href="careers.php" class="button-secondary"><i class="fas fa-briefcase"></i> Browse Jobs</a>
+                        <a href="events.php" class="button-secondary"><i class="fas fa-calendar-check"></i> Explore Events</a>
                     </div>
                 </div>
             </div>
@@ -488,7 +613,7 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
                     const desc = document.getElementById('job-desc').value;
 
                     if (!title || !company || !link) {
-                        Swal.showValidationMessage('Title, Company aur Link zaroori hain!');
+                        Swal.showValidationMessage('Title, Company and Application Link are required!');
                         return;
                     }
 
@@ -502,13 +627,13 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
                 }
             }).then((result) => {
                 if (result.isConfirmed && result.value.status === 'success') {
-                    Swal.fire('Done!', 'Job post ho gayi, approval ka wait karein!', 'success').then(() => location.reload());
+                    Swal.fire('Done!', 'Your job post was submitted successfully. Awaiting approval.', 'success').then(() => location.reload());
                 }
             });
         }
 
         <?php if (isset($_GET['msg']) && $_GET['msg'] == 'applied'): ?>
-            Swal.fire('Success!', 'Event ke liye register ho gaya!', 'success');
+            Swal.fire('Success!', 'You have successfully registered for the event!', 'success');
         <?php endif; ?>
     </script>
 
