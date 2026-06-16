@@ -26,6 +26,22 @@ if (!isset($_SESSION['user'])) {
 $user = $_SESSION['user'];
 $alumni_id = $user['id'];
 
+$jobs_count = 0;
+$events_count = 0;
+$applied_count = 0;
+$jobs_res = $conn->query("SELECT COUNT(*) AS cnt FROM jobs WHERE status='approved'");
+if ($jobs_res) {
+    $jobs_count = (int) $jobs_res->fetch_assoc()['cnt'];
+}
+$events_res = $conn->query("SELECT COUNT(*) AS cnt FROM events WHERE event_date >= CURDATE()");
+if ($events_res) {
+    $events_count = (int) $events_res->fetch_assoc()['cnt'];
+}
+$applied_res = $conn->query("SELECT COUNT(*) AS cnt FROM event_applications WHERE alumni_id='$alumni_id'");
+if ($applied_res) {
+    $applied_count = (int) $applied_res->fetch_assoc()['cnt'];
+}
+
 // --- 3. EVENT APPLY LOGIC ---
 if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
     $event_id = mysqli_real_escape_string($conn, $_GET['apply_event']);
@@ -75,27 +91,42 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
         .dashboard-container {
             display: flex;
             min-height: 100vh;
-            padding: 20px;
-            gap: 20px;
+            padding: 28px;
+            gap: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 15% 10%, rgba(236, 72, 153, 0.16), transparent 20%),
+                        radial-gradient(circle at 90% 10%, rgba(59, 130, 246, 0.12), transparent 15%);
+            pointer-events: none;
         }
 
         /* Sidebar */
         .sidebar {
-            width: 280px;
-            background: var(--dark);
-            border-radius: 30px;
-            padding: 40px 20px;
+            width: 300px;
+            background: rgba(15, 23, 42, 0.95);
+            border-radius: 32px;
+            padding: 40px 24px;
             color: white;
             display: flex;
             flex-direction: column;
-            transition: 0.3s;
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
         }
 
         .logo {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 800;
-            margin-bottom: 50px;
+            margin-bottom: 44px;
             text-align: center;
+            letter-spacing: -0.04em;
         }
 
         .logo span {
@@ -103,113 +134,233 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
         }
 
         .nav-item {
-            padding: 15px 20px;
-            border-radius: 15px;
+            padding: 16px 20px;
+            border-radius: 18px;
             text-decoration: none;
-            color: #94a3b8;
+            color: #cbd5e1;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             transition: 0.3s;
         }
 
         .nav-item:hover,
         .nav-item.active {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             color: white;
         }
 
         .nav-item i {
             color: var(--accent);
+            width: 22px;
+            text-align: center;
         }
 
         .main-feed {
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 24px;
+            position: relative;
+            z-index: 1;
         }
 
         .top-nav {
-            background: white;
-            padding: 20px 30px;
-            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 28px 32px;
+            border-radius: 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .top-nav h2 {
+            font-size: 32px;
+            margin-bottom: 6px;
+            letter-spacing: -0.04em;
+        }
+
+        .top-nav p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .top-nav .notification-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(236, 72, 153, 0.12);
+            color: var(--accent);
+            padding: 12px 18px;
+            border-radius: 18px;
+            font-weight: 700;
+            border: 1px solid rgba(236, 72, 153, 0.18);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .stat-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.95));
+            border-radius: 28px;
+            padding: 26px 26px 24px;
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+        }
+
+        .stat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-title {
+            color: #64748b;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.16em;
+            font-weight: 700;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .stat-icon {
+            width: 58px;
+            height: 58px;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            background: linear-gradient(135deg, #ec4899, #f97316);
+            font-size: 20px;
+            box-shadow: 0 14px 30px rgba(236, 72, 153, 0.22);
         }
 
         .bento-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 25px;
+            gap: 24px;
         }
 
         .card {
-            background: white;
-            border-radius: 30px;
-            padding: 30px;
-            border: 1px solid var(--border);
-            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 32px;
+            padding: 32px;
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
         }
 
         .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+            transform: translateY(-6px);
+            box-shadow: 0 24px 54px rgba(15, 23, 42, 0.12);
         }
 
         .job-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            border-radius: 20px;
-            background: #f1f5f9;
-            margin-bottom: 15px;
+            padding: 22px;
+            border-radius: 24px;
+            background: rgba(241, 245, 249, 0.95);
+            margin-bottom: 16px;
+        }
+
+        .job-item h4 {
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .job-item p {
+            color: #64748b;
+            font-size: 13px;
         }
 
         .btn-red {
-            background: var(--accent);
+            background: linear-gradient(135deg, #ec4899, #f97316);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 12px;
+            padding: 12px 24px;
+            border-radius: 16px;
             font-weight: 700;
             cursor: pointer;
-            transition: 0.3s;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            box-shadow: 0 14px 24px rgba(236, 72, 153, 0.24);
         }
 
         .btn-red:hover {
-            background: var(--dark);
+            opacity: 0.95;
+            transform: translateY(-1px);
         }
 
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: var(--accent);
+        .profile-card {
+            text-align: center;
             color: white;
-            border-radius: 20px;
+            background: linear-gradient(180deg, rgba(236, 72, 153, 0.95), rgba(249, 115, 22, 0.95));
+        }
+
+        .profile-card h4 {
+            margin-top: 10px;
+            font-size: 20px;
+        }
+
+        .profile-card p {
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .profile-avatar {
+            width: 76px;
+            height: 76px;
+            background: rgba(255, 255, 255, 0.18);
+            border-radius: 24px;
+            margin: 0 auto 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
-            cursor: pointer;
-            box-shadow: 0 10px 20px rgba(225, 29, 72, 0.3);
+            font-size: 30px;
+            font-weight: 800;
         }
 
-        @media (max-width: 900px) {
-            .sidebar {
-                display: none;
+        @media (max-width: 1050px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
 
             .bento-grid {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .dashboard-container {
+                padding: 18px;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .top-nav {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 18px;
             }
         }
     </style>
@@ -229,11 +380,36 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
         <div class="main-feed">
             <div class="top-nav">
                 <div>
-                    <h2 style="font-weight: 800;">Hello, <?php echo htmlspecialchars($user['full_name']); ?>!</h2>
-                    <p style="color: #64748b; font-size: 14px;">Welcome to your professional space.</p>
+                    <h2>Hello, <?php echo htmlspecialchars($user['full_name']); ?>!</h2>
+                    <p>Welcome back to your alumni hub — yahan se sab control karein.</p>
                 </div>
-                <div style="background: var(--bg); padding: 5px 15px; border-radius: 12px; border: 1px solid var(--border);">
+                <div class="notification-pill">
                     <i class="fas fa-bell"></i>
+                    3 Notifications
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-title">Open Jobs</span>
+                        <span class="stat-value"><?php echo $jobs_count; ?></span>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-briefcase"></i></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-title">Upcoming Events</span>
+                        <span class="stat-value"><?php echo $events_count; ?></span>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <span class="stat-title">Your Applications</span>
+                        <span class="stat-value"><?php echo $applied_count; ?></span>
+                    </div>
+                    <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
                 </div>
             </div>
 
