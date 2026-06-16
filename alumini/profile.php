@@ -35,7 +35,7 @@ if (!$user) {
 
 $profileImage = !empty($user['image']) && file_exists(__DIR__ . "/../uploads/profiles/" . $user['image'])
     ? "../uploads/profiles/" . $user['image']
-    : "https://ui-avatars.com/api/?name=" . urlencode($user['name']) . "&background=3b82f6&color=fff&bold=true&size=240";
+    : "https://ui-avatars.com/api/?name=" . urlencode($user['name']) . "&background=e11d48&color=fff&bold=true&size=240";
 
 $jobsPosted = 0;
 $eventsRsvped = 0;
@@ -65,9 +65,9 @@ function esc($value) {
         :root {
             --bg: #f8fbff;
             --surface: #ffffff;
-            --surface-soft: #eef5ff;
-            --primary: #2563eb;
-            --primary-soft: #dbeafe;
+            --surface-soft: #fff1f2;
+            --primary: #e11d48;
+            --primary-soft: #fee2e6;
             --text: #0f172a;
             --muted: #64748b;
             --shadow: 0 25px 60px rgba(15, 23, 42, 0.08);

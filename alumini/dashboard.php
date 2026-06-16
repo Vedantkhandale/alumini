@@ -239,7 +239,7 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
         }
 
         .hero-btn.primary {
-            background: linear-gradient(135deg, #2563eb, #2563ebcc);
+            background: linear-gradient(135deg, var(--accent), #f97316);
             color: white;
             border: 1px solid transparent;
         }
@@ -505,18 +505,19 @@ if (isset($_GET['apply_event']) && !empty($_GET['apply_event'])) {
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            background: #2563eb;
+            background: linear-gradient(135deg, var(--accent), #fb7185);
             color: #fff;
             padding: 12px 18px;
             border-radius: 14px;
             font-weight: 700;
             text-decoration: none;
             transition: transform .2s ease, box-shadow .2s ease;
+            box-shadow: 0 10px 24px rgba(225,29,72,0.18);
         }
 
         .profile-link-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 18px 30px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 20px 40px rgba(225,29,72,0.22);
         }
 
         @media (max-width: 1050px) {
