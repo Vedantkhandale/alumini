@@ -53,14 +53,14 @@ include("includes/db.php");
 
     .hero-section {
         width: 100%;
-        min-height: calc(85vh - var(--nav-height));
+        min-height: calc(78vh - var(--nav-height)); /* slightly tighter hero */
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
         overflow: hidden;
         background-color: var(--bg);
-        background: radial-gradient(circle at top, rgba(255, 59, 59, 0.08), transparent 28%),
+        background: radial-gradient(circle at top, rgba(255, 59, 59, 0.06), transparent 28%),
             linear-gradient(180deg, rgba(248, 251, 255, 1) 0%, rgba(248, 251, 255, 1) 100%);
     }
 
@@ -86,19 +86,19 @@ include("includes/db.php");
     }
 
     .hero-badge {
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(14px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         color: #fff;
-        padding: 16px 42px;
+        padding: 10px 28px;
         border-radius: 999px;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        letter-spacing: 4px;
+        letter-spacing: 3px;
         text-transform: uppercase;
-        margin-bottom: 32px;
+        margin-bottom: 20px;
         display: inline-block;
-        box-shadow: 0 18px 50px rgba(2, 6, 23, 0.45);
+        box-shadow: 0 12px 34px rgba(2, 6, 23, 0.35);
         transform-origin: center;
         animation: floatBadge 6s ease-in-out infinite;
     }
@@ -117,15 +117,15 @@ include("includes/db.php");
 
     .hero-content h1 {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(48px, 11vw, 110px);
+        font-size: clamp(40px, 9.8vw, 88px);
         font-weight: 900;
-        letter-spacing: -4px;
-        line-height: 1.05;
+        letter-spacing: -3px;
+        line-height: 1.04;
         color: #fff;
-        margin: 0 auto 28px;
+        margin: 0 auto 20px;
         text-transform: uppercase;
-        max-width: 1000px;
-        text-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+        max-width: 980px;
+        text-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
     }
 
     .hero-content h1 span {
@@ -512,11 +512,11 @@ include("includes/db.php");
 
     .sexy-event-card {
         position: relative;
-        border-radius: 32px;
+        border-radius: 20px;
         overflow: hidden;
-        min-height: 480px;
-        box-shadow: 0 30px 90px rgba(15, 23, 42, 0.12);
-        transition: transform 0.45s ease, box-shadow 0.45s ease, filter 0.45s ease;
+        min-height: 360px; /* unified, lighter cards */
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.10);
+        transition: transform 0.32s ease, box-shadow 0.32s ease, filter 0.32s ease;
         background-size: cover;
         background-position: center center;
         display: flex;
@@ -538,11 +538,11 @@ include("includes/db.php");
     .sexy-event-card::after {
         content: '';
         position: absolute;
-        right: -20px;
-        top: 20px;
-        width: 130px;
-        height: 130px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 60%);
+        right: -10px;
+        top: 12px;
+        width: 100px;
+        height: 100px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 60%);
         z-index: 1;
     }
 
@@ -554,17 +554,17 @@ include("includes/db.php");
 
     .event-meta {
         position: absolute;
-        top: 24px;
-        left: 24px;
+        top: 16px;
+        left: 16px;
         z-index: 2;
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-        backdrop-filter: blur(16px);
-        border-radius: 26px;
-        padding: 18px 20px;
+        background: rgba(255, 255, 255, 0.10);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(8px);
+        border-radius: 18px;
+        padding: 12px 14px;
         display: inline-flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
 
     .event-day {
@@ -585,23 +585,26 @@ include("includes/db.php");
     .event-copy {
         position: relative;
         z-index: 2;
-        padding: 30px 32px 36px;
+        padding: 20px 22px 26px;
         color: #fff;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
     .event-copy h3 {
-        font-size: clamp(28px, 3vw, 44px);
-        margin: 0 0 16px;
-        line-height: 1.05;
-        letter-spacing: -0.02em;
+        font-size: clamp(20px, 2.6vw, 30px);
+        margin: 0 0 10px;
+        line-height: 1.04;
+        letter-spacing: -0.01em;
     }
 
     .event-copy p {
-        color: rgba(255, 255, 255, 0.9);
+        color: rgba(255, 255, 255, 0.92);
         margin: 0;
-        max-width: 88%;
-        font-size: 15px;
-        line-height: 1.8;
+        max-width: 100%;
+        font-size: 14px;
+        line-height: 1.6;
     }
 
     .event-copy .location {

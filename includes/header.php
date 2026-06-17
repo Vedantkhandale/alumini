@@ -10,11 +10,12 @@ $logoPath = $siteRoot . '/images/logo.png';
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, "UTF-8"); ?></title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUa6mY5S0vQvVb1rYF0QgY6bZr2a8aE6z9FQZ6Y5mY5QKf5Z2X5p6Jv9K" crossorigin="anonymous">
@@ -25,7 +26,7 @@ $logoPath = $siteRoot . '/images/logo.png';
             --glass-dark: rgba(0, 0, 0, 0.6);
             --glass-light: rgba(255, 255, 255, 0.05);
             --blur: blur(15px);
-            --nav-height: 60px;
+            --nav-height: 52px;
         }
 
         * {
@@ -36,41 +37,49 @@ $logoPath = $siteRoot . '/images/logo.png';
         }
 
         body {
-            padding-top: var(--nav-height);
+            padding-top: 0;
         }
 
         .navbar {
             position: fixed;
             top: 0;
+            bottom: auto;
             left: 0;
             width: 100%;
             z-index: 1200;
-            background: rgba(6, 10, 20, 0.62);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            transition: background 0.28s ease, padding 0.28s ease;
+            min-height: 72px;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-bottom: 1px solid transparent !important;
+            transition: background 0.22s ease, padding 0.22s ease, transform 0.22s ease;
         }
 
         .nav-container {
             max-width: 1320px;
             margin: auto;
-            padding: 10px 22px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             position: relative;
-            min-height: 60px;
+            min-height: 72px;
         }
 
         .navbar.transparent {
-            background: transparent;
-            border-bottom-color: transparent;
+            background: transparent !important;
+            border-bottom-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
 
         .navbar.scrolled {
-            background: rgba(6, 10, 20, 0.78);
+            background: rgba(6, 10, 20, 0.82) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+            transform: translateY(0);
         }
 
         .navbar-brand {
@@ -84,10 +93,9 @@ $logoPath = $siteRoot . '/images/logo.png';
         }
 
         .logo img {
-            height: 34px;
+            height: 42px;
             width: auto;
-            transition: transform 0.25s ease;
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
         .logo-text {
@@ -143,17 +151,12 @@ $logoPath = $siteRoot . '/images/logo.png';
         }
 
         .nav-btn {
-            padding: 10px 22px;
+            padding: 12px 28px;
             border-radius: 999px;
             background: linear-gradient(135deg, #ff5d5d, #ff2d2d);
             color: #fff !important;
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
-            letter-spacing: 0.4px;
-            box-shadow: 0 14px 34px rgba(255, 77, 77, 0.24);
-            text-transform: none;
-            white-space: nowrap;
-            transition: transform 0.22s ease, box-shadow 0.22s ease;
         }
 
         .nav-btn:hover {
@@ -230,6 +233,7 @@ $logoPath = $siteRoot . '/images/logo.png';
         }
 
         @media (max-width: 767.98px) {
+
             .nav-center,
             .nav-right {
                 display: none !important;
@@ -296,7 +300,6 @@ $logoPath = $siteRoot . '/images/logo.png';
             if (!nav) return;
             const height = nav.offsetHeight;
             document.documentElement.style.setProperty('--nav-height', `${height}px`);
-            document.body.style.paddingTop = `${height}px`;
         };
 
         const updateNavState = () => {
@@ -343,3 +346,5 @@ $logoPath = $siteRoot . '/images/logo.png';
 
         window.addEventListener('scroll', updateNavState);
     </script>
+</body>
+</html>

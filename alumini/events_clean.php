@@ -68,9 +68,9 @@ $events_res = $conn->query("SELECT * FROM events ORDER BY event_date ASC");
         .btn{background:#fff;border:1px solid #eee;padding:8px 12px;border-radius:10px;cursor:pointer}
         .btn.primary{background:var(--primary);color:#fff;border:none}
         .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-        .event-card{background:var(--card);border-radius:14px;padding:12px;border:1px solid #eee;box-shadow:0 12px 30px rgba(0,0,0,0.04);transition:transform .28s}
-        .event-card:hover{transform:translateY(-6px)}
-        .media{width:100%;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#f3f4f6}
+        .event-card{background:var(--card);border-radius:20px;padding:14px;border:1px solid rgba(0,0,0,0.04);box-shadow:0 20px 60px rgba(15,23,42,0.06);transition:transform .28s,box-shadow .28s}
+        .event-card:hover{transform:translateY(-8px);box-shadow:0 30px 80px rgba(15,23,42,0.10)}
+        .media{width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#f3f4f6}
         .media img{width:100%;height:100%;object-fit:cover}
         .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
         .meta .when{font-weight:800;color:var(--primary)}
