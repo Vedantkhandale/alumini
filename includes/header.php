@@ -25,6 +25,7 @@ $logoPath = $siteRoot . '/images/logo.png';
             --glass-dark: rgba(0, 0, 0, 0.6);
             --glass-light: rgba(255, 255, 255, 0.05);
             --blur: blur(15px);
+            --nav-height: 60px;
         }
 
         * {
@@ -32,6 +33,10 @@ $logoPath = $siteRoot . '/images/logo.png';
             padding: 0;
             box-sizing: border-box;
             font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            padding-top: var(--nav-height);
         }
 
         .navbar {
@@ -50,13 +55,13 @@ $logoPath = $siteRoot . '/images/logo.png';
         .nav-container {
             max-width: 1320px;
             margin: auto;
-            padding: 14px 26px;
+            padding: 10px 22px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 16px;
             position: relative;
-            min-height: 72px;
+            min-height: 60px;
         }
 
         .navbar.transparent {
@@ -79,7 +84,7 @@ $logoPath = $siteRoot . '/images/logo.png';
         }
 
         .logo img {
-            height: 38px;
+            height: 34px;
             width: auto;
             transition: transform 0.25s ease;
             border-radius: 8px;
@@ -159,8 +164,8 @@ $logoPath = $siteRoot . '/images/logo.png';
         .navbar-toggler {
             border: none;
             display: none;
-            width: 46px;
-            height: 46px;
+            width: 42px;
+            height: 42px;
             border-radius: 14px;
             background: rgba(255, 255, 255, 0.08);
             color: #fff;

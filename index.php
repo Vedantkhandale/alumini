@@ -53,14 +53,15 @@ include("includes/db.php");
 
     .hero-section {
         width: 100%;
-        min-height: calc(100vh - var(--nav-height, 86px));
+        min-height: calc(85vh - var(--nav-height));
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
         overflow: hidden;
+        background-color: var(--bg);
         background: radial-gradient(circle at top, rgba(255, 59, 59, 0.08), transparent 28%),
-            linear-gradient(180deg, #090b13 0%, #05060d 100%);
+            linear-gradient(180deg, rgba(248, 251, 255, 1) 0%, rgba(248, 251, 255, 1) 100%);
     }
 
     .hero-section::after {
@@ -69,8 +70,8 @@ include("includes/db.php");
         inset: 0;
         pointer-events: none;
         background: radial-gradient(circle at top center, rgba(255, 77, 77, 0.08), transparent 16%),
-            radial-gradient(circle at 22% 72%, rgba(255, 255, 255, 0.05), transparent 10%);
-        opacity: 0.95;
+            radial-gradient(circle at 22% 72%, rgba(255, 255, 255, 0.5), transparent 10%);
+        opacity: 0.75;
     }
 
     .hero-content {
