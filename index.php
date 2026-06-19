@@ -312,6 +312,11 @@ include("includes/db.php");
         flex: 1 1 0;
     }
 
+    .community-title {
+        font-size: clamp(35px, 4vw, 55px);
+        line-height: 0.95;
+    }
+
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(180px, 1fr));
@@ -1031,6 +1036,18 @@ include("includes/db.php");
             grid-template-columns: 1fr;
         }
 
+        .summit-community-row {
+            align-items: flex-start;
+        }
+
+        .summit-community-row .timeline-container {
+            justify-content: flex-start;
+        }
+
+        .summit-community-row .sexy-post {
+            flex: 0 1 auto;
+        }
+
         .container-fluid {
             padding: 80px 5%;
         }
@@ -1113,6 +1130,7 @@ include("includes/db.php");
 
         .timeline-container {
             padding: 24px;
+            border-radius: 28px;
         }
 
         .sexy-post {
@@ -1207,6 +1225,13 @@ include("includes/db.php");
 
         .section-title {
             font-size: clamp(26px, 8vw, 40px);
+            letter-spacing: 0;
+        }
+
+        .community-title {
+            font-size: clamp(30px, 9vw, 38px);
+            line-height: 1;
+            max-width: 340px;
         }
 
         .event-meta {
@@ -1218,11 +1243,45 @@ include("includes/db.php");
         }
 
         .post-top {
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 48px minmax(0, 1fr);
+            align-items: center;
+            gap: 12px;
+        }
+
+        .post-avatar,
+        .note-badge {
+            width: 48px;
+            height: 48px;
+            border-radius: 15px;
+        }
+
+        .note-badge {
+            font-size: 18px;
         }
 
         .post-chip {
-            margin-left: 70px;
+            grid-column: 1 / -1;
+            justify-self: start;
+            margin-left: 0;
+            max-width: 100%;
+            white-space: normal;
+            text-align: center;
+            line-height: 1.25;
+        }
+
+        .timeline-container {
+            padding: 18px;
+            border-radius: 24px;
+        }
+
+        .sexy-post {
+            padding: 18px 18px 18px 22px;
+            border-radius: 20px;
+        }
+
+        .post-copy {
+            font-size: 13px;
         }
 
         .job-strip {
@@ -1571,7 +1630,7 @@ $eventsCount = $stats['events_count'] ?? 0;
         <div class="col-lg-5">
             <div class="section-label reveal">
                 <div class="label-line" style="width: 60px; height: 6px; background: linear-gradient(90deg, var(--primary), transparent); border-radius: 10px; margin-bottom: 20px;"></div>
-                <h2 class="section-title" style="font-size: clamp(35px, 4vw, 55px); line-height: 0.95;">Community <span>Pulse</span></h2>
+                <h2 class="section-title community-title">Community <span>Pulse</span></h2>
             </div>
             <div class="timeline-container reveal">
                 <div class="sexy-post">
