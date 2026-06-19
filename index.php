@@ -55,52 +55,52 @@ include("includes/db.php");
 
     .hero-section {
         width: 100%;
-        min-height: calc(78vh - var(--nav-height)); /* slightly tighter hero */
+        min-height: calc(92vh - var(--nav-height));
+        padding: calc(var(--nav-height) + 20px) 0 54px;
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
         overflow: hidden;
-        background-color: var(--bg);
-        background: radial-gradient(circle at top, rgba(255, 59, 59, 0.06), transparent 28%),
-            linear-gradient(180deg, rgba(248, 251, 255, 1) 0%, rgba(248, 251, 255, 1) 100%);
+        background: #050713;
+        isolation: isolate;
     }
 
     .hero-section::after {
         content: '';
         position: absolute;
         inset: 0;
+        z-index: 3;
         pointer-events: none;
-        background: radial-gradient(circle at top center, rgba(255, 77, 77, 0.08), transparent 16%),
-            radial-gradient(circle at 22% 72%, rgba(255, 255, 255, 0.5), transparent 10%);
-        opacity: 0.75;
+        background:
+            linear-gradient(90deg, rgba(2, 6, 23, 0.78) 0%, rgba(2, 6, 23, 0.36) 48%, rgba(2, 6, 23, 0.72) 100%),
+            linear-gradient(180deg, rgba(2, 6, 23, 0.58) 0%, rgba(2, 6, 23, 0.18) 42%, rgba(2, 6, 23, 0.86) 100%);
     }
 
     .hero-content {
         z-index: 10;
         text-align: center;
-        /* keep hero content constrained and aligned with site */
         padding: 0 6%;
         width: 100%;
-        max-width: 980px;
+        max-width: 1120px;
         box-sizing: border-box;
-        margin: 18px auto 0;
+        margin: 0 auto;
     }
 
     .hero-badge {
-        background: rgba(255, 255, 255, 0.10);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.13);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         color: #fff;
-        padding: 10px 28px;
+        padding: 11px 24px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 700;
-        letter-spacing: 3px;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
         display: inline-block;
-        box-shadow: 0 12px 34px rgba(2, 6, 23, 0.35);
+        box-shadow: 0 16px 42px rgba(2, 6, 23, 0.34);
         transform-origin: center;
         animation: floatBadge 6s ease-in-out infinite;
     }
@@ -119,15 +119,15 @@ include("includes/db.php");
 
     .hero-content h1 {
         font-family: 'Inter', sans-serif;
-        font-size: clamp(40px, 9.8vw, 88px);
+        font-size: clamp(52px, 12vw, 118px);
         font-weight: 900;
-        letter-spacing: -3px;
-        line-height: 1.04;
+        letter-spacing: 0;
+        line-height: 0.9;
         color: #fff;
-        margin: 0 auto 20px;
+        margin: 0 auto 22px;
         text-transform: uppercase;
-        max-width: 980px;
-        text-shadow: 0 18px 46px rgba(0, 0, 0, 0.36);
+        max-width: 1100px;
+        text-shadow: 0 22px 58px rgba(0, 0, 0, 0.48);
     }
 
     .hero-content h1 span {
@@ -139,9 +139,9 @@ include("includes/db.php");
 
     .hero-content p {
         font-size: clamp(14px, 1.6vw, 18px);
-        color: rgba(255, 255, 255, 0.85);
-        max-width: 700px;
-        margin: 0 auto 16px;
+        color: rgba(255, 255, 255, 0.9);
+        max-width: 760px;
+        margin: 0 auto 20px;
         font-weight: 400;
         line-height: 1.6;
         text-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
@@ -151,10 +151,10 @@ include("includes/db.php");
         background: linear-gradient(270deg, #ff6a6a, #ff3b3b, #ff8a66);
         background-size: 200% 200%;
         color: #fff;
-        padding: 12px 40px;
-        border-radius: 16px;
+        padding: 15px 42px;
+        border-radius: 999px;
         font-weight: 900;
-        letter-spacing: 1px;
+        letter-spacing: 0.8px;
         display: inline-block;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         text-transform: uppercase;
@@ -1066,7 +1066,8 @@ include("includes/db.php");
         }
 
         .hero-section {
-            min-height: 66vh;
+            min-height: calc(88vh - var(--nav-height));
+            padding: calc(var(--nav-height) + 14px) 0 48px;
         }
 
         .hero-content {
@@ -1074,7 +1075,7 @@ include("includes/db.php");
         }
 
         .hero-left h1 {
-            font-size: clamp(32px, 8vw, 60px);
+            font-size: clamp(42px, 12vw, 74px);
         }
 
         .hero-left p {
@@ -1098,7 +1099,7 @@ include("includes/db.php");
         }
 
         .hero-overlay {
-            background: linear-gradient(180deg, rgba(2, 6, 23, 0.28), rgba(2, 6, 23, 0.16));
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.28), rgba(2, 6, 23, 0.22));
         }
 
         .hero-inner {
@@ -1132,12 +1133,12 @@ include("includes/db.php");
 
     @media (max-width: 680px) {
         .hero-section {
-            min-height: auto;
-            padding: 90px 0 80px;
+            min-height: calc(88vh - var(--nav-height));
+            padding: calc(var(--nav-height) + 10px) 0 52px;
         }
 
         .hero-left h1 {
-            font-size: clamp(28px, 10vw, 44px);
+            font-size: clamp(40px, 15vw, 62px);
         }
 
         .hero-left p {
@@ -1149,11 +1150,12 @@ include("includes/db.php");
         }
 
         .hero-overlay {
-            background: linear-gradient(180deg, rgba(2, 6, 23, 0.36), rgba(2, 6, 23, 0.24));
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.44), rgba(2, 6, 23, 0.28));
         }
 
         .hero-video-wrap {
-            display: none;
+            display: block;
+            inset: -24px;
         }
 
         .hero-badge {
@@ -1165,8 +1167,24 @@ include("includes/db.php");
             max-width: 320px;
         }
 
+        .btn-ghost {
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+        }
+
+        .hero-highlights {
+            gap: 8px;
+            margin-top: 22px;
+        }
+
+        .hero-highlights span {
+            width: min(100%, 320px);
+            justify-content: center;
+        }
+
         .hero-inner {
-            padding: 26px 16px 54px;
+            padding: 112px 16px 58px;
         }
     }
 
@@ -1228,9 +1246,11 @@ include("includes/db.php");
         /* Hero enhancements */
         .hero-video-wrap {
             position: absolute;
-            inset: 0;
+            inset: -42px -34px -28px;
             z-index: 1;
             overflow: hidden;
+            transform-origin: center;
+            will-change: transform;
         }
 
         .hero-video-wrap video {
@@ -1241,20 +1261,23 @@ include("includes/db.php");
             min-width: 100%;
             min-height: 100%;
             object-fit: cover;
-            transform: scale(1.05);
-            filter: brightness(0.96) saturate(1.15) contrast(1.1);
-            transition: transform 1.2s ease;
+            transform: scale(1.14);
+            filter: brightness(0.84) saturate(1.28) contrast(1.12);
+            transition: transform 1.2s ease, filter 1.2s ease;
         }
 
         .hero-section:hover .hero-video-wrap video {
-            transform: scale(1.09);
+            transform: scale(1.2);
+            filter: brightness(0.9) saturate(1.36) contrast(1.16);
         }
 
         .hero-overlay {
             position: absolute;
             inset: 0;
             z-index: 2;
-            background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.12));
+            background:
+                linear-gradient(180deg, rgba(255, 59, 59, 0.22) 0%, rgba(255, 59, 59, 0.02) 28%, rgba(2, 6, 23, 0.2) 100%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 36%);
             pointer-events: none;
         }
 
@@ -1263,9 +1286,9 @@ include("includes/db.php");
             align-items: center;
             justify-content: center;
             gap: 20px;
-            max-width: 1100px;
+            max-width: 1180px;
             margin: 0 auto;
-            padding: 40px 20px 86px;
+            padding: clamp(112px, 16vh, 156px) 20px clamp(70px, 9vh, 98px);
             z-index: 10;
             position: relative;
             flex-direction: column;
@@ -1274,7 +1297,7 @@ include("includes/db.php");
         .hero-left,
         .hero-right {
             width: 100%;
-            max-width: 880px;
+            max-width: 960px;
             color: #fff;
         }
 
@@ -1282,7 +1305,7 @@ include("includes/db.php");
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 16px;
+            gap: 14px;
         }
 
         .btn-premium {
@@ -1297,17 +1320,17 @@ include("includes/db.php");
         }
 
         .hero-left h1 {
-            font-size: clamp(36px, 8vw, 76px);
-            line-height: 1.02;
-            margin: 6px 0 12px;
-            letter-spacing: -1px;
+            font-size: clamp(54px, 12vw, 118px);
+            line-height: 0.9;
+            margin: 6px 0 18px;
+            letter-spacing: 0;
         }
 
         .hero-left p {
             font-size: clamp(16px, 2vw, 18px);
             color: rgba(255, 255, 255, 0.9);
-            max-width: 680px;
-            margin-bottom: 22px;
+            max-width: 760px;
+            margin-bottom: 24px;
         }
 
         .cta-group {
@@ -1319,12 +1342,51 @@ include("includes/db.php");
         }
 
         .btn-ghost {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.1);
             color: #fff;
-            padding: 14px 28px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 15px 30px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+            backdrop-filter: blur(14px);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .hero-highlights {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 28px;
+        }
+
+        .hero-highlights span {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-height: 42px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
             font-weight: 700;
+            backdrop-filter: blur(14px);
+        }
+
+        .hero-highlights i {
+            color: #ff7a6b;
         }
 
         /* avatars removed for a minimal hero */
@@ -1382,6 +1444,7 @@ include("includes/db.php");
             .hero-inner {
                 flex-direction: column;
                 align-items: center;
+                padding: 118px 16px 72px;
             }
 
             .hero-right {
@@ -1402,16 +1465,21 @@ include("includes/db.php");
 
     <div class="hero-overlay" aria-hidden="true"></div>
     <div class="hero-content">
-        <div class="hero-inner" style="flex-direction:column; align-items:center; text-align:center;">
-            <div class="hero-badge reveal">AluminiX Excellence</div>
+        <div class="hero-inner">
+            <div class="hero-badge reveal"><i class="fas fa-bolt"></i> AlumniX Excellence</div>
             <h1 class="reveal" id="mainTitle">ALUMNI <span>X</span></h1>
-            <p class="reveal" style="max-width:780px;">A curated network for founders, builders and leaders — premium connections, verified roles, and invite-only experiences. Join the pulse.</p>
+            <p class="reveal">A curated network for founders, builders and leaders - premium connections, verified roles, and invite-only experiences. Join the pulse.</p>
 
             <div class="cta-group reveal">
                 <a href="registration.php" class="btn-premium">Claim Your Access</a>
+                <a href="events.php" class="btn-ghost">Explore Events</a>
             </div>
 
-            <!-- avatar stack removed for a cleaner hero -->
+            <div class="hero-highlights reveal" aria-label="Portal highlights">
+                <span><i class="fas fa-user-check"></i> Verified alumni</span>
+                <span><i class="fas fa-briefcase"></i> Curated jobs</span>
+                <span><i class="fas fa-calendar-check"></i> Live events</span>
+            </div>
         </div>
     </div>
 
@@ -1426,9 +1494,10 @@ include("includes/db.php");
                 const nav = document.getElementById('mainNav');
                 if (!hero) return;
                 const navH = nav ? nav.offsetHeight : 0;
-                // expose nav height as a CSS variable and set hero min-height so video fills the viewport
+                // expose nav height as a CSS variable and keep the next section peeking in
                 document.documentElement.style.setProperty('--nav-height', navH + 'px');
-                hero.style.minHeight = `calc(100vh - ${navH}px)`;
+                const targetVh = window.innerWidth < 768 ? 88 : 92;
+                hero.style.minHeight = `calc(${targetVh}vh - ${navH}px)`;
             }
             window.addEventListener('resize', adjustHeroForNav);
             window.addEventListener('load', adjustHeroForNav);

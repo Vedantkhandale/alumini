@@ -42,29 +42,39 @@ $logoPath = $siteRoot . '/images/logo.png';
 
         .navbar {
             position: fixed;
-            top: 0;
+            top: 14px;
             bottom: auto;
             left: 0;
             width: 100%;
             z-index: 1200;
             min-height: 72px;
+            padding: 0 clamp(14px, 4vw, 36px);
             background: transparent !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
             border-bottom: 1px solid transparent !important;
-            transition: background 0.22s ease, padding 0.22s ease, transform 0.22s ease;
+            pointer-events: none;
+            transition: top 0.22s ease, transform 0.22s ease;
         }
 
-        .nav-container {
-            max-width: 1320px;
+        .navbar .nav-container {
+            max-width: 1240px;
             margin: auto;
-            padding: 12px 20px;
+            padding: 10px 12px 10px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
             position: relative;
-            min-height: 72px;
+            min-height: 66px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(5, 10, 22, 0.36);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.26);
+            pointer-events: auto;
+            transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, min-height 0.22s ease;
         }
 
         .navbar.transparent {
@@ -74,15 +84,28 @@ $logoPath = $siteRoot . '/images/logo.png';
             -webkit-backdrop-filter: none !important;
         }
 
+        .navbar.transparent .nav-container {
+            background: rgba(5, 10, 22, 0.28);
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
         .navbar.scrolled {
-            background: rgba(6, 10, 20, 0.82) !important;
-            backdrop-filter: blur(12px) !important;
-            -webkit-backdrop-filter: blur(12px) !important;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+            top: 8px;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-bottom: 1px solid transparent !important;
             transform: translateY(0);
         }
 
-        .navbar-brand {
+        .navbar.scrolled .nav-container {
+            min-height: 62px;
+            background: rgba(6, 10, 20, 0.9);
+            border-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 60px rgba(2, 6, 23, 0.32);
+        }
+
+        .navbar .navbar-brand {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -92,79 +115,91 @@ $logoPath = $siteRoot . '/images/logo.png';
             font-weight: 800;
         }
 
-        .logo img {
-            height: 42px;
+        .navbar .logo img {
+            height: 38px;
             width: auto;
-            border-radius: 6px;
+            border-radius: 10px;
+            box-shadow: 0 10px 26px rgba(2, 6, 23, 0.18);
         }
 
-        .logo-text {
-            letter-spacing: -0.04em;
+        .navbar .logo-text {
+            letter-spacing: 0;
             color: #fff;
         }
 
-        .logo-text span {
+        .navbar .logo-text span {
             color: var(--primary);
         }
 
-        .nav-center {
+        .navbar .nav-center {
             position: absolute;
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
             display: flex;
             align-items: center;
-            gap: 1.8rem;
+            gap: 6px;
+            padding: 6px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             z-index: 1;
         }
 
-        .nav-center a {
+        .navbar .nav-center a {
             color: rgba(255, 255, 255, 0.87);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
             position: relative;
-            padding: 0.2rem 0;
-            transition: color 0.22s ease, transform 0.22s ease;
+            padding: 9px 15px;
+            border-radius: 999px;
+            transition: color 0.22s ease, transform 0.22s ease, background 0.22s ease;
         }
 
-        .nav-center a:hover,
-        .nav-center a.active {
+        .navbar .nav-center a:hover,
+        .navbar .nav-center a.active {
             color: #fff;
             transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .nav-center a.active::after {
+        .navbar .nav-center a.active::after {
             content: '';
             position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 100%;
-            height: 2px;
+            left: 50%;
+            bottom: 5px;
+            width: 18px;
+            height: 3px;
             background: #ff4d4d;
-            border-radius: 2px;
+            border-radius: 999px;
+            transform: translateX(-50%);
         }
 
-        .nav-right {
+        .navbar .nav-right {
             display: flex;
             align-items: center;
         }
 
-        .nav-btn {
-            padding: 12px 28px;
+        .navbar .nav-btn {
+            padding: 13px 26px;
             border-radius: 999px;
             background: linear-gradient(135deg, #ff5d5d, #ff2d2d);
             color: #fff !important;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
+            text-decoration: none;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            box-shadow: 0 16px 36px rgba(255, 45, 45, 0.26);
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
         }
 
-        .nav-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 18px 42px rgba(255, 77, 77, 0.28);
+        .navbar .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 46px rgba(255, 77, 77, 0.34);
         }
 
-        .navbar-toggler {
+        .navbar .navbar-toggler {
             border: none;
             display: none;
             width: 42px;
@@ -178,7 +213,7 @@ $logoPath = $siteRoot . '/images/logo.png';
             transition: background 0.2s ease;
         }
 
-        .navbar-toggler:hover {
+        .navbar .navbar-toggler:hover {
             background: rgba(255, 255, 255, 0.14);
         }
 
@@ -193,6 +228,8 @@ $logoPath = $siteRoot . '/images/logo.png';
             border-radius: 20px;
             padding: 0 18px;
             margin: 10px 26px 0;
+            pointer-events: auto;
+            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.28);
         }
 
         .mobile-menu.open {
@@ -239,12 +276,13 @@ $logoPath = $siteRoot . '/images/logo.png';
                 display: none !important;
             }
 
-            .navbar-toggler {
+            .navbar .navbar-toggler {
                 display: inline-flex;
             }
 
-            .nav-container {
+            .navbar .nav-container {
                 padding: 14px 18px;
+                border-radius: 24px;
             }
 
             .mobile-menu {
@@ -346,5 +384,3 @@ $logoPath = $siteRoot . '/images/logo.png';
 
         window.addEventListener('scroll', updateNavState);
     </script>
-</body>
-</html>
