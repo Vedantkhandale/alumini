@@ -10,8 +10,21 @@ $user = $stmt->get_result()->fetch_assoc();
 
 if (!$user) die("User not found.");
 
+$name = trim((string) ($user['name'] ?? 'Alumni Member'));
+$nameParts = preg_split('/\s+/', $name) ?: [];
+$firstName = $nameParts[0] ?? 'Alumni';
+$lastName = trim(implode(' ', array_slice($nameParts, 1))) ?: 'Member';
+$company = trim((string) ($user['company'] ?? 'AlumniX Network')) ?: 'AlumniX Network';
+$course = trim((string) ($user['course'] ?? 'Not listed')) ?: 'Not listed';
+$batch = trim((string) ($user['batch'] ?? 'N/A')) ?: 'N/A';
+$location = trim((string) ($user['location'] ?? 'Global')) ?: 'Global';
+$email = trim((string) ($user['email'] ?? ''));
+
 // Profile Image logic
-$imgUrl = !empty($user['image']) ? "uploads/profiles/" . $user['image'] : "https://ui-avatars.com/api/?name=" . urlencode($user['name']) . "&background=111&color=fff&bold=true&size=800";
+$profileImage = !empty($user['image']) ? basename((string) $user['image']) : '';
+$imgUrl = $profileImage && file_exists(__DIR__ . "/uploads/profiles/" . $profileImage)
+    ? "uploads/profiles/" . rawurlencode($profileImage)
+    : "https://ui-avatars.com/api/?name=" . urlencode($name) . "&background=0f172a&color=fff&bold=true&size=800";
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +32,7 @@ $imgUrl = !empty($user['image']) ? "uploads/profiles/" . $user['image'] : "https
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= e($user['name']) ?> | Alumni Elite</title>
+    <title><?= e($name) ?> | AlumniX Profile</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <style>

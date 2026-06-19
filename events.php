@@ -1,287 +1,456 @@
-<?php 
-include(__DIR__ . "/includes/header.php"); 
-include(__DIR__ . "/includes/db.php"); 
+<?php
+$pageTitle = "AlumniX | Events";
+include(__DIR__ . "/includes/header.php");
+include(__DIR__ . "/includes/db.php");
+require_once(__DIR__ . "/includes/public_helpers.php");
+
+$events = fetchRows($conn, "SELECT * FROM events ORDER BY event_date ASC, id DESC");
+$eventCount = count($events);
+$nextEventDate = $events && !empty($events[0]["event_date"]) ? strtotime((string) $events[0]["event_date"]) : false;
+
+if (!function_exists("eventExcerpt")) {
+    function eventExcerpt($text, int $limit = 130): string
+    {
+        $clean = trim(preg_replace("/\s+/", " ", (string) $text));
+        if (function_exists("mb_strimwidth")) {
+            return mb_strimwidth($clean, 0, $limit, "...");
+        }
+
+        return strlen($clean) > $limit ? substr($clean, 0, $limit - 3) . "..." : $clean;
+    }
+}
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
 
 <style>
-/* ⚪ PREMIUM HIGH-VISIBILITY THEME */
-:root {
-    --primary: #ff3b3b;
-    --bg-white: #ffffff;
-    --card-bg: #ffffff;
-    --text-main: #0c0f14;
-    --text-muted: #64748b;
-    --border: #e2e8f0;
-}
+    :root {
+        --primary: #ff3b3b;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --line: rgba(148, 163, 184, 0.22);
+        --soft: #f8fbff;
+        --card: #ffffff;
+    }
 
-body {
-    background-color: var(--bg-white);
-    margin: 0;
-    padding: 0;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    overflow-x: hidden;
-}
+    html,
+    body {
+        background:
+            radial-gradient(circle at 12% 8%, rgba(255, 59, 59, 0.08), transparent 28%),
+            linear-gradient(180deg, #ffffff 0%, var(--soft) 100%);
+        margin: 0;
+        overflow-x: hidden;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
 
-.page {
-    padding: 100px 0 60px;
-    position: relative;
-    z-index: 10;
-}
+    .events-shell {
+        width: min(1240px, calc(100% - 40px));
+        margin: 0 auto;
+        padding: 132px 0 70px;
+        color: var(--ink);
+    }
 
-.mesh-bg {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at 10% 10%, rgba(255, 59, 59, 0.04) 0%, transparent 40%);
-    z-index: -1;
-    pointer-events: none;
-}
+    .events-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 30px;
+        align-items: end;
+        margin-bottom: 36px;
+    }
 
-.page-header { text-align: center; margin-bottom: 30px; }
+    .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        min-height: 34px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: rgba(255, 59, 59, 0.1);
+        color: var(--primary);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 1.6px;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
 
-.page-title {
-    font-size: clamp(32px, 5vw, 52px);
-    font-weight: 800;
-    color: var(--text-main);
-    text-transform: uppercase;
-    letter-spacing: -1px;
-}
+    .events-title {
+        font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
+        font-size: clamp(42px, 8vw, 82px);
+        line-height: 0.92;
+        margin: 0;
+        color: var(--ink);
+        text-transform: uppercase;
+        letter-spacing: 0;
+        font-weight: 900;
+    }
 
-.page-title span { color: var(--primary); }
+    .events-title span {
+        color: var(--primary);
+    }
 
-/* 💎 FIXED 3-COLUMN LEFT-FLOATING COMPACT SYSTEM */
-.reveal-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start; /* Forcing items to align left */
-}
+    .events-copy {
+        max-width: 700px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: clamp(15px, 1.6vw, 18px);
+        line-height: 1.7;
+    }
 
-.event-card-wrapper {
-    width: 33.333% !important; /* Forces exactly 3 cards in one line */
-    padding: 12px;
-    display: flex;
-}
+    .hero-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(130px, 1fr));
+        gap: 12px;
+        min-width: min(360px, 100%);
+    }
 
-.event-card {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 10px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
-    transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-    will-change: transform, opacity;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
+    .metric-card {
+        background: rgba(255, 255, 255, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 18px;
+        box-shadow: 0 22px 70px rgba(15, 23, 42, 0.08);
+    }
 
-.event-card:hover {
-    border-color: rgba(255, 59, 59, 0.25);
-}
+    .metric-card strong {
+        display: block;
+        font-size: 28px;
+        color: var(--primary);
+        line-height: 1;
+    }
 
-.img-wrap {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    background: #f1f5f9;
-}
+    .metric-card span {
+        display: block;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
 
-.img-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    display: block;
-    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
+    .events-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px;
+        margin-bottom: 20px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid var(--line);
+        box-shadow: 0 18px 55px rgba(15, 23, 42, 0.06);
+    }
 
-.event-card:hover .img-wrap img {
-    transform: scale(1.04);
-}
+    .toolbar-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink);
+        font-weight: 900;
+    }
 
-.date-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: var(--primary);
-    color: #fff;
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 10px;
-    letter-spacing: 0.3px;
-    z-index: 5;
-    box-shadow: 0 4px 12px rgba(255, 59, 59, 0.2);
-}
+    .toolbar-label i {
+        color: var(--primary);
+    }
 
-.content-area {
-    padding: 10px 4px 2px;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    justify-content: space-between;
-}
+    .events-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+        gap: 22px;
+    }
 
-.meta-info {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
+    .event-card {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 26px;
+        overflow: hidden;
+        box-shadow: 0 22px 70px rgba(15, 23, 42, 0.07);
+        transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    }
 
-.meta-info i { 
-    color: var(--primary); 
-    margin-right: 4px;
-}
+    .event-card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(255, 59, 59, 0.32);
+        box-shadow: 0 34px 90px rgba(255, 59, 59, 0.14);
+    }
 
-.event-card h3 {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 0 0 12px;
-    line-height: 1.35;
-    letter-spacing: -0.2px;
-}
+    .event-media {
+        position: relative;
+        aspect-ratio: 16 / 10;
+        overflow: hidden;
+        background: #e8edf5;
+    }
 
-.btn-premium {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    background: #0f172a;
-    color: #fff;
-    text-align: center;
-    text-decoration: none;
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 12px;
-    letter-spacing: 0.2px;
-    transition: all 0.25s ease;
-    margin-top: auto;
-}
+    .event-media img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: cover;
+        transition: transform 0.7s cubic-bezier(0.2, 1, 0.3, 1);
+    }
 
-.btn-premium:hover {
-    background: var(--primary);
-    box-shadow: 0 6px 16px rgba(255, 59, 59, 0.2);
-}
+    .event-card:hover .event-media img {
+        transform: scale(1.07);
+    }
 
-/* Responsive Scaling to keep alignment clean on smaller screens */
-@media(max-width: 992px) {
-    .event-card-wrapper { width: 50% !important; }
-}
-@media(max-width: 576px) {
-    .event-card-wrapper { width: 100% !important; }
-}
+    .date-badge {
+        position: absolute;
+        left: 16px;
+        top: 16px;
+        min-width: 70px;
+        padding: 10px 12px;
+        border-radius: 18px;
+        text-align: center;
+        background: rgba(15, 23, 42, 0.88);
+        color: #fff;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 20px 40px rgba(2, 6, 23, 0.22);
+    }
+
+    .date-badge strong {
+        display: block;
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .date-badge span {
+        display: block;
+        margin-top: 5px;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+    }
+
+    .event-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        padding: 22px;
+        gap: 16px;
+    }
+
+    .event-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .event-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: #f4f7fb;
+    }
+
+    .event-meta i {
+        color: var(--primary);
+    }
+
+    .event-card h3 {
+        margin: 0;
+        color: var(--ink);
+        font-size: 22px;
+        line-height: 1.22;
+        font-weight: 900;
+        overflow-wrap: anywhere;
+    }
+
+    .event-description {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+    }
+
+    .event-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        width: 100%;
+        min-height: 48px;
+        margin-top: auto;
+        border-radius: 16px;
+        background: var(--ink);
+        color: #fff;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        transition: background 0.24s ease, transform 0.24s ease;
+    }
+
+    .event-action:hover {
+        background: var(--primary);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        padding: 42px 22px;
+        border-radius: 28px;
+        background: #fff;
+        border: 1px dashed var(--line);
+        text-align: center;
+        color: var(--muted);
+        font-weight: 800;
+    }
+
+    @media (max-width: 900px) {
+        .events-shell {
+            width: min(100% - 28px, 760px);
+            padding-top: 122px;
+        }
+
+        .events-hero {
+            grid-template-columns: 1fr;
+            align-items: start;
+        }
+
+        .hero-metrics {
+            width: 100%;
+        }
+
+        .events-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .events-shell {
+            width: min(100% - 22px, 520px);
+            padding-top: 114px;
+        }
+
+        .events-title {
+            font-size: clamp(38px, 14vw, 58px);
+        }
+
+        .hero-metrics {
+            grid-template-columns: 1fr;
+        }
+
+        .events-grid {
+            grid-template-columns: 1fr;
+            gap: 18px;
+        }
+
+        .event-body {
+            padding: 18px;
+        }
+    }
 </style>
 
-<div class="page">
-    <div class="mesh-bg"></div>
-    <div class="container">
-        <div class="row align-items-center gy-4">
-            <div class="col-12">
-                <div class="page-header text-center text-lg-start">
-                    <h1 class="page-title reveal-header">Summit <span>2026</span></h1>
-                </div>
+<main class="events-shell">
+    <section class="events-hero">
+        <div>
+            <span class="eyebrow reveal-header"><i class="fas fa-calendar-check"></i> Community Calendar</span>
+            <h1 class="events-title reveal-header">Summit <span>Events</span></h1>
+            <p class="events-copy reveal-header">Discover alumni meetups, career sessions, mentorship circles, and campus experiences built for real networking.</p>
+        </div>
+
+        <div class="hero-metrics reveal-header" aria-label="Event summary">
+            <div class="metric-card">
+                <strong><?= number_format($eventCount) ?></strong>
+                <span>Scheduled</span>
+            </div>
+            <div class="metric-card">
+                <strong><?= $nextEventDate ? e(date("d M", $nextEventDate)) : "TBA" ?></strong>
+                <span>Next Event</span>
             </div>
         </div>
+    </section>
 
-        <div class="reveal-container mt-2">
+    <div class="events-toolbar reveal-card">
+        <div class="toolbar-label"><i class="fas fa-bolt"></i> Upcoming experiences</div>
+        <div class="toolbar-label"><i class="fas fa-location-dot"></i> Online and campus ready</div>
+    </div>
+
+    <section class="events-grid">
+        <?php if ($events): ?>
             <?php
-            $res = $conn->query("SELECT * FROM events ORDER BY event_date ASC");
-
-            if($res && $res->num_rows > 0){
-                while($row = $res->fetch_assoc()){
-                    $eDate = strtotime($row['event_date']);
-                    $time = isset($row['event_time']) ? date('h:i A', strtotime($row['event_time'])) : 'TBA';
-                    $loc = !empty($row['location']) ? $row['location'] : 'Nexus Hall';
-                    $defaultImages = [
-                        'https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=800&q=80',
-                        'https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=800&q=80'
-                    ];
-                    $imgUrl = !empty($row['image'])
-                        ? 'uploads/events/' . $row['image']
-                        : $defaultImages[$row['id'] % count($defaultImages)];
+            $defaultImages = [
+                "https://images.unsplash.com/photo-1515169067865-5387ec356754?auto=format&fit=crop&w=900&q=80",
+                "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=900&q=80",
+                "https://images.unsplash.com/photo-1496307042754-b4aa456c4a2d?auto=format&fit=crop&w=900&q=80",
+            ];
             ?>
-                <div class="event-card-wrapper">
-                    <div class="event-card reveal-card">
-                        <div class="img-wrap">
-                            <img src="<?= $imgUrl ?>" alt="Event" loading="lazy">
-                            <div class="date-badge"><?= date('d M', $eDate) ?></div>
-                        </div>
-                        <div class="content-area">
-                            <div>
-                                <div class="meta-info">
-                                    <span><i class="fas fa-clock"></i><?= $time ?></span>
-                                    <span><i class="fas fa-map-marker-alt"></i><?= htmlspecialchars($loc) ?></span>
-                                </div>
-                                <h3><?= htmlspecialchars($row['title']) ?></h3>
-                            </div>
-                            <a href="event_details.php?id=<?= $row['id'] ?>" class="btn-premium">View Event</a>
+            <?php foreach ($events as $index => $event): ?>
+                <?php
+                $eventDate = !empty($event["event_date"]) ? strtotime((string) $event["event_date"]) : false;
+                $time = !empty($event["event_time"]) ? date("h:i A", strtotime((string) $event["event_time"])) : "TBA";
+                $location = !empty($event["location"]) ? (string) $event["location"] : "Campus Hub";
+                $description = !empty($event["description"]) ? (string) $event["description"] : "Join the AlumniX network for conversations, ideas, and meaningful connections.";
+                $imagePath = !empty($event["image"]) ? __DIR__ . "/uploads/events/" . basename((string) $event["image"]) : "";
+                $imageUrl = $imagePath && file_exists($imagePath)
+                    ? "uploads/events/" . rawurlencode(basename((string) $event["image"]))
+                    : $defaultImages[$index % count($defaultImages)];
+                ?>
+                <article class="event-card reveal-card">
+                    <div class="event-media">
+                        <img src="<?= e($imageUrl) ?>" alt="<?= e($event["title"] ?? "AlumniX event") ?>" loading="lazy">
+                        <div class="date-badge">
+                            <strong><?= $eventDate ? e(date("d", $eventDate)) : "--" ?></strong>
+                            <span><?= $eventDate ? e(date("M", $eventDate)) : "TBA" ?></span>
                         </div>
                     </div>
-                </div>
-            <?php }
-            } else {
-                echo '<div class="col-12"><h2 class="text-center text-muted">No Events Found</h2></div>';
-            }
-            ?>
-        </div>
-    </div>
-</div>
+                    <div class="event-body">
+                        <div class="event-meta">
+                            <span><i class="fas fa-clock"></i><?= e($time) ?></span>
+                            <span><i class="fas fa-map-marker-alt"></i><?= e($location) ?></span>
+                        </div>
+                        <h3><?= e($event["title"] ?? "AlumniX Event") ?></h3>
+                        <p class="event-description"><?= e(eventExcerpt($description)) ?></p>
+                        <a href="registration.php" class="event-action">Reserve Spot <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </article>
+            <?php endforeach; ?>
+        <?php else: ?>
+            <div class="empty-state">No events found. New alumni experiences will show here soon.</div>
+        <?php endif; ?>
+    </section>
+</main>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        if (!window.gsap) return;
+
         gsap.registerPlugin(ScrollTrigger);
 
-        // 1. Header Animation
         gsap.from(".reveal-header", {
-            y: -30,
+            y: 32,
             opacity: 0,
             duration: 0.8,
+            stagger: 0.08,
             ease: "power3.out"
         });
 
-        // 2. Cards Entrance Animation
         gsap.from(".reveal-card", {
             scrollTrigger: {
-                trigger: ".reveal-container",
-                start: "top 90%", 
+                trigger: ".events-grid",
+                start: "top 88%",
                 toggleActions: "play none none none"
             },
-            y: 40,
+            y: 34,
             opacity: 0,
-            duration: 0.8,
-            stagger: 0.1, 
+            duration: 0.7,
+            stagger: 0.08,
             ease: "power3.out"
-        });
-
-        // 3. Smooth Micro-Hover Feedback
-        const cards = document.querySelectorAll(".event-card");
-        cards.forEach(card => {
-            card.addEventListener("mouseenter", () => {
-                gsap.to(card, { 
-                    y: -6, 
-                    boxShadow: "0 16px 32px rgba(255, 59, 59, 0.06)",
-                    duration: 0.3, 
-                    ease: "power2.out" 
-                });
-            });
-            card.addEventListener("mouseleave", () => {
-                gsap.to(card, { 
-                    y: 0, 
-                    boxShadow: "0 4px 18px rgba(0, 0, 0, 0.03)",
-                    duration: 0.3, 
-                    ease: "power2.out" 
-                });
-            });
         });
     });
 </script>
