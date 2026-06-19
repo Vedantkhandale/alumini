@@ -1461,47 +1461,7 @@ $jobsCount = $stats['jobs_count'] ?? 0;
 $eventsCount = $stats['events_count'] ?? 0;
 ?>
 
-<section class="container-fluid section-glow">
-    <div class="section-label reveal">
-        <div class="label-line"></div>
-        <h2 class="section-title">Hall Of <span>Fame</span></h2>
-    </div>
 
-    <div class="stats-grid reveal">
-        <div class="stat-card">
-            <span><?= number_format($alumniCount) ?></span>
-            <p>Curated alumni stories, leaders, and alumni mentors shaping the next generation.</p>
-        </div>
-        <div class="stat-card">
-            <span><?= number_format($jobsCount) ?></span>
-            <p>Approved premium roles shared across the network. Every listing is verified and ready to hire.</p>
-        </div>
-        <div class="stat-card">
-            <span><?= number_format($eventsCount) ?></span>
-            <p>High-energy summits, networking nights, and launch events connecting campus with industry.</p>
-        </div>
-        <div class="stat-card">
-            <span>98%</span>
-            <p>Success rate for alumni placed through the portal and mentorship connections created in 2025.</p>
-        </div>
-    </div>
-
-    <div class="horizontal-scroll-container reveal" id="alumniTrack">
-        <?php
-        $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 8");
-        while ($row = $res->fetch_assoc()) {
-            $imageId = ($row['id'] % 70) + 10;
-        ?>
-            <div class="premium-alumni-card moving-card">
-                <img src="https://i.pravatar.cc/220?img=<?= $imageId ?>" class="alumni-avatar" alt="<?= htmlspecialchars($row['name'], ENT_QUOTES) ?>">
-                <h3 class="alumni-name"><?= htmlspecialchars($row['name'], ENT_QUOTES) ?></h3>
-                <div class="alumni-company"><i class="fas fa-star"></i> <?= htmlspecialchars($row['company'], ENT_QUOTES) ?></div>
-                <p class="alumni-copy">Driving impact with deep expertise in product, growth, and global strategy.</p>
-                <div style="position: absolute; top: 18px; right: 20px; opacity: 0.08; font-size: 42px; pointer-events: none;"><i class="fas fa-award"></i></div>
-            </div>
-        <?php } ?>
-    </div>
-</section>
 
 <section class="container-fluid">
     <div class="row summit-community-row">
@@ -1602,6 +1562,47 @@ $eventsCount = $stats['events_count'] ?? 0;
                 </div>
             </div>
         </div>
+    </div>
+</section>
+<section class="container-fluid section-glow">
+    <div class="section-label reveal">
+        <div class="label-line"></div>
+        <h2 class="section-title">Hall Of <span>Fame</span></h2>
+    </div>
+
+    <div class="stats-grid reveal">
+        <div class="stat-card">
+            <span><?= number_format($alumniCount) ?></span>
+            <p>Curated alumni stories, leaders, and alumni mentors shaping the next generation.</p>
+        </div>
+        <div class="stat-card">
+            <span><?= number_format($jobsCount) ?></span>
+            <p>Approved premium roles shared across the network. Every listing is verified and ready to hire.</p>
+        </div>
+        <div class="stat-card">
+            <span><?= number_format($eventsCount) ?></span>
+            <p>High-energy summits, networking nights, and launch events connecting campus with industry.</p>
+        </div>
+        <div class="stat-card">
+            <span>98%</span>
+            <p>Success rate for alumni placed through the portal and mentorship connections created in 2025.</p>
+        </div>
+    </div>
+
+    <div class="horizontal-scroll-container reveal" id="alumniTrack">
+        <?php
+        $res = $conn->query("SELECT * FROM alumni ORDER BY id DESC LIMIT 8");
+        while ($row = $res->fetch_assoc()) {
+            $imageId = ($row['id'] % 70) + 10;
+        ?>
+            <div class="premium-alumni-card moving-card">
+                <img src="https://i.pravatar.cc/220?img=<?= $imageId ?>" class="alumni-avatar" alt="<?= htmlspecialchars($row['name'], ENT_QUOTES) ?>">
+                <h3 class="alumni-name"><?= htmlspecialchars($row['name'], ENT_QUOTES) ?></h3>
+                <div class="alumni-company"><i class="fas fa-star"></i> <?= htmlspecialchars($row['company'], ENT_QUOTES) ?></div>
+                <p class="alumni-copy">Driving impact with deep expertise in product, growth, and global strategy.</p>
+                <div style="position: absolute; top: 18px; right: 20px; opacity: 0.08; font-size: 42px; pointer-events: none;"><i class="fas fa-award"></i></div>
+            </div>
+        <?php } ?>
     </div>
 </section>
 
