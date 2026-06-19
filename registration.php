@@ -17,7 +17,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
     try {
         // Data Sanitization
         $full_name = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["full_name"])));
-        $student_id = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["student_id"])));
+        $year = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["year"])));
         $gender = mysqli_real_escape_string($conn, $_POST["gender"]);
         $batch_start = intval($_POST["batch_start"]);
         $batch_end = intval($_POST["batch_end"]);
@@ -49,10 +49,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             throw new Exception("The provided email address format is invalid.");
         }
 
-        // 2. Database Duplicate Check mapped to 'alumni_users'
-        $check = $conn->query("SELECT id FROM alumni_users WHERE email='$email' OR student_id='$student_id'");
+        // 2. Database Duplicate Check mapped to 'alumni_users' (ID check removed)
+        $check = $conn->query("SELECT id FROM alumni_users WHERE email='$email'");
         if ($check && $check->num_rows > 0) {
-            throw new Exception("This Student ID or Email address is already registered.");
+            throw new Exception("This Email address is already registered.");
         }
 
         // 3. Live API Check via Abstract API (With Dynamic Built-in Fallback)
@@ -94,9 +94,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             throw new Exception($error_message);
         }
 
-        // 4. Secure Database Insertion into 'alumni_users'
-        $insert_query = "INSERT INTO alumni_users (full_name, student_id, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
-                         VALUES ('$full_name', '$student_id', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
+        // 4. Secure Database Insertion into 'alumni_users' (student_id changed to year)
+        $insert_query = "INSERT INTO alumni_users (full_name, year, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
+                         VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
         
         if ($conn->query($insert_query)) {
             ob_end_clean();
@@ -294,8 +294,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                    <input type="text" name="full_name" class="input-style" autocomplete="off" placeholder="John Doe" required>
                 </div>
                 <div class="field-group">
-                    <label class="label">College ID</label>
-                    <input type="text" name="student_id" class="input-style" placeholder="ST-2024-XXX" autocomplete="off" required>
+                    <label class="label">Year</label>
+                    <input type="text" name="year" class="input-style" placeholder="e.g. Final Year / 4th Year" autocomplete="off" required>
                 </div>
                 <div class="field-group">
                     <label class="label">Gender</label>
@@ -322,8 +322,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                     <label class="label">Graduation Year</label>
                     <select name="grad_year" class="input-style" required>
                         <option value="" disabled selected>Select Year</option>
-                        <?php for ($year = 2028; $year >= 2010; $year--): ?>
-                            <option value="<?php echo $year; ?>"><?php echo $year; ?></option>
+                        <?php for ($year_val = 2028; $year_val >= 2010; $year_val--): ?>
+                            <option value="<?php echo $year_val; ?>"><?php echo $year_val; ?></option>
                         <?php endfor; ?>
                     </select>
                 </div>
