@@ -120,20 +120,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Join AlumniX | Premium Registration</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --primary: #e63946;          /* Crimson Red */
-            --primary-hover: #bd1e2c;    /* Dark Crimson Red */
-            --error-color: #f43f5e;      /* Red Error Info */
-            --success-color: #10b981;    /* Emerald Success Green */
-            --bg: #111111;               /* Deep Matte Black Background */
-            --card-bg: #1a1a1a;          /* Rich Dark Gray/Black Card Background */
-            --text-main: #ffffff;        /* Pure White Text */
-            --text-gray: #a3a3a3;        /* Muted Muted Gray Text */
-            --border: #2d2d2d;           /* Slate Dark Border Accent */
-            --input-bg: #242424;         /* Charcoal Inner Input Fields Background */
+            /* Matched with your previous form's light theme */
+            --primary: #e11d48;          
+            --primary-hover: #be123c;    
+            --error-color: #f43f5e;      
+            --success-color: #10b981;    
+            --bg: #f8fafc;               
+            --card-bg: #ffffff;          
+            --text-main: #0f172a;        
+            --text-gray: #64748b;        
+            --border: #e2e8f0;           
+            --input-bg: #fbfcfd;         
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -147,7 +148,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             align-items: center;
             justify-content: center;
             padding: 24px;
-            background-image: radial-gradient(circle at top right, rgba(230, 57, 70, 0.12), transparent 45%);
         }
 
         .wizard-card {
@@ -155,14 +155,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             width: 100%;
             max-width: 440px;
             padding: 40px 32px;
-            border-radius: 24px;
-            border: 1px solid var(--border);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border-radius: 30px;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
             position: relative;
         }
 
         .step-header { text-align: center; margin-bottom: 28px; }
-        .step-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: #fff; }
+        .step-header h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; color: var(--text-main); }
         .step-header span { color: var(--primary); }
         #step-title {
             color: var(--text-gray);
@@ -175,7 +175,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
 
         .progress-bar { display: flex; justify-content: center; gap: 8px; margin-bottom: 30px; }
         .dot { width: 40px; height: 5px; background: var(--border); border-radius: 10px; transition: 0.4s; }
-        .dot.active { background: var(--primary); box-shadow: 0 0 10px rgba(230, 57, 70, 0.4); }
+        .dot.active { background: var(--primary); box-shadow: 0 0 10px rgba(225, 29, 72, 0.2); }
 
         .form-step { display: none; }
         .form-step.active { display: block; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -188,28 +188,28 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         .field-group { margin-bottom: 20px; position: relative; }
         .label {
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-gray);
             text-transform: uppercase;
             margin-bottom: 8px;
             display: block;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
         }
 
         .input-style {
             width: 100%;
             padding: 14px 16px;
             background: var(--input-bg);
-            border: 1px solid var(--border);
-            border-radius: 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
             color: var(--text-main);
             outline: none;
-            transition: all 0.25s ease;
+            transition: all 0.3s ease;
             font-size: 14px;
             font-weight: 500;
         }
 
-        .input-style:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.2); }
+        .input-style:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(225, 29, 72, 0.05); }
         .input-style.input-err { border-color: var(--error-color) !important; background-color: rgba(244, 63, 94, 0.05); }
         .input-style.input-success { border-color: var(--success-color) !important; background-color: rgba(16, 185, 129, 0.05); }
         
@@ -220,27 +220,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         
         .btn {
             flex: 1;
-            padding: 15px;
-            border-radius: 14px;
+            padding: 16px;
+            border-radius: 12px;
             font-weight: 700;
             border: none;
             cursor: pointer;
-            transition: all 0.2s ease;
-            text-transform: uppercase;
-            font-size: 13px;
-            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            font-size: 16px;
         }
 
-        .btn-next { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25); }
-        .btn-next:hover { background: var(--primary-hover); transform: translateY(-1px); }
-        .btn-prev { background: #242424; color: var(--text-gray); border: 1px solid var(--border); }
-        .btn-prev:hover { background: #2d2d2d; color: #fff; }
+        .btn-next { background: var(--text-main); color: #fff; }
+        .btn-next:hover { background: var(--primary); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(225, 29, 72, 0.2); }
+        
+        .btn-prev { background: #f1f5f9; color: var(--text-gray); }
+        .btn-prev:hover { background: #e2e8f0; color: var(--text-main); }
 
         .img-preview-box {
             width: 84px;
             height: 84px;
             border-radius: 50%;
-            border: 2px dashed var(--border);
+            border: 2px dashed #cbd5e1;
             margin: 0 auto 20px;
             display: flex;
             align-items: center;
@@ -250,22 +249,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             background: var(--input-bg);
             transition: 0.2s;
         }
-        .img-preview-box:hover { border-color: var(--primary); }
+        .img-preview-box:hover { border-color: var(--primary); background: #fff; }
         .img-preview-box img { width: 100%; height: 100%; object-fit: cover; }
 
         select.input-style { appearance: none; cursor: pointer; }
 
         .credential-note {
             padding: 14px 16px;
-            border: 1px solid rgba(230, 57, 70, 0.2);
-            border-radius: 14px;
-            background: rgba(230, 57, 70, 0.03);
+            border: 1px solid rgba(225, 29, 72, 0.2);
+            border-radius: 12px;
+            background: rgba(225, 29, 72, 0.03);
         }
         .credential-note p { color: var(--text-gray); font-size: 12px; line-height: 1.6; }
         
         .loading-btn {
-            background: #404040 !important;
-            color: #a3a3a3 !important;
+            background: #e2e8f0 !important;
+            color: #94a3b8 !important;
             cursor: not-allowed !important;
             transform: none !important;
             box-shadow: none !important;
@@ -334,7 +333,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-prev" onclick="prevStep(0)">Back</button>
-                    <button type="button" class="btn btn-next" onclick="nextStep(2)">Next</button>
+                    <button type="button" class="btn btn-next" onclick="nextStep(2)">Next Step</button>
                 </div>
             </div>
 
@@ -416,9 +415,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                     title: 'Form Incomplete',
                     text: 'Please fill in all required fields.',
                     icon: 'warning',
-                    background: '#1a1a1a',
-                    color: '#fff',
-                    confirmButtonColor: '#e63946'
+                    confirmButtonColor: '#e11d48'
                 });
             }
         }
@@ -448,9 +445,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                     title: 'Invalid Email!',
                     text: 'Please input a valid email format to proceed.',
                     icon: 'error',
-                    background: '#1a1a1a',
-                    color: '#fff',
-                    confirmButtonColor: '#e63946'
+                    confirmButtonColor: '#e11d48'
                 });
                 return false;
             }
@@ -474,9 +469,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                         title: 'Successfully Submitted!',
                         html: 'Profile saved for verification.<br>Updates will be sent to: <strong>' + data.email + '</strong>.',
                         icon: 'success',
-                        background: '#1a1a1a',
-                        color: '#fff',
-                        confirmButtonColor: '#e63946'
+                        confirmButtonColor: '#e11d48'
                     }).then(() => { window.location.reload(); });
                 } else {
                     btn.classList.remove("loading-btn");
@@ -486,9 +479,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                         title: 'Submission Failed',
                         text: data.message,
                         icon: 'error',
-                        background: '#1a1a1a',
-                        color: '#fff',
-                        confirmButtonColor: '#e63946'
+                        confirmButtonColor: '#e11d48'
                     });
                 }
             })
@@ -500,9 +491,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                     title: 'System Error',
                     text: 'Unable to process registration. Try again.',
                     icon: 'error',
-                    background: '#1a1a1a',
-                    color: '#fff',
-                    confirmButtonColor: '#e63946'
+                    confirmButtonColor: '#e11d48'
                 });
             });
         });

@@ -48,6 +48,8 @@ include("includes/db.php");
 
     img {
         max-width: 100%;
+        /* Changes here  */
+        height: 100%;
         display: block;
     }
 
