@@ -32,6 +32,19 @@ function alumnixLastMailError(): string
     return (string) ($GLOBALS["alumnix_last_mail_error"] ?? "Email delivery failed. Check SMTP settings.");
 }
 
+function alumnixGetLoginUrl(): string
+{
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scheme = 'http';
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        $scheme = 'https';
+    } elseif (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') {
+        $scheme = 'https';
+    }
+
+    return $scheme . '://' . $host . '/alumini/login.php';
+}
+
 function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
     alumnixSetMailError("");
     $config = alumnixMailConfig();
@@ -85,6 +98,73 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
                 </div>
             </div>";
         $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login email: {$email}. Temporary password: {$plainPassword}. Please change it after first login.";
+
+        if (!$mail->send()) {
+            alumnixSetMailError($mail->ErrorInfo ?: "Email delivery failed.");
+            return false;
+        }
+
+        return true;
+    } catch (Exception $e) {
+        alumnixSetMailError($mail->ErrorInfo ?: $e->getMessage());
+        return false;
+    }
+}
+
+function alumnixSendApprovalNotice($fullName, $email) {
+    alumnixSetMailError("");
+    $config = alumnixMailConfig();
+
+    if (
+        empty($config["host"]) ||
+        empty($config["username"]) ||
+        empty($config["password"]) ||
+        stripos((string) $config["username"], "YOUR_") !== false ||
+        stripos((string) $config["password"], "YOUR_") !== false
+    ) {
+        alumnixSetMailError("SMTP username/password missing in config/mail.php.");
+        return false;
+    }
+
+    $loginUrl = alumnixGetLoginUrl();
+    $mail = new PHPMailer(true);
+
+    try {
+        $mail->isSMTP();
+        $mail->Host       = $config["host"];
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $config["username"];
+        $mail->Password   = $config["password"];
+        $mail->SMTPSecure = $config["encryption"] === "ssl"
+            ? PHPMailer::ENCRYPTION_SMTPS
+            : PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port       = $config["port"];
+        $mail->CharSet    = "UTF-8";
+
+        $mail->setFrom($config["username"], $config["from_name"]);
+        if (!empty($config["reply_to"])) {
+            $mail->addReplyTo($config["reply_to"], $config["from_name"]);
+        }
+        $mail->addAddress($email);
+
+        $mail->isHTML(true);
+        $mail->Subject = 'Your AlumniX account is approved';
+        $mail->Body    = "
+            <div style='font-family: Arial, sans-serif; background: #f8fafc; padding: 28px; color: #0f172a;'>
+                <div style='max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 18px; padding: 28px; border: 1px solid #e2e8f0;'>
+                    <p style='margin: 0 0 10px; color: #f43f5e; font-weight: 700;'>AlumniX Approval</p>
+                    <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($fullName, ENT_QUOTES, "UTF-8") . ",</h2>
+                    <p style='line-height: 1.6;'>Your AlumniX account has been approved.</p>
+                    <div style='background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 16px; margin: 18px 0;'>
+                        <p style='margin: 0 0 8px; font-size: 13px; color: #64748b;'>Login page</p>
+                        <strong><a href='" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "' style='color: #4338ca; text-decoration: none;'>" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "</a></strong>
+                        <p style='margin: 16px 0 0; font-size: 13px; color: #64748b;'>Login Email</p>
+                        <strong>" . htmlspecialchars($email, ENT_QUOTES, "UTF-8") . "</strong>
+                    </div>
+                    <p style='line-height: 1.6;'>Use the password you chose during registration.</p>
+                </div>
+            </div>";
+        $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login at {$loginUrl} with your email address and the password you set during registration.";
 
         if (!$mail->send()) {
             alumnixSetMailError($mail->ErrorInfo ?: "Email delivery failed.");

@@ -24,6 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         $grad_year = intval($_POST["grad_year"]);
         $company = mysqli_real_escape_string($conn, htmlspecialchars(trim($_POST["company"])));
         $email = mysqli_real_escape_string($conn, trim(strtolower($_POST["email"])));
+        $passwordRaw = trim((string) ($_POST["password"] ?? ""));
+        $confirmPasswordRaw = trim((string) ($_POST["confirm_pass"] ?? ""));
         
         // Image Handling Logic
         $profile_img_name = "default.png"; 
@@ -47,6 +49,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         }
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             throw new Exception("The provided email address format is invalid.");
+        }
+
+        if (strlen($passwordRaw) < 6) {
+            throw new Exception("Password must be at least 6 characters long.");
+        }
+        if ($passwordRaw !== $confirmPasswordRaw) {
+            throw new Exception("Passwords do not match.");
         }
 
         // 2. Database Duplicate Check mapped to 'alumni_users' (ID check removed)
@@ -98,6 +107,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         $insert_query = "INSERT INTO alumni_users (full_name, year, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
                          VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
         
+        $passwordHash = password_hash($passwordRaw, PASSWORD_DEFAULT);
+        if ($passwordHash === false) {
+            throw new Exception("Unable to secure your password. Please try again.");
+        }
+        $passwordHash = mysqli_real_escape_string($conn, $passwordHash);
+
+        $insert_query = "INSERT INTO alumni_users (full_name, year, gender, batch_start, batch_end, grad_year, company, email, profile_img, status, password) \
+                         VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending', '$passwordHash')";
+
         if ($conn->query($insert_query)) {
             ob_end_clean();
             echo json_encode(["status" => "success", "email" => $email]);
@@ -349,8 +367,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                     <div class="error-msg-text" id="emailErrorHint">Please enter a valid email format!</div>
                 </div>
 
+                <div class="field-group">
+                    <label class="label">Password</label>
+                    <input type="password" name="password" class="input-style" placeholder="Create a password" autocomplete="new-password" required>
+                </div>
+                <div class="field-group">
+                    <label class="label">Confirm Password</label>
+                    <input type="password" name="confirm_pass" class="input-style" placeholder="Confirm password" autocomplete="new-password" required>
+                </div>
+
                 <div class="field-group credential-note">
-                    <p><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i> Your email will be your login ID. A generated password will be emailed after admin approval.</p>
+                    <p><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i> Your email will be your login ID. Please set a password now; after admin approval you can login with the same password.</p>
                 </div>
 
                 <div class="btn-group">
