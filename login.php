@@ -236,7 +236,7 @@ if (isset($_POST["login"])) {
             </form>
 
             <div class="note-box">
-                <p>Your email is your login ID. Passwords are generated and emailed after admin approval.</p>
+                <p>Your email is your login ID. Use the password you created during registration after admin approval.</p>
             </div>
         </div>
 

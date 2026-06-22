@@ -321,7 +321,7 @@ function timeAgo($timestamp): string
 
 function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
 {
-    $stmt = $conn->prepare("SELECT id, full_name, email, status FROM alumni_users WHERE id = ? LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, full_name, email, status, password FROM alumni_users WHERE id = ? LIMIT 1");
     if (!$stmt) {
         return ["ok" => false, "message" => "Query error."];
     }
@@ -341,18 +341,37 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
         return ["ok" => false, "message" => "Already approved."];
     }
 
-    $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
-    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+    $existingPassword = trim((string) ($user["password"] ?? ""));
+    $needsPasswordGeneration = $existingPassword === "";
+    $plainPassword = "";
+    $hashedPassword = null;
+
+    if ($needsPasswordGeneration) {
+        $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
+        $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+        if ($hashedPassword === false) {
+            return ["ok" => false, "message" => "Unable to generate a secure password."];
+        }
+    }
 
     $conn->begin_transaction();
 
-    $update = $conn->prepare("UPDATE alumni_users SET status = 'approved', password = ? WHERE id = ?");
-    if (!$update) {
-        $conn->rollback();
-        return ["ok" => false, "message" => "Update query failed."];
+    if ($needsPasswordGeneration) {
+        $update = $conn->prepare("UPDATE alumni_users SET status = 'approved', password = ? WHERE id = ?");
+        if (!$update) {
+            $conn->rollback();
+            return ["ok" => false, "message" => "Update query failed."];
+        }
+        $update->bind_param("si", $hashedPassword, $memberId);
+    } else {
+        $update = $conn->prepare("UPDATE alumni_users SET status = 'approved' WHERE id = ?");
+        if (!$update) {
+            $conn->rollback();
+            return ["ok" => false, "message" => "Update query failed."];
+        }
+        $update->bind_param("i", $memberId);
     }
 
-    $update->bind_param("si", $hashedPassword, $memberId);
     $saved = $update->execute();
     $update->close();
 
@@ -363,15 +382,19 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
 
     $mailSent = false;
     if (!empty($user["email"])) {
-        $mailSent = alumnixSendApprovalCredentials($user["full_name"], $user["email"], $plainPassword);
+        if ($needsPasswordGeneration) {
+            $mailSent = alumnixSendApprovalCredentials($user["full_name"], $user["email"], $plainPassword);
+        } else {
+            $mailSent = alumnixSendApprovalNotice($user["full_name"], $user["email"]);
+        }
     }
 
     if (!$mailSent) {
         adminSaveMailOutbox([
-            "type" => "approval_credentials",
+            "type" => "approval_notification",
             "name" => $user["full_name"],
             "email" => $user["email"],
-            "password" => $plainPassword,
+            "password" => $plainPassword ?: null,
             "error" => alumnixLastMailError(),
         ]);
 
@@ -380,7 +403,9 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
         return [
             "ok" => true,
             "mail_sent" => false,
-            "message" => "Approved. Automatic email failed, so credentials are shown once and saved in local outbox.",
+            "message" => $needsPasswordGeneration
+                ? "Approved. Automatic email failed, so credentials are shown once and saved in local outbox."
+                : "Approved. Automatic email failed, please inform the user manually.",
             "name" => $user["full_name"],
             "email" => $user["email"],
             "password" => $plainPassword,
@@ -393,7 +418,9 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
     return [
         "ok" => true,
         "mail_sent" => true,
-        "message" => "Approved and credentials emailed automatically.",
+        "message" => $needsPasswordGeneration
+            ? "Approved and credentials emailed automatically."
+            : "Approved and approval email sent automatically.",
         "name" => $user["full_name"],
         "email" => $user["email"],
     ];
