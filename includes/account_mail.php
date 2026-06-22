@@ -32,6 +32,23 @@ function alumnixLastMailError(): string
     return (string) ($GLOBALS["alumnix_last_mail_error"] ?? "Email delivery failed. Check SMTP settings.");
 }
 
+function alumnixLogMailError(string $email, string $context, string $message): void
+{
+    $errorDir = __DIR__ . '/../uploads/mail_outbox';
+    if (!is_dir($errorDir)) {
+        mkdir($errorDir, 0775, true);
+    }
+    $line = json_encode([
+        "created_at" => date("Y-m-d H:i:s"),
+        "email" => $email,
+        "context" => $context,
+        "error" => $message,
+    ], JSON_UNESCAPED_SLASHES);
+    if ($line !== false) {
+        file_put_contents($errorDir . "/mail_errors.log", $line . PHP_EOL, FILE_APPEND | LOCK_EX);
+    }
+}
+
 function alumnixGetLoginUrl(): string
 {
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
@@ -100,13 +117,17 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
         $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login email: {$email}. Temporary password: {$plainPassword}. Please change it after first login.";
 
         if (!$mail->send()) {
-            alumnixSetMailError($mail->ErrorInfo ?: "Email delivery failed.");
+            $errorMessage = $mail->ErrorInfo ?: "Email delivery failed.";
+            alumnixSetMailError($errorMessage);
+            alumnixLogMailError($email, 'approval_credentials', $errorMessage);
             return false;
         }
 
         return true;
     } catch (Exception $e) {
-        alumnixSetMailError($mail->ErrorInfo ?: $e->getMessage());
+        $errorMessage = $mail->ErrorInfo ?: $e->getMessage();
+        alumnixSetMailError($errorMessage);
+        alumnixLogMailError($email, 'approval_credentials', $errorMessage);
         return false;
     }
 }
@@ -167,13 +188,17 @@ function alumnixSendApprovalNotice($fullName, $email) {
         $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login at {$loginUrl} with your email address and the password you set during registration.";
 
         if (!$mail->send()) {
-            alumnixSetMailError($mail->ErrorInfo ?: "Email delivery failed.");
+            $errorMessage = $mail->ErrorInfo ?: "Email delivery failed.";
+            alumnixSetMailError($errorMessage);
+            alumnixLogMailError($email, 'approval_notice', $errorMessage);
             return false;
         }
 
         return true;
     } catch (Exception $e) {
-        alumnixSetMailError($mail->ErrorInfo ?: $e->getMessage());
+        $errorMessage = $mail->ErrorInfo ?: $e->getMessage();
+        alumnixSetMailError($errorMessage);
+        alumnixLogMailError($email, 'approval_notice', $errorMessage);
         return false;
     }
 }
@@ -227,13 +252,17 @@ function alumnixSendJobApprovalNotice($fullName, $email, $jobTitle, $company) {
         $mail->AltBody = "Your AlumniX job post is approved: {$jobTitle} at {$company}.";
 
         if (!$mail->send()) {
-            alumnixSetMailError($mail->ErrorInfo ?: "Email delivery failed.");
+            $errorMessage = $mail->ErrorInfo ?: "Email delivery failed.";
+            alumnixSetMailError($errorMessage);
+            alumnixLogMailError($email, 'job_approval', $errorMessage);
             return false;
         }
 
         return true;
     } catch (Exception $e) {
-        alumnixSetMailError($mail->ErrorInfo ?: $e->getMessage());
+        $errorMessage = $mail->ErrorInfo ?: $e->getMessage();
+        alumnixSetMailError($errorMessage);
+        alumnixLogMailError($email, 'job_approval', $errorMessage);
         return false;
     }
 }

@@ -244,6 +244,9 @@ function adminRenderFlash(?array $flash): void
 
     if (!empty($flash["mail_error"])) {
         echo '<p><strong>Email delivery issue:</strong> ' . adminE((string) $flash["mail_error"]) . '</p>';
+        if (stripos((string) $flash["mail_error"], 'authenticate') !== false) {
+            echo '<p>Please verify SMTP credentials and provider settings. For Gmail, use an app password or OAuth credential instead of a regular account password.</p>';
+        }
         if (empty($flash["credential_password"])) {
             echo '<p>Please notify the user manually since the approval email could not be delivered.</p>';
         }
