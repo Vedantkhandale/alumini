@@ -12,7 +12,8 @@ if (isset($_GET["approve"])) {
         $meta["credential_email"] = $result["email"] ?? "";
         $meta["credential_password"] = $result["password"];
     }
-    adminSetFlash($result["ok"] ? "success" : "error", $result["message"], $meta);
+    $flashType = $result["ok"] ? (isset($result["mail_sent"]) && $result["mail_sent"] === false ? "warning" : "success") : "error";
+    adminSetFlash($flashType, $result["message"], $meta);
     header("Location: alumni_list.php");
     exit();
 }
