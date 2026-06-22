@@ -240,8 +240,12 @@ function adminRenderFlash(?array $flash): void
         echo '<p>SMTP delivery did not complete, so these credentials are shown once and also logged locally.</p>';
         echo '<code>Login: ' . adminE((string) ($flash["credential_email"] ?? "")) . '</code>';
         echo '<code>Password: ' . adminE((string) ($flash["credential_password"] ?? "")) . '</code>';
-        if (!empty($flash["mail_error"])) {
-            echo '<p>' . adminE((string) $flash["mail_error"]) . '</p>';
+    }
+
+    if (!empty($flash["mail_error"])) {
+        echo '<p><strong>Email delivery issue:</strong> ' . adminE((string) $flash["mail_error"]) . '</p>';
+        if (empty($flash["credential_password"])) {
+            echo '<p>Please notify the user manually since the approval email could not be delivered.</p>';
         }
     }
 

@@ -5,13 +5,12 @@ adminOnly();
 if (isset($_GET["approve"])) {
     $id = (int) $_GET["approve"];
     $result = alumnixApproveUserEngine($conn, $id);
-    $meta = [];
+    $meta = [
+        "mail_error" => $result["mail_error"] ?? "",
+    ];
     if (!empty($result["password"])) {
-        $meta = [
-            "credential_email" => $result["email"] ?? "",
-            "credential_password" => $result["password"],
-            "mail_error" => $result["mail_error"] ?? "",
-        ];
+        $meta["credential_email"] = $result["email"] ?? "";
+        $meta["credential_password"] = $result["password"];
     }
     adminSetFlash($result["ok"] ? "success" : "error", $result["message"], $meta);
     header("Location: alumni_list.php");
