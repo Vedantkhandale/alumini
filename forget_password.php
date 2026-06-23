@@ -1,57 +1,85 @@
 <?php
 session_start();
 include("includes/db.php");
+require_once __DIR__ . "/includes/account_mail.php";
+
 $message = "";
+$success = false;
 
-// 1. Pehle Check karo agar form submit hua hai (Validation First)
-if(isset($_POST['get_code'])){
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $user_captcha = intval($_POST['captcha']);
+// Ensure reset token and expiry columns exist in database
+function ensureResetTokenColumns($conn) {
+    static $checked = false;
+    if ($checked) return;
+    $checked = true;
     
-    // Session se wahi answer uthao jo screen par dikh raha tha
-    $correct_ans = isset($_SESSION['captcha_ans']) ? intval($_SESSION['captcha_ans']) : 0;
+    try {
+        $result = $conn->query("SHOW COLUMNS FROM alumni_users LIKE 'reset_token'");
+        if (!($result instanceof mysqli_result) || $result->num_rows === 0) {
+            $conn->query("ALTER TABLE alumni_users ADD COLUMN reset_token VARCHAR(255) NULL");
+            $conn->query("ALTER TABLE alumni_users ADD COLUMN reset_token_expiry DATETIME NULL");
+        }
+    } catch (Throwable $e) {
+        // Column might already exist
+    }
+}
 
-    if($user_captcha !== $correct_ans){
-        $message = "❌ Wrong Captcha! Try again.";
+ensureResetTokenColumns($conn);
+
+// Process form submission
+if(isset($_POST['get_code'])){
+    $email = trim(strtolower(mysqli_real_escape_string($conn, $_POST['email'])));
+    
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = "❌ Please enter a valid email address!";
     } else {
-        $check = $conn->prepare("SELECT id FROM alumni_users WHERE email = ? LIMIT 1");
-        $exists = false;
+        // Check if email exists
+        $check = $conn->prepare("SELECT id, full_name FROM alumni_users WHERE email = ? LIMIT 1");
+        $userExists = false;
+        $userName = "";
+        $userId = null;
+        
         if ($check) {
             $check->bind_param("s", $email);
             $check->execute();
             $result = $check->get_result();
-            $exists = $result && $result->num_rows > 0;
+            if ($result && $result->num_rows > 0) {
+                $userExists = true;
+                $user = $result->fetch_assoc();
+                $userName = $user['full_name'];
+                $userId = $user['id'];
+            }
             $check->close();
         }
-        if($exists){
-            $reset_code = rand(100000, 999999);
-            $_SESSION['reset_email'] = $email;
-            $_SESSION['reset_token'] = $reset_code;
+        
+        if($userExists){
+            // Generate secure reset token
+            $reset_token = bin2hex(random_bytes(32));
+            $token_expiry = date("Y-m-d H:i:s", strtotime("+24 hours"));
             
-            echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
-            echo "<script>
-                setTimeout(function() {
-                    Swal.fire({
-                        title: 'Verification Code',
-                        html: 'Copy this code to reset:<br><b style=\"font-size:40px; color:#ff4d4d; letter-spacing:3px;\">$reset_code</b>',
-                        icon: 'success',
-                        background: '#ffffff',
-                        confirmButtonColor: '#1e293b',
-                        confirmButtonText: 'Proceed to Reset'
-                    }).then(() => { window.location.href = 'reset_password.php'; });
-                }, 100);
-            </script>";
+            // Save token to database
+            $update = $conn->prepare("UPDATE alumni_users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?");
+            if ($update) {
+                $update->bind_param("ssi", $reset_token, $token_expiry, $userId);
+                $update->execute();
+                $update->close();
+                
+                // Send password reset email
+                $emailSent = alumnixSendPasswordResetEmail($userName, $email, $reset_token);
+                
+                if ($emailSent) {
+                    $success = true;
+                    $message = "✅ Password reset link sent to your email! Check your inbox.";
+                } else {
+                    $message = "⚠️ Email could not be sent. Please try again later.";
+                }
+            }
         } else {
-            $message = "⚠️ Email not registered!";
+            // Don't reveal if email exists or not (security best practice)
+            $message = "✅ If this email is registered, you'll receive a password reset link shortly.";
+            $success = true;
         }
     }
 }
-
-// 2. Naya Captcha sirf tab generate hoga jab submit ho chuka ho ya pehli baar load ho
-$num1 = rand(10, 30);
-$num2 = rand(1, 9);
-$_SESSION['captcha_ans'] = $num1 + $num2;
-$_SESSION['captcha_text'] = "$num1 + $num2";
 ?>
 
 <!DOCTYPE html>
@@ -126,11 +154,11 @@ $_SESSION['captcha_text'] = "$num1 + $num2";
 <body>
 
 <div class="card">
-    <h2>Forgot <span>Access?</span></h2>
-    <p class="desc">Verify your identity to get the reset code.</p>
+    <h2>Forgot <span>Password?</span></h2>
+    <p class="desc">Enter your email and we'll send you a password reset link.</p>
 
     <?php if($message): ?>
-        <div class="error-msg"><?php echo $message; ?></div>
+        <div class="error-msg" style="<?php echo $success ? 'background: #ecfdf5; color: #047857; border-color: #a7f3d0;' : ''; ?>"><?php echo $message; ?></div>
     <?php endif; ?>
 
     <form method="POST" autocomplete="off">
@@ -139,16 +167,7 @@ $_SESSION['captcha_text'] = "$num1 + $num2";
             <input type="email" name="email" class="input-field" placeholder="name@example.com" required>
         </div>
 
-        <div class="input-group">
-            <label class="label">Security Challenge</label>
-            <div class="captcha-wrapper">
-                <span style="font-size: 10px; color: #ff9494; font-weight: 700; margin-bottom: 5px;">SOLVE THIS MATH</span>
-                <div class="captcha-text"><?php echo $_SESSION['captcha_text']; ?></div>
-            </div>
-            <input type="number" name="captcha" class="input-field" placeholder="Enter result" required>
-        </div>
-
-        <button type="submit" name="get_code" class="btn">Get Verification Code</button>
+        <button type="submit" name="get_code" class="btn">Send Reset Link</button>
     </form>
 
     <a href="login.php" class="back-link">← Back to Login</a>

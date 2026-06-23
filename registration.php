@@ -117,6 +117,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                          VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending', '$passwordHash')";
 
         if ($conn->query($insert_query)) {
+            // Send registration confirmation email
+            alumnixSendRegistrationConfirmation($full_name, $email);
+            
             ob_end_clean();
             echo json_encode(["status" => "success", "email" => $email]);
             exit;

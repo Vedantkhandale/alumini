@@ -2,20 +2,64 @@
 session_start();
 include("includes/db.php");
 
-// Agar user direct is page pe aaye bina code generate kiye, toh wapas bhej do
-if(!isset($_SESSION['reset_email']) || !isset($_SESSION['reset_token'])){
-    header("Location: forget_password.php");
-    exit();
+// Check if token and email are provided in URL
+if(!isset($_GET['token']) || !isset($_GET['email'])){
+    // Check for legacy session-based flow (backward compatibility)
+    if(!isset($_SESSION['reset_email']) || !isset($_SESSION['reset_token'])){
+        header("Location: forget_password.php");
+        exit();
+    }
+    // Use session-based flow
+    $legacy_mode = true;
+    $reset_email = $_SESSION['reset_email'];
+    $reset_token = $_SESSION['reset_token'];
+} else {
+    // Use token-based flow
+    $legacy_mode = false;
+    $reset_email = trim(strtolower($_GET['email']));
+    $reset_token = trim($_GET['token']);
+    
+    // Validate token and email format
+    if (!filter_var($reset_email, FILTER_VALIDATE_EMAIL) || empty($reset_token)) {
+        header("Location: forget_password.php");
+        exit();
+    }
 }
 
 $message = "";
+$tokenValid = false;
+
+if(!$legacy_mode) {
+    // Verify token from database
+    $verify = $conn->prepare("SELECT id FROM alumni_users WHERE email = ? AND reset_token = ? AND reset_token_expiry > NOW() LIMIT 1");
+    if ($verify) {
+        $verify->bind_param("ss", $reset_email, $reset_token);
+        $verify->execute();
+        $result = $verify->get_result();
+        $tokenValid = $result && $result->num_rows > 0;
+        $verify->close();
+        
+        if(!$tokenValid) {
+            $message = "❌ Invalid or expired reset link!";
+        }
+    }
+}
+
 if(isset($_POST['reset_now'])){
-    $input_token = intval($_POST['token']);
+    if($legacy_mode) {
+        // Legacy flow validation
+        $input_token = intval($_POST['token']);
+        $token_valid_legacy = $input_token === intval($_SESSION['reset_token']);
+    } else {
+        // Token-based flow validation
+        $token_valid_legacy = $tokenValid;
+    }
+    
     $new_pass = $_POST['new_pass'];
     $confirm_pass = $_POST['confirm_pass'];
 
     // Validation
-    if($input_token !== intval($_SESSION['reset_token'])){
+    if(!$token_valid_legacy){
         $message = "❌ Invalid Reset Code!";
     } elseif($new_pass !== $confirm_pass){
         $message = "❌ Passwords do not match!";
@@ -23,10 +67,10 @@ if(isset($_POST['reset_now'])){
         $message = "❌ Password must be at least 6 chars!";
     } else {
         $hashed_pass = password_hash($new_pass, PASSWORD_DEFAULT);
-        $email = $_SESSION['reset_email'];
+        $email = $legacy_mode ? $_SESSION['reset_email'] : $reset_email;
         
-        // Database Update
-        $stmt = $conn->prepare("UPDATE alumni_users SET password = ? WHERE email = ?");
+        // Database Update - clear reset token after successful reset
+        $stmt = $conn->prepare("UPDATE alumni_users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE email = ?");
         $updated = false;
         if ($stmt) {
             $stmt->bind_param("ss", $hashed_pass, $email);
@@ -35,9 +79,11 @@ if(isset($_POST['reset_now'])){
         }
 
         if($updated){
-            // Kaam ho gaya, ab session saaf karo
-            unset($_SESSION['reset_email']);
-            unset($_SESSION['reset_token']);
+            // Clear session if using legacy flow
+            if($legacy_mode) {
+                unset($_SESSION['reset_email']);
+                unset($_SESSION['reset_token']);
+            }
             
             echo "<script src='https://cdn.jsdelivr.net/npm/sweetalert2@11'></script>";
             echo "<script>
@@ -50,6 +96,7 @@ if(isset($_POST['reset_now'])){
                     }).then(() => { window.location.href = 'login.php'; });
                 }, 100);
             </script>";
+            exit;
         } else {
             $message = "❌ Database error! Try again.";
         }
@@ -105,32 +152,40 @@ if(isset($_POST['reset_now'])){
 <body>
 
 <div class="card">
-    <h2>Reset <span>Now</span></h2>
-    <p class="sub-text">Enter the code and set your new password.</p>
+    <h2>Reset <span>Password</span></h2>
+    <p class="sub-text"><?php echo (!$legacy_mode && !$tokenValid) ? "Verification failed. Please request a new link." : "Set your new password."; ?></p>
 
     <?php if($message): ?>
         <div class="error-box"><?php echo $message; ?></div>
     <?php endif; ?>
 
-    <form method="POST" autocomplete="off">
-        <div class="input-group">
-            <label class="label">Reset Code</label>
-            <input type="number" name="token" class="input-field" placeholder="6-digit code" required>
+    <?php if(!$legacy_mode && !$tokenValid): ?>
+        <div style="background: #fef2f2; color: #991b1b; padding: 12px; border-radius: 10px; font-size: 13px; border: 1px solid #fecdd3; margin-top: 20px;">
+            <strong>Link Expired or Invalid</strong><br>
+            Please request a <a href="forget_password.php" style="color: #e11d48; text-decoration: underline;">new password reset link</a>.
         </div>
+    <?php else: ?>
+        <form method="POST" autocomplete="off">
+            <?php if($legacy_mode): ?>
+                <div class="input-group">
+                    <label class="label">Reset Code</label>
+                    <input type="number" name="token" class="input-field" placeholder="6-digit code" required>
+                </div>
+            <?php endif; ?>
 
-        <div class="input-group">
-            <label class="label">New Password</label>
-            <input type="password" name="new_pass" class="input-field" placeholder="••••••••" required>
-        </div>
+            <div class="input-group">
+                <label class="label">New Password</label>
+                <input type="password" name="new_pass" class="input-field" placeholder="••••••••" required>
+            </div>
 
-        <div class="input-group">
-            <label class="label">Confirm Password</label>
-            <input type="password" name="confirm_pass" class="input-field" placeholder="••••••••" required>
-        </div>
+            <div class="input-group">
+                <label class="label">Confirm Password</label>
+                <input type="password" name="confirm_pass" class="input-field" placeholder="••••••••" required>
+            </div>
 
-        <button type="submit" name="reset_now" class="btn">Update Password</button>
-    </form>
-</div>
+            <button type="submit" name="reset_now" class="btn">Update Password</button>
+        </form>
+    <?php endif; ?>
 
 </body>
 </html>
