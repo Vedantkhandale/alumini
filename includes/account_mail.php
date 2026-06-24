@@ -58,7 +58,6 @@ function alumnixGetBaseUrl(): string
     } elseif (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') {
         $scheme = 'https';
     }
-    // Fixed typo: corrected '/alumini' to '/alumni'
     return $scheme . '://' . $host . '/alumni';
 }
 
@@ -76,7 +75,6 @@ function alumnixMailerFactory(array $config): PHPMailer
     $mail->Port       = $config["port"];
     $mail->CharSet    = "UTF-8";
 
-    // Handle distinct encryption flags properly
     switch ($config["encryption"]) {
         case 'ssl':
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
@@ -86,7 +84,7 @@ function alumnixMailerFactory(array $config): PHPMailer
             break;
         default:
             $mail->SMTPSecure = '';
-            $mail->SMTPAutoTLS = false; // Disable opportunistic TLS if explicit "none"
+            $mail->SMTPAutoTLS = false;
             break;
     }
 
@@ -118,6 +116,8 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
     $config = alumnixMailConfig();
     if (!alumnixValidateConfig($config)) return false;
 
+    $loginUrl = alumnixGetBaseUrl() . '/login.php'; 
+
     try {
         $mail = alumnixMailerFactory($config);
         $mail->addAddress($email);
@@ -128,17 +128,22 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
                 <div style='max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 18px; padding: 28px; border: 1px solid #e2e8f0;'>
                     <p style='margin: 0 0 10px; color: #f43f5e; font-weight: 700;'>AlumniX Approval</p>
                     <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($fullName, ENT_QUOTES, "UTF-8") . ",</h2>
-                    <p style='line-height: 1.6;'>Your AlumniX account has been approved. You can now login using your email address and the temporary password below.</p>
+                    <p style='line-height: 1.6;'>Your AlumniX account has been approved. You can now login using the details below.</p>
+                    
                     <div style='background: #fff1f2; border: 1px solid #fecdd3; border-radius: 14px; padding: 16px; margin: 18px 0;'>
-                        <p style='margin: 0 0 8px; font-size: 13px; color: #64748b;'>Login Email</p>
+                        <p style='margin: 0 0 4px; font-size: 13px; color: #64748b;'>Login Page URL</p>
+                        <strong><a href='" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "' style='color: #e11d48; text-decoration: none;'>" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "</a></strong>
+                        
+                        <p style='margin: 16px 0 4px; font-size: 13px; color: #64748b;'>Login Email</p>
                         <strong>" . htmlspecialchars($email, ENT_QUOTES, "UTF-8") . "</strong>
-                        <p style='margin: 16px 0 8px; font-size: 13px; color: #64748b;'>Temporary Password</p>
-                        <strong style='font-size: 20px; letter-spacing: 1px;'>" . htmlspecialchars($plainPassword, ENT_QUOTES, "UTF-8") . "</strong>
+                        
+                        <p style='margin: 16px 0 4px; font-size: 13px; color: #64748b;'>Temporary Password</p>
+                        <strong style='font-size: 20px; letter-spacing: 1px; color: #0f172a;'>" . htmlspecialchars($plainPassword, ENT_QUOTES, "UTF-8") . "</strong>
                     </div>
-                    <p style='line-height: 1.6;'>Please change this password after your first login.</p>
+                    <p style='line-height: 1.6;'>Please change this password immediately after your first login for security purposes.</p>
                 </div>
             </div>";
-        $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login email: {$email}. Temporary password: {$plainPassword}. Please change it after first login.";
+        $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login at {$loginUrl}. Email: {$email}. Temporary password: {$plainPassword}. Please change it after first login.";
 
         return $mail->send();
     } catch (Exception $e) {
@@ -166,14 +171,16 @@ function alumnixSendApprovalNotice($fullName, $email) {
                 <div style='max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 18px; padding: 28px; border: 1px solid #e2e8f0;'>
                     <p style='margin: 0 0 10px; color: #f43f5e; font-weight: 700;'>AlumniX Approval</p>
                     <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($fullName, ENT_QUOTES, "UTF-8") . ",</h2>
-                    <p style='line-height: 1.6;'>Your AlumniX account has been approved.</p>
+                    <p style='line-height: 1.6;'>Your AlumniX account has been approved. You can now log in using your credentials.</p>
+                    
                     <div style='background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 14px; padding: 16px; margin: 18px 0;'>
-                        <p style='margin: 0 0 8px; font-size: 13px; color: #64748b;'>Login page</p>
+                        <p style='margin: 0 0 4px; font-size: 13px; color: #64748b;'>Login Page URL</p>
                         <strong><a href='" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "' style='color: #4338ca; text-decoration: none;'>" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "</a></strong>
-                        <p style='margin: 16px 0 0; font-size: 13px; color: #64748b;'>Login Email</p>
+                        
+                        <p style='margin: 16px 0 4px; font-size: 13px; color: #64748b;'>Login Email</p>
                         <strong>" . htmlspecialchars($email, ENT_QUOTES, "UTF-8") . "</strong>
                     </div>
-                    <p style='line-height: 1.6;'>Use the password you chose during registration.</p>
+                    <p style='line-height: 1.6;'>Please use the original password you chose during the registration process.</p>
                 </div>
             </div>";
         $mail->AltBody = "Hi {$fullName}, your AlumniX account is approved. Login at {$loginUrl} with your email address and the password you set during registration.";
