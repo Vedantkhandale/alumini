@@ -59,10 +59,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         }
 
         // 2. Database Duplicate Check mapped to 'alumni_users' (ID check removed)
-        $check = $conn->query("SELECT id FROM alumni_users WHERE email='$email'");
-        if ($check && $check->num_rows > 0) {
+        $checkStmt = $conn->prepare("SELECT id FROM alumni_users WHERE email = ? LIMIT 1");
+        if (!$checkStmt) {
+            throw new Exception("Unable to validate email uniqueness right now. Please try again.");
+        }
+        $checkStmt->bind_param("s", $email);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        if ($checkResult && $checkResult->num_rows > 0) {
+            $checkStmt->close();
             throw new Exception("This Email address is already registered.");
         }
+        $checkStmt->close();
 
         // 3. Live API Check via Abstract API (With Dynamic Built-in Fallback)
         $api_key = "38e4450699d38f381bbecb4553803ae9";
@@ -104,19 +112,68 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
         }
 
         // 4. Secure Database Insertion into 'alumni_users' (student_id changed to year)
-        $insert_query = "INSERT INTO alumni_users (full_name, year, gender, batch_start, batch_end, grad_year, company, email, profile_img, status) 
-                         VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending')";
-        
+        $yearColumn = null;
+        $yearColumnResult = $conn->query("SHOW COLUMNS FROM alumni_users LIKE 'year'");
+        if ($yearColumnResult instanceof mysqli_result && $yearColumnResult->num_rows > 0) {
+            $yearColumn = "year";
+        }
+        if ($yearColumnResult instanceof mysqli_result) {
+            $yearColumnResult->free();
+        }
+        if ($yearColumn === null) {
+            $studentIdColumnResult = $conn->query("SHOW COLUMNS FROM alumni_users LIKE 'student_id'");
+            if ($studentIdColumnResult instanceof mysqli_result && $studentIdColumnResult->num_rows > 0) {
+                $yearColumn = "student_id";
+            }
+            if ($studentIdColumnResult instanceof mysqli_result) {
+                $studentIdColumnResult->free();
+            }
+        }
+        if ($yearColumn === null) {
+            throw new Exception("Registration table is missing both `year` and `student_id` columns.");
+        }
+
         $passwordHash = password_hash($passwordRaw, PASSWORD_DEFAULT);
         if ($passwordHash === false) {
             throw new Exception("Unable to secure your password. Please try again.");
         }
-        $passwordHash = mysqli_real_escape_string($conn, $passwordHash);
 
-        $insert_query = "INSERT INTO alumni_users (full_name, year, gender, batch_start, batch_end, grad_year, company, email, profile_img, status, password) \
-                         VALUES ('$full_name', '$year', '$gender', '$batch_start', '$batch_end', '$grad_year', '$company', '$email', '$profile_img_name', 'pending', '$passwordHash')";
+        $insertStmt = $conn->prepare(
+            "INSERT INTO alumni_users (
+                full_name,
+                {$yearColumn},
+                gender,
+                batch_start,
+                batch_end,
+                grad_year,
+                company,
+                email,
+                profile_img,
+                status,
+                password
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)"
+        );
 
-        if ($conn->query($insert_query)) {
+        if (!$insertStmt) {
+            throw new Exception("Unable to prepare registration query. Please try again.");
+        }
+
+        $insertStmt->bind_param(
+            "sssiiissss",
+            $full_name,
+            $year,
+            $gender,
+            $batch_start,
+            $batch_end,
+            $grad_year,
+            $company,
+            $email,
+            $profile_img_name,
+            $passwordHash
+        );
+
+        if ($insertStmt->execute()) {
+            $insertStmt->close();
             // Send registration confirmation email
             alumnixSendRegistrationConfirmation($full_name, $email);
             
@@ -124,7 +181,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
             echo json_encode(["status" => "success", "email" => $email]);
             exit;
         } else {
-            throw new Exception("Database Connection Error: " . $conn->error);
+            $dbError = $insertStmt->error ?: $conn->error;
+            $insertStmt->close();
+            throw new Exception("Database Connection Error: " . $dbError);
         }
 
     } catch (Exception $e) {
