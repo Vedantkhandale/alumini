@@ -2,8 +2,8 @@
 
 return [
     "host" => "smtp.gmail.com",
-    "username" => "AluminiX5@gmail.com",
-    "password" => "wsgt fvkf rkgp avib", // Gmail app password; runtime par spaces auto-trim ho jate hain
+    "username" => "vedantkhandale8@gmail.com",
+    "password" => "psbx jcli zgsi qamb", // Gmail app password; runtime par spaces auto-trim ho jate hain
     "port" => 587,
     "encryption" => "tls",
     "from_name" => "AlumniX Portal",
