@@ -11,21 +11,50 @@ function alumnixMailConfig(): array
     $configPath = __DIR__ . '/../config/mail.php';
     $fileConfig = file_exists($configPath) ? require $configPath : [];
 
+    $host = trim((string) (getenv("ALUMNIX_SMTP_HOST") ?: ($fileConfig["host"] ?? "smtp.gmail.com")));
+    $username = trim((string) (getenv("ALUMNIX_SMTP_USER") ?: ($fileConfig["username"] ?? "")));
+    $password = trim((string) (getenv("ALUMNIX_SMTP_PASS") ?: ($fileConfig["password"] ?? "")));
+    $isGmailSmtp = stripos($host, "gmail.com") !== false || stripos($username, "@gmail.com") !== false;
+
+    if ($isGmailSmtp && $password !== "") {
+        $password = preg_replace('/\s+/', '', $password) ?? $password;
+    }
+
     return [
-        "host"       => getenv("ALUMNIX_SMTP_HOST") ?: ($fileConfig["host"] ?? "smtp.gmail.com"),
-        "username"   => getenv("ALUMNIX_SMTP_USER") ?: ($fileConfig["username"] ?? ""),
-        "password"   => getenv("ALUMNIX_SMTP_PASS") ?: ($fileConfig["password"] ?? ""),
+        "host"       => $host,
+        "username"   => $username,
+        "password"   => $password,
         "port"       => (int) (getenv("ALUMNIX_SMTP_PORT") ?: ($fileConfig["port"] ?? 587)),
         "encryption" => strtolower((string) (getenv("ALUMNIX_SMTP_ENCRYPTION") ?: ($fileConfig["encryption"] ?? "tls"))),
         "from_name"  => getenv("ALUMNIX_MAIL_FROM_NAME") ?: ($fileConfig["from_name"] ?? "AlumniX Portal"),
-        "reply_to"   => getenv("ALUMNIX_MAIL_REPLY_TO") ?: ($fileConfig["reply_to"] ?? ""),
-        "base_url"   => getenv("ALUMNIX_APP_BASE_URL") ?: ($fileConfig["base_url"] ?? ""),
+        "reply_to"   => trim((string) (getenv("ALUMNIX_MAIL_REPLY_TO") ?: ($fileConfig["reply_to"] ?? ""))),
+        "base_url"   => trim((string) (getenv("ALUMNIX_APP_BASE_URL") ?: ($fileConfig["base_url"] ?? ""))),
     ];
 }
 
 function alumnixSetMailError(string $message): void
 {
     $GLOBALS["alumnix_last_mail_error"] = $message;
+}
+
+function alumnixFormatMailError(string $message): string
+{
+    $normalized = trim($message);
+    $lower = strtolower($normalized);
+
+    if (strpos($lower, "badcredentials") !== false || strpos($lower, "could not authenticate") !== false) {
+        return "SMTP authentication failed. The configured sender email or Gmail app password is invalid, expired, or revoked.";
+    }
+
+    if (strpos($lower, "getaddrinfo") !== false || strpos($lower, "no such host is known") !== false) {
+        return "SMTP host lookup failed. This server could not resolve the mail host name.";
+    }
+
+    if (strpos($lower, "stream_socket_enable_crypto") !== false || strpos($lower, "ready to start tls") !== false) {
+        return "SMTP TLS handshake failed. A firewall, antivirus, or local SSL setting interrupted the secure mail connection.";
+    }
+
+    return $normalized;
 }
 
 function alumnixLastMailError(): string
@@ -95,6 +124,8 @@ function alumnixMailerFactory(array $config): PHPMailer
     $mail->Password   = $config["password"];
     $mail->Port       = $config["port"];
     $mail->CharSet    = "UTF-8";
+    $mail->Timeout    = 20;
+    $mail->SMTPKeepAlive = false;
 
     switch ($config["encryption"]) {
         case 'ssl':
@@ -169,7 +200,7 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'approval_credentials', $errorMessage);
         return false;
     }
@@ -209,7 +240,7 @@ function alumnixSendApprovalNotice($fullName, $email) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'approval_notice', $errorMessage);
         return false;
     }
@@ -242,7 +273,7 @@ function alumnixSendJobApprovalNotice($fullName, $email, $jobTitle, $company) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'job_approval', $errorMessage);
         return false;
     }
@@ -277,7 +308,7 @@ function alumnixSendRejectionNotice($fullName, $email) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'account_rejection', $errorMessage);
         return false;
     }
@@ -311,7 +342,7 @@ function alumnixSendRegistrationConfirmation($fullName, $email) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'registration_confirmation', $errorMessage);
         return false;
     }
@@ -349,8 +380,53 @@ function alumnixSendPasswordResetEmail($fullName, $email, $resetToken) {
         return $mail->send();
     } catch (Exception $e) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
-        alumnixSetMailError($errorMessage);
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
         alumnixLogMailError($email, 'password_reset', $errorMessage);
+        return false;
+    }
+}
+
+function alumnixSendTestEmail(string $recipientEmail, string $recipientName = "Admin"): bool
+{
+    alumnixSetMailError("");
+    $config = alumnixMailConfig();
+    if (empty($recipientEmail) || !filter_var($recipientEmail, FILTER_VALIDATE_EMAIL)) {
+        alumnixSetMailError("Please enter a valid recipient email address for the test email.");
+        return false;
+    }
+    if (!alumnixValidateConfig($config)) {
+        return false;
+    }
+
+    $loginUrl = alumnixGetBaseUrl() . '/login.php';
+
+    try {
+        $mail = alumnixMailerFactory($config);
+        $mail->addAddress($recipientEmail, $recipientName);
+        $mail->isHTML(true);
+        $mail->Subject = 'AlumniX mail test';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; background: #f8fafc; padding: 28px; color: #0f172a;'>
+                <div style='max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 18px; padding: 28px; border: 1px solid #e2e8f0;'>
+                    <p style='margin: 0 0 10px; color: #10b981; font-weight: 700;'>Mail Test Successful</p>
+                    <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($recipientName, ENT_QUOTES, "UTF-8") . ",</h2>
+                    <p style='line-height: 1.6;'>This is a live test email from the AlumniX mail system.</p>
+                    <div style='background: #ecfeff; border: 1px solid #a5f3fc; border-radius: 14px; padding: 16px; margin: 18px 0;'>
+                        <p style='margin: 0 0 6px; font-size: 13px; color: #64748b;'>Configured sender</p>
+                        <strong>" . htmlspecialchars($config["username"], ENT_QUOTES, "UTF-8") . "</strong>
+                        <p style='margin: 14px 0 6px; font-size: 13px; color: #64748b;'>Login URL currently used in approval mail</p>
+                        <strong><a href='" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "' style='color: #0f766e; text-decoration: none;'>" . htmlspecialchars($loginUrl, ENT_QUOTES, "UTF-8") . "</a></strong>
+                    </div>
+                    <p style='line-height: 1.6; color: #64748b; font-size: 13px;'>If you received this message, SMTP authentication and delivery are working from this server.</p>
+                </div>
+            </div>";
+        $mail->AltBody = "This is a live test email from AlumniX. Login URL: {$loginUrl}. Sender: {$config["username"]}.";
+
+        return $mail->send();
+    } catch (Exception $e) {
+        $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
+        alumnixSetMailError(alumnixFormatMailError($errorMessage));
+        alumnixLogMailError($recipientEmail, 'mail_test', $errorMessage);
         return false;
     }
 }

@@ -129,6 +129,7 @@ function adminSidebarItems(): array
         ["key" => "dashboard", "href" => "admin_dashboard.php", "icon" => "fas fa-table-cells-large", "label" => "Dashboard"],
         ["key" => "alumni", "href" => "alumni_list.php", "icon" => "fas fa-user-graduate", "label" => "Alumni"],
         ["key" => "jobs", "href" => "jobs.php", "icon" => "fas fa-briefcase", "label" => "Jobs"],
+        ["key" => "mail", "href" => "mail_diagnostics.php", "icon" => "fas fa-envelope-circle-check", "label" => "Mail Test"],
         ["key" => "applications", "href" => "view_applications.php", "icon" => "fas fa-file-lines", "label" => "Applications"],
         ["key" => "events", "href" => "event.php", "icon" => "fas fa-calendar-days", "label" => "Events"],
         ["key" => "logout", "href" => "logout.php", "icon" => "fas fa-power-off", "label" => "Logout", "logout" => true],
