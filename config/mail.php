@@ -8,4 +8,5 @@ return [
     "encryption" => "tls",
     "from_name" => "AlumniX Portal",
     "reply_to" => "",
+    "base_url" => "http://localhost/alumini",
 ];

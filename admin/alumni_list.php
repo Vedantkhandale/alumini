@@ -7,12 +7,9 @@ if (isset($_GET["approve"])) {
     $result = alumnixApproveUserEngine($conn, $id);
     $meta = [
         "mail_error" => $result["mail_error"] ?? "",
+        "mail_blocked" => !empty($result["mail_blocked"]),
     ];
-    if (!empty($result["password"])) {
-        $meta["credential_email"] = $result["email"] ?? "";
-        $meta["credential_password"] = $result["password"];
-    }
-    $flashType = $result["ok"] ? (isset($result["mail_sent"]) && $result["mail_sent"] === false ? "warning" : "success") : "error";
+    $flashType = $result["ok"] ? "success" : "error";
     adminSetFlash($flashType, $result["message"], $meta);
     header("Location: alumni_list.php");
     exit();
@@ -20,13 +17,32 @@ if (isset($_GET["approve"])) {
 
 if (isset($_GET["reject"])) {
     $id = (int) $_GET["reject"];
-    $stmt = $conn->prepare("UPDATE alumni_users SET status='rejected' WHERE id = ?");
-    if ($stmt) {
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $stmt->close();
-    }
-    adminSetFlash("warning", "Member request marked as rejected.");
+    $result = alumnixRejectUserEngine($conn, $id);
+    adminSetFlash($result["ok"] ? "success" : "error", $result["message"], [
+        "mail_error" => $result["mail_error"] ?? "",
+        "mail_blocked" => !empty($result["mail_blocked"]),
+    ]);
+    header("Location: alumni_list.php");
+    exit();
+}
+
+if (isset($_GET["resend_approval"])) {
+    $id = (int) $_GET["resend_approval"];
+    $result = alumnixResendApprovalEmailEngine($conn, $id);
+    adminSetFlash($result["ok"] ? "success" : "error", $result["message"], [
+        "mail_error" => $result["mail_error"] ?? "",
+        "mail_blocked" => !empty($result["mail_blocked"]),
+    ]);
+    header("Location: alumni_list.php");
+    exit();
+}
+
+if (isset($_GET["resend_rejection"])) {
+    $id = (int) $_GET["resend_rejection"];
+    $result = alumnixResendRejectionEmailEngine($conn, $id);
+    adminSetFlash($result["ok"] ? "success" : "error", $result["message"], [
+        "mail_error" => $result["mail_error"] ?? "",
+    ]);
     header("Location: alumni_list.php");
     exit();
 }
@@ -83,7 +99,7 @@ adminRenderPageStart([
     "page_title" => "Alumni Moderation | AlumniX Admin",
     "hero_badge" => "Member approvals",
     "hero_title" => "Tighter alumni review with cleaner alignment.",
-    "hero_text" => "Every member request now reads from the live alumni table, with sharper status visibility, cleaner identity rows, and one-click moderation actions.",
+    "hero_text" => "Every member request now reads from the live alumni table, with sharper status visibility, mandatory approval emails, rejection notices, and resend controls in one place.",
     "active" => "alumni",
     "actions" => [
         ["href" => "admin_dashboard.php", "icon" => "fas fa-table-cells-large", "label" => "Dashboard", "variant" => "secondary"],
@@ -125,7 +141,7 @@ adminRenderPageStart([
     <div class="panel-head">
         <div>
             <h2 class="panel-title">Alumni Queue</h2>
-            <p class="panel-copy">Profile identity, batch data, graduation year, company info, and moderation actions stay aligned in a single review table.</p>
+            <p class="panel-copy">Profile identity, batch data, graduation year, company info, and moderation actions stay aligned in a single review table, including fresh access-email resend support.</p>
         </div>
         <span class="panel-link"><?php echo number_format(count($alumniUsers)); ?> row(s)</span>
     </div>
@@ -162,10 +178,14 @@ adminRenderPageStart([
                             <td>
                                 <div class="row-actions">
                                     <?php if (!in_array($status, ["approved", "active"], true)): ?>
-                                        <a href="?approve=<?php echo (int) $user["id"]; ?>" class="action-pill approve" onclick="return confirm('Approve this member and send credentials by email?');">Approve</a>
+                                        <a href="?approve=<?php echo (int) $user["id"]; ?>" class="action-pill approve" onclick="return confirm('Approve this member? A login email with a new password must be delivered before approval is saved.');">Approve</a>
+                                    <?php else: ?>
+                                        <a href="?resend_approval=<?php echo (int) $user["id"]; ?>" class="action-pill ghost" onclick="return confirm('Send a fresh access email? This will reset the member password to a new temporary one.');">Resend Access Mail</a>
                                     <?php endif; ?>
                                     <?php if ($status !== "rejected"): ?>
-                                        <a href="?reject=<?php echo (int) $user["id"]; ?>" class="action-pill reject" onclick="return confirm('Mark this member request as rejected?');">Reject</a>
+                                        <a href="?reject=<?php echo (int) $user["id"]; ?>" class="action-pill reject" onclick="return confirm('Reject this member? A rejection email will be sent automatically.');">Reject</a>
+                                    <?php else: ?>
+                                        <a href="?resend_rejection=<?php echo (int) $user["id"]; ?>" class="action-pill ghost" onclick="return confirm('Resend the rejection email to this member?');">Resend Reject Mail</a>
                                     <?php endif; ?>
                                     <a href="?delete=<?php echo (int) $user["id"]; ?>" class="action-pill delete" onclick="return confirm('Delete this member permanently?');">Delete</a>
                                 </div>

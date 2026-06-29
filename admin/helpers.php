@@ -247,7 +247,9 @@ function adminRenderFlash(?array $flash): void
         if (stripos((string) $flash["mail_error"], 'authenticate') !== false) {
             echo '<p>Please verify SMTP credentials and provider settings. For Gmail, use an app password or OAuth credential instead of a regular account password.</p>';
         }
-        if (empty($flash["credential_password"])) {
+        if (!empty($flash["mail_blocked"])) {
+            echo '<p>Email delivery is mandatory for this action, so no status change was saved.</p>';
+        } elseif (empty($flash["credential_password"])) {
             echo '<p>Please notify the user manually since the approval email could not be delivered.</p>';
         }
     }
@@ -326,11 +328,11 @@ function timeAgo($timestamp): string
     return "just now";
 }
 
-function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
+function alumnixAdminFetchMember(mysqli $conn, int $memberId): ?array
 {
     $stmt = $conn->prepare("SELECT id, full_name, email, status, password FROM alumni_users WHERE id = ? LIMIT 1");
     if (!$stmt) {
-        return ["ok" => false, "message" => "Query error."];
+        return null;
     }
 
     $stmt->bind_param("i", $memberId);
@@ -339,45 +341,62 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
     $user = $result ? $result->fetch_assoc() : null;
     $stmt->close();
 
+    return $user ?: null;
+}
+
+function alumnixGenerateTemporaryPassword(int $length = 10): string
+{
+    $alphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+    $lastIndex = strlen($alphabet) - 1;
+    $password = "";
+
+    for ($index = 0; $index < $length; $index++) {
+        $password .= $alphabet[random_int(0, $lastIndex)];
+    }
+
+    return $password;
+}
+
+function alumnixLogModerationMailFailure(string $type, array $user, string $error): void
+{
+    adminSaveMailOutbox([
+        "type" => $type,
+        "name" => $user["full_name"] ?? "",
+        "email" => $user["email"] ?? "",
+        "error" => $error,
+    ]);
+}
+
+function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
+{
+    $user = alumnixAdminFetchMember($conn, $memberId);
     if (!$user) {
         return ["ok" => false, "message" => "Member not found."];
     }
 
     $status = strtolower(trim((string) $user["status"]));
     if (in_array($status, ["approved", "active"], true)) {
-        return ["ok" => false, "message" => "Already approved."];
+        return ["ok" => false, "message" => "Already approved. Use resend access email if the member needs fresh credentials."];
     }
 
-    $existingPassword = trim((string) ($user["password"] ?? ""));
-    $needsPasswordGeneration = $existingPassword === "";
-    $plainPassword = "";
-    $hashedPassword = null;
+    if (empty($user["email"])) {
+        return ["ok" => false, "message" => "Approval stopped because the member email address is missing."];
+    }
 
-    if ($needsPasswordGeneration) {
-        $plainPassword = substr(str_shuffle("23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"), 0, 10);
-        $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
-        if ($hashedPassword === false) {
-            return ["ok" => false, "message" => "Unable to generate a secure password."];
-        }
+    $plainPassword = alumnixGenerateTemporaryPassword();
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+    if ($hashedPassword === false) {
+        return ["ok" => false, "message" => "Unable to generate a secure password."];
     }
 
     $conn->begin_transaction();
 
-    if ($needsPasswordGeneration) {
-        $update = $conn->prepare("UPDATE alumni_users SET status = 'approved', password = ? WHERE id = ?");
-        if (!$update) {
-            $conn->rollback();
-            return ["ok" => false, "message" => "Update query failed."];
-        }
-        $update->bind_param("si", $hashedPassword, $memberId);
-    } else {
-        $update = $conn->prepare("UPDATE alumni_users SET status = 'approved' WHERE id = ?");
-        if (!$update) {
-            $conn->rollback();
-            return ["ok" => false, "message" => "Update query failed."];
-        }
-        $update->bind_param("i", $memberId);
+    $update = $conn->prepare("UPDATE alumni_users SET status = 'approved', password = ? WHERE id = ?");
+    if (!$update) {
+        $conn->rollback();
+        return ["ok" => false, "message" => "Update query failed."];
     }
+    $update->bind_param("si", $hashedPassword, $memberId);
 
     $saved = $update->execute();
     $update->close();
@@ -387,35 +406,16 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
         return ["ok" => false, "message" => "Database update failed."];
     }
 
-    $mailSent = false;
-    if (!empty($user["email"])) {
-        if ($needsPasswordGeneration) {
-            $mailSent = alumnixSendApprovalCredentials($user["full_name"], $user["email"], $plainPassword);
-        } else {
-            $mailSent = alumnixSendApprovalNotice($user["full_name"], $user["email"]);
-        }
-    }
+    $mailSent = alumnixSendApprovalCredentials($user["full_name"], $user["email"], $plainPassword);
 
     if (!$mailSent) {
-        adminSaveMailOutbox([
-            "type" => "approval_notification",
-            "name" => $user["full_name"],
-            "email" => $user["email"],
-            "password" => $plainPassword ?: null,
-            "error" => alumnixLastMailError(),
-        ]);
-
-        $conn->commit();
+        $conn->rollback();
+        alumnixLogModerationMailFailure("approval_notification", $user, alumnixLastMailError());
 
         return [
-            "ok" => true,
-            "mail_sent" => false,
-            "message" => $needsPasswordGeneration
-                ? "Approved. Automatic email failed, so credentials are shown once and saved in local outbox."
-                : "Approved. Automatic email failed, please inform the user manually.",
-            "name" => $user["full_name"],
-            "email" => $user["email"],
-            "password" => $plainPassword,
+            "ok" => false,
+            "mail_blocked" => true,
+            "message" => "Approval stopped because the access email could not be delivered.",
             "mail_error" => alumnixLastMailError(),
         ];
     }
@@ -425,10 +425,150 @@ function alumnixApproveUserEngine(mysqli $conn, int $memberId): array
     return [
         "ok" => true,
         "mail_sent" => true,
-        "message" => $needsPasswordGeneration
-            ? "Approved and credentials emailed automatically."
-            : "Approved and approval email sent automatically.",
+        "message" => "Approved and credentials emailed automatically.",
         "name" => $user["full_name"],
         "email" => $user["email"],
+    ];
+}
+
+function alumnixResendApprovalEmailEngine(mysqli $conn, int $memberId): array
+{
+    $user = alumnixAdminFetchMember($conn, $memberId);
+    if (!$user) {
+        return ["ok" => false, "message" => "Member not found."];
+    }
+
+    $status = strtolower(trim((string) $user["status"]));
+    if (!in_array($status, ["approved", "active"], true)) {
+        return ["ok" => false, "message" => "Only approved members can receive a fresh access email."];
+    }
+
+    if (empty($user["email"])) {
+        return ["ok" => false, "message" => "Resend stopped because the member email address is missing."];
+    }
+
+    $plainPassword = alumnixGenerateTemporaryPassword();
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+    if ($hashedPassword === false) {
+        return ["ok" => false, "message" => "Unable to generate a secure password."];
+    }
+
+    $conn->begin_transaction();
+    $update = $conn->prepare("UPDATE alumni_users SET password = ? WHERE id = ?");
+    if (!$update) {
+        $conn->rollback();
+        return ["ok" => false, "message" => "Update query failed."];
+    }
+
+    $update->bind_param("si", $hashedPassword, $memberId);
+    $saved = $update->execute();
+    $update->close();
+
+    if (!$saved) {
+        $conn->rollback();
+        return ["ok" => false, "message" => "Database update failed."];
+    }
+
+    if (!alumnixSendApprovalCredentials($user["full_name"], $user["email"], $plainPassword)) {
+        $conn->rollback();
+        alumnixLogModerationMailFailure("approval_resend", $user, alumnixLastMailError());
+
+        return [
+            "ok" => false,
+            "mail_blocked" => true,
+            "message" => "Fresh access email could not be delivered, so the existing password was kept unchanged.",
+            "mail_error" => alumnixLastMailError(),
+        ];
+    }
+
+    $conn->commit();
+
+    return [
+        "ok" => true,
+        "message" => "Fresh access email sent successfully. The member now has a new temporary password in that email.",
+    ];
+}
+
+function alumnixRejectUserEngine(mysqli $conn, int $memberId): array
+{
+    $user = alumnixAdminFetchMember($conn, $memberId);
+    if (!$user) {
+        return ["ok" => false, "message" => "Member not found."];
+    }
+
+    $status = strtolower(trim((string) $user["status"]));
+    if ($status === "rejected") {
+        return ["ok" => false, "message" => "Already rejected. Use resend rejection email if needed."];
+    }
+
+    if (empty($user["email"])) {
+        return ["ok" => false, "message" => "Rejection stopped because the member email address is missing."];
+    }
+
+    $conn->begin_transaction();
+    $update = $conn->prepare("UPDATE alumni_users SET status = 'rejected' WHERE id = ?");
+    if (!$update) {
+        $conn->rollback();
+        return ["ok" => false, "message" => "Update query failed."];
+    }
+
+    $update->bind_param("i", $memberId);
+    $saved = $update->execute();
+    $update->close();
+
+    if (!$saved) {
+        $conn->rollback();
+        return ["ok" => false, "message" => "Database update failed."];
+    }
+
+    if (!alumnixSendRejectionNotice($user["full_name"], $user["email"])) {
+        $conn->rollback();
+        alumnixLogModerationMailFailure("account_rejection", $user, alumnixLastMailError());
+
+        return [
+            "ok" => false,
+            "mail_blocked" => true,
+            "message" => "Rejection stopped because the rejection email could not be delivered.",
+            "mail_error" => alumnixLastMailError(),
+        ];
+    }
+
+    $conn->commit();
+
+    return [
+        "ok" => true,
+        "message" => "Member rejected and rejection email sent automatically.",
+    ];
+}
+
+function alumnixResendRejectionEmailEngine(mysqli $conn, int $memberId): array
+{
+    $user = alumnixAdminFetchMember($conn, $memberId);
+    if (!$user) {
+        return ["ok" => false, "message" => "Member not found."];
+    }
+
+    $status = strtolower(trim((string) $user["status"]));
+    if ($status !== "rejected") {
+        return ["ok" => false, "message" => "Only rejected members can receive the rejection email again."];
+    }
+
+    if (empty($user["email"])) {
+        return ["ok" => false, "message" => "Resend stopped because the member email address is missing."];
+    }
+
+    if (!alumnixSendRejectionNotice($user["full_name"], $user["email"])) {
+        alumnixLogModerationMailFailure("rejection_resend", $user, alumnixLastMailError());
+
+        return [
+            "ok" => false,
+            "message" => "Rejection email could not be delivered.",
+            "mail_error" => alumnixLastMailError(),
+        ];
+    }
+
+    return [
+        "ok" => true,
+        "message" => "Rejection email sent again successfully.",
     ];
 }

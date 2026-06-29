@@ -26,7 +26,7 @@ if (isset($_POST["login"])) {
         $status = strtolower(trim((string) ($user["status"] ?? "pending")));
 
         if ($status === "pending") {
-            $error = "Your account is waiting for admin approval. Login credentials will be emailed after approval.";
+            $error = "Your account is waiting for admin approval. After approval, the latest login password and access link will be emailed to you.";
         } elseif ($status === "rejected") {
             $error = "Your account approval was not completed. Please contact the admin team.";
         } elseif (empty($user["password"])) {
@@ -236,7 +236,7 @@ if (isset($_POST["login"])) {
             </form>
 
             <div class="note-box">
-                <p>Your email is your login ID. Use the password you created during registration after admin approval.</p>
+                <p>Your email is your login ID. Use the latest password sent to your email after admin approval.</p>
             </div>
         </div>
 

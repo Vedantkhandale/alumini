@@ -380,7 +380,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["action"]) && $_POST["
                 </div>
 
                 <div class="field-group credential-note">
-                    <p><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i> Your email will be your login ID. Please set a password now; after admin approval you can login with the same password.</p>
+                    <p><i class="fas fa-info-circle" style="color: var(--primary); margin-right: 5px;"></i> Your email will be your login ID. After admin approval, a login link and the latest temporary password will be sent to this email.</p>
                 </div>
 
                 <div class="btn-group">

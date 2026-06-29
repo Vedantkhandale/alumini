@@ -19,6 +19,7 @@ function alumnixMailConfig(): array
         "encryption" => strtolower((string) (getenv("ALUMNIX_SMTP_ENCRYPTION") ?: ($fileConfig["encryption"] ?? "tls"))),
         "from_name"  => getenv("ALUMNIX_MAIL_FROM_NAME") ?: ($fileConfig["from_name"] ?? "AlumniX Portal"),
         "reply_to"   => getenv("ALUMNIX_MAIL_REPLY_TO") ?: ($fileConfig["reply_to"] ?? ""),
+        "base_url"   => getenv("ALUMNIX_APP_BASE_URL") ?: ($fileConfig["base_url"] ?? ""),
     ];
 }
 
@@ -51,6 +52,12 @@ function alumnixLogMailError(string $email, string $context, string $message): v
 
 function alumnixGetBaseUrl(): string
 {
+    $config = alumnixMailConfig();
+    $configuredBaseUrl = trim((string) ($config["base_url"] ?? ""));
+    if ($configuredBaseUrl !== "") {
+        return rtrim($configuredBaseUrl, "/");
+    }
+
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
     $scheme = 'http';
     if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
@@ -58,7 +65,21 @@ function alumnixGetBaseUrl(): string
     } elseif (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === '443') {
         $scheme = 'https';
     }
-    return $scheme . '://' . $host . '/alumni';
+
+    $scriptName = str_replace("\\", "/", (string) ($_SERVER['SCRIPT_NAME'] ?? $_SERVER['PHP_SELF'] ?? ""));
+    $basePath = $scriptName !== "" ? dirname($scriptName) : "/alumini";
+    $basePath = str_replace("\\", "/", $basePath);
+
+    if (preg_match('#/admin$#i', $basePath)) {
+        $basePath = dirname($basePath);
+    }
+
+    $basePath = rtrim($basePath, "/.");
+    if ($basePath === "") {
+        $basePath = "/alumini";
+    }
+
+    return $scheme . '://' . $host . $basePath;
 }
 
 /**
@@ -116,7 +137,7 @@ function alumnixSendApprovalCredentials($fullName, $email, $plainPassword) {
     $config = alumnixMailConfig();
     if (!alumnixValidateConfig($config)) return false;
 
-    $loginUrl = alumnixGetBaseUrl() . '/login.php'; 
+    $loginUrl = alumnixGetBaseUrl() . '/login.php';
 
     try {
         $mail = alumnixMailerFactory($config);
@@ -223,6 +244,41 @@ function alumnixSendJobApprovalNotice($fullName, $email, $jobTitle, $company) {
         $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
         alumnixSetMailError($errorMessage);
         alumnixLogMailError($email, 'job_approval', $errorMessage);
+        return false;
+    }
+}
+
+function alumnixSendRejectionNotice($fullName, $email) {
+    alumnixSetMailError("");
+    $config = alumnixMailConfig();
+    if (empty($email) || !alumnixValidateConfig($config)) {
+        return false;
+    }
+
+    try {
+        $mail = alumnixMailerFactory($config);
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Your AlumniX account request was not approved';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; background: #f8fafc; padding: 28px; color: #0f172a;'>
+                <div style='max-width: 560px; margin: 0 auto; background: #ffffff; border-radius: 18px; padding: 28px; border: 1px solid #e2e8f0;'>
+                    <p style='margin: 0 0 10px; color: #f59e0b; font-weight: 700;'>AlumniX Review Update</p>
+                    <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($fullName ?: "there", ENT_QUOTES, "UTF-8") . ",</h2>
+                    <p style='line-height: 1.6;'>Your AlumniX registration request was reviewed, but it could not be approved at this time.</p>
+                    <div style='background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px; padding: 16px; margin: 18px 0;'>
+                        <p style='margin: 0; color: #9a3412;'>If you believe this was a mistake, please contact the admin team and verify your submitted details.</p>
+                    </div>
+                    <p style='line-height: 1.6; color: #64748b; font-size: 13px;'>You can register again later if the admin team asks for updated information.</p>
+                </div>
+            </div>";
+        $mail->AltBody = "Hi {$fullName}, your AlumniX registration request was reviewed but could not be approved at this time. Please contact the admin team if you need clarification.";
+
+        return $mail->send();
+    } catch (Exception $e) {
+        $errorMessage = isset($mail) ? ($mail->ErrorInfo ?: $e->getMessage()) : $e->getMessage();
+        alumnixSetMailError($errorMessage);
+        alumnixLogMailError($email, 'account_rejection', $errorMessage);
         return false;
     }
 }
