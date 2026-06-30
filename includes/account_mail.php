@@ -297,13 +297,6 @@ function alumnixSendRejectionNotice($fullName, $email) {
                     <p style='margin: 0 0 10px; color: #f59e0b; font-weight: 700;'>AlumniX Review Update</p>
                     <h2 style='margin: 0 0 14px;'>Hi " . htmlspecialchars($fullName ?: "there", ENT_QUOTES, "UTF-8") . ",</h2>
                     <p style='line-height: 1.6;'>Your AlumniX registration request was reviewed, but it could not be approved at this time.</p>
- 
- 
- 
- 
- 
- 
- 
                     <div style='background: #fff7ed; border: 1px solid #fed7aa; border-radius: 14px; padding: 16px; margin: 18px 0;'>
                         <p style='margin: 0; color: #9a3412;'>If you believe this was a mistake, please contact the admin team and verify your submitted details.</p>
                     </div>
